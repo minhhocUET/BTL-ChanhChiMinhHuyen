@@ -6,8 +6,7 @@ package com.uet.bidding;
  */
 public class App 
 {
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello Huyenvuive!!" );
+    public static void main( String[] args ){
+        System.out.println( "Hello Huyenvuive!!" )
     }
 }

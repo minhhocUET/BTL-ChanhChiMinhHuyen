@@ -1,4 +1,4 @@
-package main.java.com.uet.bidding.dangki.main.java.com.example;
+package com.uet.bidding.dangki.main.java.com.example;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -11,7 +11,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Tải file FXML từ thư mục resources
-        Parent root = FXMLLoader.load(getClass().getResource("Login.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/Login.fxml"));
         // Cài đặt tiêu đề và kích thước cửa sổ
         primaryStage.setTitle("Giao diện Đăng Nhập");
         primaryStage.setScene(new Scene(root, 350, 450));

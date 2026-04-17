@@ -1,4 +1,4 @@
-package main.java.com.uet.bidding.dangki.main.java.com.example;
+package com.uet.bidding.dangki.main.java.com.example;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -88,7 +88,7 @@ public class LoginController {
     @FXML
     public void goToRegister(ActionEvent event) throws IOException {
         // 1. Tải file giao diện Đăng Ký
-        Parent root = FXMLLoader.load(getClass().getResource("Register.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/Register.fxml"));
 
         // 2. Lấy ra cái Cửa sổ (Stage) hiện tại đang hiển thị
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();

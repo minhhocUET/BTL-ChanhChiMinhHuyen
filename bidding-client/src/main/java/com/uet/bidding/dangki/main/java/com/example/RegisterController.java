@@ -1,4 +1,4 @@
-package main.java.com.uet.bidding.dangki.main.java.com.example;
+package com.uet.bidding.dangki.main.java.com.example;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -59,7 +59,7 @@ public class RegisterController {
     }
     @FXML
     public void goToLogin(javafx.event.ActionEvent event) throws java.io.IOException {
-        javafx.scene.Parent root = javafx.fxml.FXMLLoader.load(getClass().getResource("Login.fxml"));
+        javafx.scene.Parent root = javafx.fxml.FXMLLoader.load(getClass().getResource("../../../../../../../../../resources/Login.fxml"));
         javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
         stage.setScene(new javafx.scene.Scene(root, 350, 450));
         stage.show();

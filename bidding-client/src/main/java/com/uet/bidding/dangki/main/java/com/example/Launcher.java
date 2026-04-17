@@ -1,4 +1,4 @@
-package main.java.com.uet.bidding.dangki.main.java.com.example;
+package com.uet.bidding.dangki.main.java.com.example;
 
 public class Launcher {
     public static void main(String[] args) {

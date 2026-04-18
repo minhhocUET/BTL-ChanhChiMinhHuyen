@@ -1,20 +1,41 @@
 package com.uet.bidding.model;
 
-// Tính Kế thừa: Bidder thừa hưởng mọi thứ từ User
+import java.math.BigDecimal;
+
+/**
+ * Người tham gia đấu giá
+ */
 public class Bidder extends User {
-    
-    public Bidder(int id, String username, String password, double balance) {
-        super(id, username, password, balance); // Gọi constructor của lớp cha
+
+    public Bidder(int id, String username, String password, BigDecimal balance) {
+        super(id, username, password, balance);
+    }
+
+    public Bidder(String username, String password, BigDecimal balance) {
+        super(username, password, balance);
+    }
+
+    /**
+     * Logic đặt giá
+     */
+    public boolean placeBid(Auction auction, BigDecimal amount) {
+        // Kiểm tra giá hợp lệ
+        if (amount.compareTo(auction.getCurrentPrice()) <= 0) {
+            return false;
+        }
+
+        // Kiểm tra đủ tiền
+        if (!withdraw(amount)) {
+            return false;
+        }
+
+        // Cập nhật giá mới
+        auction.setCurrentPrice(amount);
+        return true;
     }
 
     @Override
     public String getRole() {
         return "BIDDER";
-    }
-
-    // Hành động đặc thù của người mua
-    public void placeBid(Auction auction, double amount) {
-        // Logic đặt giá sẽ được xử lý ở các tuần sau
-        System.out.println(getUsername() + " đặt giá " + amount + " cho món đồ!");
     }
 }

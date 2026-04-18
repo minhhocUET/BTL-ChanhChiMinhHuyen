@@ -1,32 +1,60 @@
 package com.uet.bidding.model;
 
-public class Auction {
-    private int auctionId;
-    private Item item;            // Món đồ được đem ra đấu giá
-    private double startPrice;    // Giá khởi điểm
-    private double currentPrice;  // Giá cao nhất hiện tại
-    private String status;        // Trạng thái: OPEN, RUNNING, FINISHED
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-    public Auction(int auctionId, Item item, double startPrice) {
-        this.auctionId = auctionId;
-        this.item = item;
-        this.startPrice = startPrice;
-        this.currentPrice = startPrice; // Lúc mới tạo, giá hiện tại = giá khởi điểm
+public class Auction {
+    private int id;
+    private int itemId;
+    private BigDecimal currentPrice;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private String status;
+
+    // Constructor dùng khi đọc DB
+    public Auction(int id, int itemId, BigDecimal currentPrice,
+                   LocalDateTime startTime, LocalDateTime endTime, String status) {
+        this.id = id;
+        this.itemId = itemId;
+        this.currentPrice = currentPrice;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = status;
+    }
+
+    // Constructor khi tạo mới
+    public Auction(int itemId, BigDecimal startPrice,
+                   LocalDateTime startTime, LocalDateTime endTime) {
+        this.itemId = itemId;
+        this.currentPrice = startPrice;
+        this.startTime = startTime;
+        this.endTime = endTime;
         this.status = "OPEN";
     }
 
-    // Các hàm Getter / Setter cơ bản
-    public int getAuctionId() { return auctionId; }
-    public Item getItem() { return item; }
-    
-    public double getStartPrice() { return startPrice; }
-    public double getCurrentPrice() { return currentPrice; }
-    
-    // Hàm này rất quan trọng để cập nhật giá khi có người đặt cao hơn
-    public void setCurrentPrice(double currentPrice) { 
-        this.currentPrice = currentPrice; 
+    // ================== GETTER ==================
+    public int getId() { return id; }
+
+    public BigDecimal getCurrentPrice() {
+        return currentPrice;
     }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getStatus() {
+        return status;
+    }
+
+    // ================== SETTER ==================
+    public void setCurrentPrice(BigDecimal currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    // ================== LOGIC ==================
+
+    public boolean isActive() {
+        return status.equals("OPEN") || status.equals("RUNNING");
+    }
 }

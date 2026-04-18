@@ -1,14 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="CONTROLLER_NAME"
-            prefHeight="400.0" prefWidth="600.0">
+<VBox prefHeight="600.0" prefWidth="900.0" stylesheets="@style.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.ui.AuctionListController">
 
-</AnchorPane>
+    <children>
+        <HBox alignment="CENTER_LEFT" styleClass="header-bar">
+            <children>
+                <Label styleClass="header-title" text="VNU AUCTION SYSTEM" />
+                <Pane HBox.hgrow="ALWAYS" />
+                <Hyperlink text="My Profile" textFill="WHITE" />
+            </children>
+        </HBox>
+
+        <VBox spacing="15.0" styleClass="main-container" VBox.vgrow="ALWAYS">
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="15.0">
+                    <children>
+                        <TextField promptText="Tìm kiếm tài sản..." prefWidth="300.0" styleClass="input-field" />
+                        <ComboBox promptText="Tất cả tỉnh thành" prefWidth="150.0" />
+                        <Label styleClass="status-active" text="● Đang diễn ra: 24 phiên" />
+                    </children>
+                </HBox>
+
+                <TableView fx:id="auctionTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="nameColumn" text="Tên tài sản / Biển số" prefWidth="350.0" />
+                        <TableColumn fx:id="priceColumn" text="Giá khởi điểm ($)" prefWidth="200.0" />
+                        <TableColumn fx:id="timeColumn" text="Trạng thái / Thời gian" prefWidth="280.0" />
+                    </columns>
+                </TableView>
+
+                <HBox alignment="CENTER_RIGHT">
+                    <children>
+                        <Button mnemonicParsing="false" styleClass="btn-enter-room" text="VÀO PHÒNG ĐẤU GIÁ" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</VBox>

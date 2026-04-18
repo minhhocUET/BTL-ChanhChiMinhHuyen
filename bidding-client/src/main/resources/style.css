@@ -1,24 +1,22 @@
-/* Màu nền tổng thể của form */
-.root-container {
-    -fx-background-color: #ffffff;
+/* Màu nền tổng thể của form - Chuyển từ hồng sang dải màu trắng/xanh nhạt */
+.root-container, .root {
+    -fx-background-color: linear-gradient(to bottom right, #ffffff, #e0f2fe);
 }
-.root {
-    -fx-background-color: #ffe4e1; /* Mã màu nền hồng nhạt pastel */
-}
-/* Tiêu đề chính */
+
+/* Tiêu đề chính - Đổi sang màu xanh đậm VNU thay vì xám đậm */
 .title-label {
-    -fx-font-size: 26px;
+    -fx-font-size: 28px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1e293b; /* Màu xám đậm */
+    -fx-text-fill: #1e3a8a; /* Màu xanh Navy đậm giống thanh menu Dashboard */
 }
 
 /* Tiêu đề phụ */
 .subtitle-label {
-    -fx-font-size: 13px;
+    -fx-font-size: 14px;
     -fx-text-fill: #64748b; /* Màu xám nhạt */
 }
 
-/* Các ô nhập chữ */
+/* Các ô nhập chữ (Giữ nguyên thiết kế rất đẹp của bạn) */
 .input-field {
     -fx-pref-height: 42px;
     -fx-background-color: #f8fafc;
@@ -37,7 +35,7 @@
     -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.2), 8, 0, 0, 0); /* Bóng tỏa ra nhẹ */
 }
 
-/* Nút bấm Đăng Ký */
+/* Nút bấm (Giữ nguyên màu xanh dương của bạn) */
 .action-button {
     -fx-pref-height: 45px;
     -fx-pref-width: 270px; /* Kéo nút rộng ra cho đẹp */
@@ -63,5 +61,63 @@
 .error-label {
     -fx-text-fill: #ef4444; /* Đỏ tươi */
     -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+/* --- style.css (Phần cho Auction) --- */
+
+/* 1. Thanh Header màu xanh đậm */
+.header-bar {
+    -fx-background-color: #334155; /* Màu xanh đen chuyên nghiệp */
+    -fx-padding: 15 20;
+}
+
+.header-title {
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+/* 2. Khu vực nội dung chính */
+.main-container {
+    -fx-background-color: #f8fafc;
+    -fx-padding: 20;
+}
+
+/* 3. Bảng TableView */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 5;
+}
+
+.table-view .column-header {
+    -fx-background-color: #e2e8f0; /* Màu nền tiêu đề cột */
+    -fx-padding: 10;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #1e293b;
+    -fx-font-weight: bold;
+}
+
+/* 4. Nút "VÀO PHÒNG ĐẤU GIÁ" màu cam */
+.btn-enter-room {
+    -fx-background-color: #f97316; /* Màu cam đặc trưng */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-background-radius: 25; /* Bo tròn mạnh */
+    -fx-padding: 10 30;
+    -fx-cursor: hand;
+}
+
+.btn-enter-room:hover {
+    -fx-background-color: #ea580c;
+}
+
+/* Trạng thái "Đang diễn ra" màu xanh lá */
+.status-active {
+    -fx-text-fill: #22c55e;
     -fx-font-weight: bold;
 }

@@ -1,24 +1,92 @@
 package com.uet.bidding.model;
 
-public class AuctionManager {
-    // 1. Tạo một biến static private chứa thể hiện duy nhất của class
-    private static AuctionManager instance;
+import java.math.BigDecimal;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
-    // 2. Chặn không cho tạo object bừa bãi bằng cách để Constructor là private
+/**
+ * AuctionManager
+ * - Singleton
+ * - Quản lý tất cả auction
+ * - Xử lý concurrent bidding
+ */
+public class AuctionManager {
+
+    // ================== SINGLETON ==================
+    private static volatile AuctionManager instance;
+
     private AuctionManager() {
         System.out.println("Hệ thống quản lý đấu giá đã được khởi động!");
     }
 
-    // 3. Cung cấp một cổng duy nhất để lấy ông quản lý này ra dùng
     public static AuctionManager getInstance() {
         if (instance == null) {
-            instance = new AuctionManager();
+            synchronized (AuctionManager.class) {
+                if (instance == null) {
+                    instance = new AuctionManager();
+                }
+            }
         }
         return instance;
     }
 
-    // Các hàm nghiệp vụ sau này sẽ viết ở đây
+    // ================== DATA ==================
+
+    // Lưu auction
+    private ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
+
+    // Lock riêng cho từng auction
+    private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
+
+    // ================== QUẢN LÝ ==================
+
+    public void addAuction(Auction auction) {
+        auctions.put(auction.getId(), auction);
+        locks.put(auction.getId(), new ReentrantLock());
+    }
+
+    public Auction getAuction(int id) {
+        return auctions.get(id);
+    }
+
     public void startAuction(int auctionId) {
-        // Logic mở phiên đấu giá
+        Auction auction = auctions.get(auctionId);
+        if (auction != null) {
+            auction.setStatus("RUNNING");
+        }
+    }
+
+    // ================== CORE LOGIC ==================
+
+    /**
+     * Đặt giá an toàn (thread-safe)
+     */
+    public boolean placeBid(int auctionId, Bidder bidder, BigDecimal amount) {
+        Auction auction = auctions.get(auctionId);
+        if (auction == null) return false;
+
+        ReentrantLock lock = locks.get(auctionId);
+
+        lock.lock(); // 🔥 khóa
+        try {
+            // 1. kiểm tra trạng thái
+            if (!auction.isActive()) return false;
+
+            // 2. kiểm tra giá
+            if (amount.compareTo(auction.getCurrentPrice()) <= 0) return false;
+
+            // 3. kiểm tra tiền
+            if (!bidder.withdraw(amount)) return false;
+
+            // 4. update
+            auction.setCurrentPrice(amount);
+
+            System.out.println(bidder.getUsername() + " bid: " + amount);
+
+            return true;
+
+        } finally {
+            lock.unlock(); // 🔥 luôn unlock
+        }
     }
 }

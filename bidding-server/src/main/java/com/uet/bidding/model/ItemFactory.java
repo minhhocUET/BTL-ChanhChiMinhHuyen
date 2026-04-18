@@ -1,15 +1,42 @@
 package com.uet.bidding.model;
 
+import java.math.BigDecimal;
+
+/**
+ * Factory pattern: tạo Item dựa theo type
+ */
 public class ItemFactory {
-    
-    // Phương thức Factory: Trả về một đối tượng Item dựa trên loại (type) đầu vào
-    public static Item createItem(String type, int id, String name) {
-        if (type.equalsIgnoreCase("ELECTRONICS")) {
-            return new Electronics(id, name);
-        } else if (type.equalsIgnoreCase("ART")) {
-            return new Art(id, name);
+
+    public static Item createItem(String type,
+                                  int id,
+                                  String name,
+                                  String description,
+                                  BigDecimal startingPrice,
+                                  int sellerId) {
+        if (type.equalsIgnoreCase("ART")) {
+            return new Art(id, name,description,startingPrice,sellerId);
         }
-        // Có thể thêm Vehicle, Jewelry... sau này
+        if (type.equalsIgnoreCase("ELECTRONICS")) {
+            return new Electronics(id, name, description, startingPrice, sellerId);
+        }
         throw new IllegalArgumentException("Loại sản phẩm không hợp lệ: " + type);
+    }
+
+    // Dùng khi tạo mới (chưa có id)
+    public static Item createItem(String type,
+                                  String name,
+                                  String description,
+                                  BigDecimal startingPrice,
+                                  int sellerId) {
+
+        if (type.equalsIgnoreCase("ART")) {
+            return new Art(name, description, startingPrice, sellerId);
+        }
+
+        if (type.equalsIgnoreCase("ELECTRONICS")) {
+            return new Electronics(name, description, startingPrice, sellerId);
+        }
+
+        throw new IllegalArgumentException("Invalid item type: " + type);
     }
 }

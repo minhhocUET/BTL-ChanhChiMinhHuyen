@@ -13,7 +13,7 @@ public abstract class User {
     // Constructor
     public User(int id, String username, String password, BigDecimal balance) {
         this.id = id;
-          this.username = username;
+        this.username = username;
         this.password = password;
         this.balance = balance;
     }
@@ -26,4 +26,12 @@ public abstract class User {
 
     // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa
     public abstract String getRole();
+
+    public boolean withdraw(BigDecimal amount) {
+        if (this.balance != null && this.balance.compareTo(amount) >= 0) {
+            this.balance = this.balance.subtract(amount);
+            return true;
+        }
+        return false;
+    }
 }

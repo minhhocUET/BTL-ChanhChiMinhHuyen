@@ -11,10 +11,6 @@ public class Bidder extends User {
         super(id, username, password, balance);
     }
 
-    public Bidder(String username, String password, BigDecimal balance) {
-        super(username, password, balance);
-    }
-
     /**
      * Logic đặt giá
      */

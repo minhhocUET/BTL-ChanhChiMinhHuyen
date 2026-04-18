@@ -1,4 +1,4 @@
-package com.uet.bidding.dangki.main.java.com.example;
+package com.uet.bidding.ui;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -10,8 +10,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-
 import java.io.IOException;
+import java.net.Socket;
+
 
 public class LoginController {
 
@@ -96,5 +97,17 @@ public class LoginController {
         // 3. Đắp giao diện Đăng Ký lên cửa sổ đó
         stage.setScene(new Scene(root, 350, 450));
         stage.show();
+    }
+    public void xuLyDangNhap() {
+        try {
+            // Thử kết nối tới Server ở cổng 8080
+            Socket socket = new Socket("localhost", 8080);
+            System.out.println("🟢 Đã kết nối tới Server thành công!");
+
+            // TODO: Chuyển sang màn hình chính của ứng dụng sau khi kết nối
+
+        } catch (IOException e) {
+            System.out.println("🔴 Lỗi: Không tìm thấy Server. Hãy chắc chắn Server đang chạy!");
+        }
     }
 }

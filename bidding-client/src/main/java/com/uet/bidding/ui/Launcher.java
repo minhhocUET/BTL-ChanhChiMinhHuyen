@@ -1,5 +1,5 @@
-package com.uet.bidding.dangki.main.java.com.example;
 
+package com.uet.bidding.ui;
 public class Launcher {
     public static void main(String[] args) {
         // Gọi hàm main của file Main.java

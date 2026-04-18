@@ -1,4 +1,4 @@
-package com.uet.bidding.dangki.main.java.com.example;
+package com.uet.bidding.ui;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

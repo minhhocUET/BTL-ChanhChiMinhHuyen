@@ -1,0 +1,67 @@
+/* Màu nền tổng thể của form */
+.root-container {
+    -fx-background-color: #ffffff;
+}
+.root {
+    -fx-background-color: #ffe4e1; /* Mã màu nền hồng nhạt pastel */
+}
+/* Tiêu đề chính */
+.title-label {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1e293b; /* Màu xám đậm */
+}
+
+/* Tiêu đề phụ */
+.subtitle-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #64748b; /* Màu xám nhạt */
+}
+
+/* Các ô nhập chữ */
+.input-field {
+    -fx-pref-height: 42px;
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 8px; /* Bo góc */
+    -fx-background-radius: 8px;
+    -fx-padding: 0 15px; /* Thụt lề chữ bên trong */
+    -fx-font-size: 14px;
+    -fx-text-fill: #334155;
+}
+
+/* Hiệu ứng khi click chuột vào ô nhập chữ (Viền sáng lên) */
+.input-field:focused {
+    -fx-border-color: #3b82f6; /* Viền xanh dương */
+    -fx-background-color: #ffffff;
+    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.2), 8, 0, 0, 0); /* Bóng tỏa ra nhẹ */
+}
+
+/* Nút bấm Đăng Ký */
+.action-button {
+    -fx-pref-height: 45px;
+    -fx-pref-width: 270px; /* Kéo nút rộng ra cho đẹp */
+    -fx-background-color: #3b82f6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+    -fx-background-radius: 8px; /* Bo góc giống ô nhập liệu */
+    -fx-cursor: hand; /* Đổi con trỏ thành hình bàn tay */
+}
+
+/* Hiệu ứng khi rê chuột qua nút */
+.action-button:hover {
+    -fx-background-color: #2563eb; /* Đổi màu xanh đậm hơn */
+}
+
+/* Hiệu ứng khi bấm giữ nút */
+.action-button:pressed {
+    -fx-background-color: #1d4ed8;
+}
+
+/* Chữ báo lỗi */
+.error-label {
+    -fx-text-fill: #ef4444; /* Đỏ tươi */
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}

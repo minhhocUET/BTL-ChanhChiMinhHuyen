@@ -2,14 +2,9 @@ package com.uet.bidding.ui;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.stage.Stage;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -40,14 +35,8 @@ public class LoginController {
         // 5. Xử lý kết quả trả về
         if (isLoginSuccess) {
             messageLabel.setText("Đăng nhập thành công!");
-
-            // Gọi hàm chuyển sang màn hình chính của ứng dụng
-            try {
-                goToMainScreen(event);
-            } catch (IOException e) {
-                e.printStackTrace();
-                messageLabel.setText("Lỗi: Không thể tải giao diện đấu giá!");
-            }
+            // Gọi thẳng hàm chuyển trang mà không cần try-catch lằng nhằng nữa
+            goToMainScreen();
         } else {
             messageLabel.setText("Sai tài khoản hoặc mật khẩu!");
         }
@@ -57,32 +46,21 @@ public class LoginController {
     private boolean checkUserInDatabase(String username, String password) {
         // ... (Đoạn code SQL của bạn vẫn giữ nguyên ở đây để sau này dùng) ...
 
-        // SỬA Ở ĐÂY: Tạm thời trả về TRUE để test việc chuyển trang sang AuctionList
+        // Tạm thời trả về TRUE để test việc chuyển trang sang AuctionList
         return true;
     }
 
-    // HÀM MỚI: CHUYỂN SANG GIAO DIỆN ĐẤU GIÁ
-    private void goToMainScreen(ActionEvent event) throws IOException {
-        // 1. Tải file giao diện Đấu giá
-        Parent root = FXMLLoader.load(getClass().getResource("/AuctionList.fxml"));
-
-        // 2. Lấy ra cái Cửa sổ (Stage) hiện tại đang hiển thị
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
-        // 3. Đắp giao diện Đấu giá lên cửa sổ đó (để kích thước to hơn cho đẹp)
-        stage.setScene(new Scene(root, 900, 600));
-        stage.setTitle("Hệ thống Đấu giá VNU - Dashboard");
-        stage.centerOnScreen(); // Căn giữa màn hình
-        stage.show();
+    // ĐÃ SỬA: Dùng hàm của Main để chuyển sang giao diện Đấu giá
+    private void goToMainScreen() {
+        // Chỉ cần 1 dòng duy nhất thay vì 4 dòng như cũ
+        Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", 900, 600);
     }
 
-    // Nút chuyển sang trang Đăng Ký
+    // ĐÃ SỬA: Nút chuyển sang trang Đăng Ký
     @FXML
-    public void goToRegister(ActionEvent event) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("/Register.fxml"));
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setScene(new Scene(root, 350, 450));
-        stage.show();
+    public void goToRegister(ActionEvent event) {
+        // Kích thước 400x500 (bạn có thể tự chỉnh lại cho khớp form đăng ký của bạn)
+        Main.changeScene("/Register.fxml", "Hệ thống Đấu giá VNU - Đăng ký", 400, 500);
     }
 
     public void xuLyDangNhap() {

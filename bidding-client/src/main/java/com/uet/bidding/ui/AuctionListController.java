@@ -1,38 +1,87 @@
 package com.uet.bidding.ui;
 
-import com.uet.bidding.model.AuctionItem; // Gọi class AuctionItem của bạn vào
+import com.uet.bidding.model.AuctionItem;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent; // Bắt buộc phải import thư viện này cho nút bấm
 import javafx.fxml.FXML;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Callback;
 
-public class AuctionListController {
+import java.net.URL;
+import java.util.ResourceBundle;
 
-    // Khai báo bảng và các cột, chỉ định rõ nó dùng dữ liệu từ AuctionItem
-    @FXML private TableView<AuctionItem> auctionTable;
-    @FXML private TableColumn<AuctionItem, String> nameColumn;
-    @FXML private TableColumn<AuctionItem, Double> priceColumn;
-    @FXML private TableColumn<AuctionItem, String> timeColumn;
+public class AuctionListController implements Initializable {
 
-    @FXML
-    public void initialize() {
-        // 1. Liên kết các cột với các biến (name, currentPrice, timeLeft) trong file AuctionItem.java
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        priceColumn.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
-        timeColumn.setCellValueFactory(new PropertyValueFactory<>("timeLeft"));
+    // Khai báo các ID phải trùng khớp với fx:id trong AuctionList.fxml
+    @FXML private TableView<AuctionItem> tableView;
+    @FXML private TableColumn<AuctionItem, Integer> colStt;
+    @FXML private TableColumn<AuctionItem, String> colCity;
+    @FXML private TableColumn<AuctionItem, String> colProduct;
+    @FXML private TableColumn<AuctionItem, Integer> colInterested;
+    @FXML private TableColumn<AuctionItem, Void> colAction;
 
-        // 2. Tạo một ít dữ liệu mẫu để đưa lên giao diện
-        ObservableList<AuctionItem> dummyData = FXCollections.observableArrayList(
-                new AuctionItem("Biển số: 30K-999.99", 5000.0, "00:45:12 (Đang chạy)"),
-                new AuctionItem("Laptop Dell XPS 15", 1200.0, "Sắp bắt đầu"),
-                new AuctionItem("Tranh sơn dầu Thế kỷ 19", 8500.0, "02:10:05 (Đang chạy)")
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        // 1. Cấu hình để các cột biết lấy dữ liệu từ đâu trong AuctionItem
+        colStt.setCellValueFactory(new PropertyValueFactory<>("stt"));
+        colCity.setCellValueFactory(new PropertyValueFactory<>("city"));
+        colProduct.setCellValueFactory(new PropertyValueFactory<>("productType"));
+        colInterested.setCellValueFactory(new PropertyValueFactory<>("interestedCount"));
+
+        // 2. Tạo nút "Đăng kí đấu giá" cho cột Lựa chọn
+        setupActionColumn();
+
+        // 3. TẠO DỮ LIỆU MẪU ĐỂ LẤP ĐẦY BẢNG
+        ObservableList<AuctionItem> dataList = FXCollections.observableArrayList(
+                new AuctionItem(1, "Hà Nội", "Laptop Dell XPS 15", 125),
+                new AuctionItem(2, "Đà Nẵng", "Đồng hồ Apple Watch S9", 45),
+                new AuctionItem(3, "TP. HCM", "Xe đạp điện VinFast", 89),
+                new AuctionItem(4, "Cần Thơ", "Máy ảnh Canon EOS R5", 12)
         );
 
-        // 3. Đổ dữ liệu vào bảng
-        auctionTable.setItems(dummyData);
+        // 4. Đưa dữ liệu vào TableView
+        tableView.setItems(dataList);
+    }
 
-        System.out.println("🟢 Đã tải xong giao diện Đấu giá và đưa dữ liệu mẫu lên bảng!");
+    private void setupActionColumn() {
+        Callback<TableColumn<AuctionItem, Void>, TableCell<AuctionItem, Void>> cellFactory = new Callback<>() {
+            @Override
+            public TableCell<AuctionItem, Void> call(final TableColumn<AuctionItem, Void> param) {
+                return new TableCell<>() {
+                    private final Button btn = new Button("Đăng kí đấu giá");
+                    {
+                        // Bo góc và tô màu cho giống bản vẽ của bạn
+                        btn.setStyle("-fx-background-color: white; -fx-border-color: black; " +
+                                "-fx-border-radius: 20; -fx-background-radius: 20; " +
+                                "-fx-text-fill: #e84393; -fx-font-weight: bold; -fx-cursor: hand;");
+                        btn.setOnAction(event -> {
+                            AuctionItem item = getTableView().getItems().get(getIndex());
+                            System.out.println("Đăng kí sản phẩm: " + item.getProductType());
+                        });
+                    }
+
+                    @Override
+                    protected void updateItem(Void item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty) {
+                            setGraphic(null);
+                        } else {
+                            setGraphic(btn);
+                        }
+                    }
+                };
+            }
+        };
+        colAction.setCellFactory(cellFactory);
+    }
+
+    // THÊM HÀM NÀY ĐỂ TRÁNH LỖI FXML TÌM KHÔNG THẤY HÀM XỬ LÝ NÚT TÌM KIẾM
+    @FXML
+    public void handleSearch(ActionEvent event) {
+        System.out.println("Nút tìm kiếm vừa được bấm!");
+        // (Sau này bạn có thể code chức năng lọc dữ liệu theo tên thành phố hoặc sản phẩm ở đây)
     }
 }

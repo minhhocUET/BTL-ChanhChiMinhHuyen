@@ -3,71 +3,68 @@
     -fx-background-color: linear-gradient(to bottom right, #ffffff, #e0f2fe);
 }
 
-/* Tiêu đề chính - Đổi sang màu xanh đậm VNU thay vì xám đậm */
+/* Tiêu đề chính */
 .title-label {
     -fx-font-size: 28px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1e3a8a; /* Màu xanh Navy đậm giống thanh menu Dashboard */
+    -fx-text-fill: #1e3a8a;
 }
 
 /* Tiêu đề phụ */
 .subtitle-label {
     -fx-font-size: 14px;
-    -fx-text-fill: #64748b; /* Màu xám nhạt */
+    -fx-text-fill: #64748b;
 }
 
-/* Các ô nhập chữ (Giữ nguyên thiết kế rất đẹp của bạn) */
+/* Các ô nhập chữ */
 .input-field {
     -fx-pref-height: 42px;
     -fx-background-color: #f8fafc;
     -fx-border-color: #cbd5e1;
-    -fx-border-radius: 8px; /* Bo góc */
+    -fx-border-radius: 8px;
     -fx-background-radius: 8px;
-    -fx-padding: 0 15px; /* Thụt lề chữ bên trong */
+    -fx-padding: 0 15px;
     -fx-font-size: 14px;
     -fx-text-fill: #334155;
 }
 
-/* Hiệu ứng khi click chuột vào ô nhập chữ (Viền sáng lên) */
 .input-field:focused {
-    -fx-border-color: #3b82f6; /* Viền xanh dương */
+    -fx-border-color: #3b82f6;
     -fx-background-color: #ffffff;
-    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.2), 8, 0, 0, 0); /* Bóng tỏa ra nhẹ */
+    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.2), 8, 0, 0, 0);
 }
 
-/* Nút bấm (Giữ nguyên màu xanh dương của bạn) */
+/* Nút bấm Đăng nhập/Đăng ký */
 .action-button {
     -fx-pref-height: 45px;
-    -fx-pref-width: 270px; /* Kéo nút rộng ra cho đẹp */
+    -fx-pref-width: 270px;
     -fx-background-color: #3b82f6;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 15px;
-    -fx-background-radius: 8px; /* Bo góc giống ô nhập liệu */
-    -fx-cursor: hand; /* Đổi con trỏ thành hình bàn tay */
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
 }
 
-/* Hiệu ứng khi rê chuột qua nút */
 .action-button:hover {
-    -fx-background-color: #2563eb; /* Đổi màu xanh đậm hơn */
+    -fx-background-color: #2563eb;
 }
 
-/* Hiệu ứng khi bấm giữ nút */
 .action-button:pressed {
     -fx-background-color: #1d4ed8;
 }
 
-/* Chữ báo lỗi */
 .error-label {
-    -fx-text-fill: #ef4444; /* Đỏ tươi */
+    -fx-text-fill: #ef4444;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
+
 /* --- style.css (Phần cho Auction) --- */
 
 /* 1. Thanh Header màu xanh đậm */
 .header-bar {
-    -fx-background-color: #334155; /* Màu xanh đen chuyên nghiệp */
+    -fx-background-color: #334155;
     -fx-padding: 15 20;
 }
 
@@ -84,30 +81,61 @@
     -fx-padding: 20;
 }
 
-/* 3. Bảng TableView */
+/* =========================================================
+   3. BẢNG TABLEVIEW (ĐÃ ĐƯỢC CHỈNH LẠI SANG TONE MÀU HỒNG)
+   ========================================================= */
 .table-view {
     -fx-background-color: transparent;
-    -fx-border-color: #cbd5e1;
+    -fx-border-color: #ff69b4;
     -fx-border-radius: 5;
 }
 
+.table-view .column-header-background,
 .table-view .column-header {
-    -fx-background-color: #e2e8f0; /* Màu nền tiêu đề cột */
+    -fx-background-color: #ffb6c1;
     -fx-padding: 10;
 }
 
 .table-view .column-header .label {
-    -fx-text-fill: #1e293b;
+    -fx-text-fill: black;
     -fx-font-weight: bold;
+    -fx-font-size: 14px;
 }
+
+.table-cell {
+    -fx-text-fill: black;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER;
+}
+
+.table-row-cell {
+    -fx-background-color: white;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #ffe4e1;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #ff69b4;
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: white;
+}
+
+.table-view .filler {
+    -fx-background-color: #ffb6c1;
+}
+/* ========================================================= */
 
 /* 4. Nút "VÀO PHÒNG ĐẤU GIÁ" màu cam */
 .btn-enter-room {
-    -fx-background-color: #f97316; /* Màu cam đặc trưng */
+    -fx-background-color: #f97316;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 16px;
-    -fx-background-radius: 25; /* Bo tròn mạnh */
+    -fx-background-radius: 25;
     -fx-padding: 10 30;
     -fx-cursor: hand;
 }

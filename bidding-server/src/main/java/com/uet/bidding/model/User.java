@@ -22,6 +22,10 @@ public abstract class User {
     public int getId() { return id; }
     public String getUsername() { return username; }
     public BigDecimal getBalance() { return balance; }
+    public String getPassword() {
+        return password;
+    }
+
     public void setBalance(BigDecimal balance) { this.balance = balance; }
 
     // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa

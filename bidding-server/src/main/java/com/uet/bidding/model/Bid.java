@@ -12,7 +12,13 @@ public class Bid {
         this.amount = amount;
         this.time = LocalDateTime.now();
     }
+
     // Getter/Setter...
-    public double getAmount() { return amount; }
-    public String getBidderName() { return bidderName; }
+    public double getAmount() {
+        return amount;
+    }
+
+    public String getBidderName() {
+        return bidderName;
+    }
 }

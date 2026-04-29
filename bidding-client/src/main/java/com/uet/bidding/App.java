@@ -2,8 +2,12 @@ package com.uet.bidding;
 
 import com.google.gson.Gson;
 import com.uet.bidding.model.NetworkMessage;
-import java.io.*;
-import java.net.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.Scanner;
 
 public class App {

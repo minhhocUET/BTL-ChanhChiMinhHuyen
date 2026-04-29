@@ -14,6 +14,12 @@ public class AuctionManager {
 
     // ================== SINGLETON ==================
     private static volatile AuctionManager instance;
+    // Lưu auction
+    private ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
+    // Lock riêng cho từng auction
+    private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
+
+    // ================== DATA ==================
 
     private AuctionManager() {
         System.out.println("Hệ thống quản lý đấu giá đã được khởi động!");
@@ -29,14 +35,6 @@ public class AuctionManager {
         }
         return instance;
     }
-
-    // ================== DATA ==================
-
-    // Lưu auction
-    private ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
-
-    // Lock riêng cho từng auction
-    private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
 
     // ================== QUẢN LÝ ==================
 

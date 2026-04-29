@@ -1,7 +1,8 @@
 package com.uet.bidding;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class App {
     public static void main(String[] args) {

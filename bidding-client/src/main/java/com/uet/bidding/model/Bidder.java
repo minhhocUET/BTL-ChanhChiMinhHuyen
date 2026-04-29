@@ -2,7 +2,7 @@ package com.uet.bidding.model;
 
 // Tính Kế thừa: Bidder thừa hưởng mọi thứ từ User
 public class Bidder extends User {
-    
+
     public Bidder(int id, String username, String password, double balance) {
         super(id, username, password, balance); // Gọi constructor của lớp cha
     }

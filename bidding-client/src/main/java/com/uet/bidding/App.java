@@ -33,6 +33,7 @@ public class App {
 
                 if (input.isEmpty()) continue;
 
+
                 // Tách lệnh dựa trên dấu cách đầu tiên tìm thấy
                 // Limit = 2 đảm bảo nếu nội dung có dấu cách (vd: "CHAT Hello bạn") thì vẫn lấy đủ
                 String[] parts = input.split(" ", 2);
@@ -45,12 +46,19 @@ public class App {
                 out.println(gson.toJson(msg));
 
                 // Nhận phản hồi
-                String response = in.readLine();
-                if (response == null) {
-                    System.out.println("[Lỗi] Mất kết nối tới Server.");
-                    break;
+                String rawResponse = in.readLine(); // Nhận {"type":"SUCCESS", "content":"..."}
+                if (rawResponse != null) {
+                    // Giải mã JSON thành đối tượng NetworkMessage
+                    NetworkMessage serverMsg = gson.fromJson(rawResponse, NetworkMessage.class);
+
+                    // Chỉ in ra phần content, có thể thêm tiền tố dựa trên Type
+                    if ("SUCCESS".equals(serverMsg.getType())) {
+                        System.out.println("[Server]: " + serverMsg.getContent());
+                    } else if ("ERROR".equals(serverMsg.getType())) {
+                        // In lỗi màu đỏ cho chuyên nghiệp (System.err)
+                        System.err.println("[Lỗi]: " + serverMsg.getContent());
+                    }
                 }
-                System.out.println("[Server]: " + response);
             }
 
         } catch (IOException e) {

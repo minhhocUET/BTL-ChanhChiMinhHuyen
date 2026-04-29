@@ -19,17 +19,20 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
-
+    <!-- 1. GSON: Bắt buộc để truyền tin nhắn JSON qua Socket -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.10.1</version>
+    </dependency>
+
+    <!-- 2. JUnit Jupiter (Aggregator): Gói này tự động bao gồm cả API và Engine bản chuẩn -->
+    <!-- Xóa bỏ các bản 6.0.0 hay TestNG vì chúng gây xung đột khiến Test không chạy được -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.0</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

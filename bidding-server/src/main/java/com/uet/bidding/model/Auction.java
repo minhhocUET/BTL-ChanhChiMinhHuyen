@@ -1,6 +1,6 @@
 package com.uet.bidding.model;
 
-import com.uet.bidding.exception.AuctionNotRunningException;
+import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 
 import java.math.BigDecimal;
@@ -59,14 +59,14 @@ public class Auction {
 
     // --- XỬ LÝ ĐA LUỒNG & NGOẠI LỆ ---
     public synchronized boolean placeBid(String bidderName, double bidAmount)
-            throws AuctionNotRunningException, InvalidBidException {
+            throws AuctionClosedException, InvalidBidException {
 
         // Chuyển double sang BigDecimal để so sánh chuẩn xác với Database
         BigDecimal offer = BigDecimal.valueOf(bidAmount);
 
         // 1. Kiểm tra trạng thái (Dùng String status)
         if (!this.status.equals("RUNNING")) {
-            throw new AuctionNotRunningException("Phiên đấu giá chưa bắt đầu hoặc đã kết thúc!");
+            throw new AuctionClosedException("Phiên đấu giá chưa bắt đầu hoặc đã kết thúc!");
         }
 
         // 2. Kiểm tra giá (Dùng compareTo: trả về <= 0 nghĩa là nhỏ hơn hoặc bằng)

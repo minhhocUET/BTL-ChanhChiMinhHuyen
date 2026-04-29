@@ -48,6 +48,7 @@ public class RegisterController {
         System.out.println("Mật khẩu: " + password);
 
     }
+
     @FXML
     public void goToLogin(javafx.event.ActionEvent event) throws java.io.IOException {
         javafx.scene.Parent root = javafx.fxml.FXMLLoader.load(getClass().getResource("/Login.fxml"));

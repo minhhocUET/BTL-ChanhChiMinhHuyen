@@ -17,16 +17,24 @@ public class AuctionItem {
         return name;
     }
 
+    // Các hàm Setter (Nếu bạn muốn thay đổi dữ liệu sau này)
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public double getCurrentPrice() {
         return currentPrice;
+    }
+
+    public void setCurrentPrice(double currentPrice) {
+        this.currentPrice = currentPrice;
     }
 
     public String getTimeLeft() {
         return timeLeft;
     }
 
-    // Các hàm Setter (Nếu bạn muốn thay đổi dữ liệu sau này)
-    public void setName(String name) { this.name = name; }
-    public void setCurrentPrice(double currentPrice) { this.currentPrice = currentPrice; }
-    public void setTimeLeft(String timeLeft) { this.timeLeft = timeLeft; }
+    public void setTimeLeft(String timeLeft) {
+        this.timeLeft = timeLeft;
+    }
 }

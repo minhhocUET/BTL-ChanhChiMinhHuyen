@@ -11,10 +11,14 @@ import javafx.scene.control.cell.PropertyValueFactory;
 public class AuctionListController {
 
     // Khai báo bảng và các cột, chỉ định rõ nó dùng dữ liệu từ AuctionItem
-    @FXML private TableView<AuctionItem> auctionTable;
-    @FXML private TableColumn<AuctionItem, String> nameColumn;
-    @FXML private TableColumn<AuctionItem, Double> priceColumn;
-    @FXML private TableColumn<AuctionItem, String> timeColumn;
+    @FXML
+    private TableView<AuctionItem> auctionTable;
+    @FXML
+    private TableColumn<AuctionItem, String> nameColumn;
+    @FXML
+    private TableColumn<AuctionItem, Double> priceColumn;
+    @FXML
+    private TableColumn<AuctionItem, String> timeColumn;
 
     @FXML
     public void initialize() {

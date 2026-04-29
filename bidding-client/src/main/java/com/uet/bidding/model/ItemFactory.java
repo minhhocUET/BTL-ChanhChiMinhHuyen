@@ -1,7 +1,7 @@
 package com.uet.bidding.model;
 
 public class ItemFactory {
-    
+
     // Phương thức Factory: Trả về một đối tượng Item dựa trên loại (type) đầu vào
     public static Item createItem(String type, int id, String name) {
         if (type.equalsIgnoreCase("ELECTRONICS")) {

@@ -1,11 +1,11 @@
 package com.uet.bidding.dao;
 
-import com.uet.bidding.model.User;
 import com.uet.bidding.model.Bidder;
 import com.uet.bidding.model.Seller;
+import com.uet.bidding.model.User;
 
-import java.sql.*;
 import java.math.BigDecimal;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 

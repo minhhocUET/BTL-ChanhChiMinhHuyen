@@ -44,13 +44,29 @@ public class Auction {
     }
 
     // ================== GETTER & SETTER ==================
-    public int getId() { return id; }
-    public BigDecimal getCurrentPrice() { return currentPrice; }
-    public String getStatus() { return status; }
-    public String getLeadBidder() { return leadBidder; }
+    public int getId() {
+        return id;
+    }
 
-    public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
-    public void setStatus(String status) { this.status = status; }
+    public BigDecimal getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public void setCurrentPrice(BigDecimal currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getLeadBidder() {
+        return leadBidder;
+    }
 
     // ================== LOGIC ==================
     public boolean isActive() {

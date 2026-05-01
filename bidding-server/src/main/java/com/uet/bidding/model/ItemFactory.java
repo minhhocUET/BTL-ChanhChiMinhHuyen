@@ -14,7 +14,7 @@ public class ItemFactory {
                                   BigDecimal startingPrice,
                                   int sellerId) {
         if (type.equalsIgnoreCase("ART")) {
-            return new Art(id, name,description,startingPrice,sellerId);
+            return new Art(id, name, description, startingPrice, sellerId);
         }
         if (type.equalsIgnoreCase("ELECTRONICS")) {
             return new Electronics(id, name, description, startingPrice, sellerId);

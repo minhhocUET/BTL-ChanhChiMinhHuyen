@@ -1,22 +1,32 @@
 package com.uet.bidding.model;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
 
 public class AuctionItem {
-    private final SimpleIntegerProperty stt;
-    private final SimpleStringProperty city;
-    private final SimpleStringProperty productType;
-    private final SimpleIntegerProperty interestedCount;
+    private String name;
+    private double currentPrice;
+    private String timeLeft;
 
-    public AuctionItem(int stt, String city, String productType, int interestedCount) {
-        this.stt = new SimpleIntegerProperty(stt);
-        this.city = new SimpleStringProperty(city);
-        this.productType = new SimpleStringProperty(productType);
-        this.interestedCount = new SimpleIntegerProperty(interestedCount);
+    // Hàm khởi tạo (Constructor)
+    public AuctionItem(String name, double currentPrice, String timeLeft) {
+        this.name = name;
+        this.currentPrice = currentPrice;
+        this.timeLeft = timeLeft;
     }
 
-    public int getStt() { return stt.get(); }
-    public String getCity() { return city.get(); }
-    public String getProductType() { return productType.get(); }
-    public int getInterestedCount() { return interestedCount.get(); }
+    // Các hàm Getter (Bắt buộc phải có để TableView đọc được dữ liệu)
+    public String getName() {
+        return name;
+    }
+
+    public double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public String getTimeLeft() {
+        return timeLeft;
+    }
+
+    // Các hàm Setter (Nếu bạn muốn thay đổi dữ liệu sau này)
+    public void setName(String name) { this.name = name; }
+    public void setCurrentPrice(double currentPrice) { this.currentPrice = currentPrice; }
+    public void setTimeLeft(String timeLeft) { this.timeLeft = timeLeft; }
 }

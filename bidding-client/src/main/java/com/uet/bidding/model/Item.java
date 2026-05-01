@@ -8,7 +8,13 @@ public abstract class Item {
         this.id = id;
         this.name = name;
     }
+
     // Getter / Setter
-    public int getId() { return id; }
-    public String getName() { return name; }
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

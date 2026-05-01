@@ -19,10 +19,25 @@ public abstract class User {
     }
 
     // Các hàm Getter/Setter để truy xuất an toàn
-    public int getId() { return id; }
-    public String getUsername() { return username; }
-    public BigDecimal getBalance() { return balance; }
-    public void setBalance(BigDecimal balance) { this.balance = balance; }
+    public int getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public String getPassword() {
+        return password;
+    }
 
     // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa
     public abstract String getRole();

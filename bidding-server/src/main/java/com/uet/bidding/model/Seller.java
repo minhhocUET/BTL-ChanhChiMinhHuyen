@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 public class Seller extends User {
 
+  private static final long serialVersionUID = 1L;
+
   public Seller(int id, String username, String password, BigDecimal balance) {
     super(id, username, password, balance);
   }

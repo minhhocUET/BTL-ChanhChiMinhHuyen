@@ -7,6 +7,8 @@ import java.math.BigDecimal;
  */
 public class Bidder extends User {
 
+  private static final long serialVersionUID = 1L;
+
   public Bidder(int id, String username, String password, BigDecimal balance) {
     super(id, username, password, balance);
   }

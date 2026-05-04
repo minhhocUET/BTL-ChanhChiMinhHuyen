@@ -1,16 +1,28 @@
 package com.uet.bidding.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 // Tính Trừu tượng: Dùng abstract vì không có "User" chung chung, chỉ có Bidder, Seller hoặc Admin
-public abstract class User {
+public abstract class User implements Serializable {
+
+  //Dòng này để cố định phiên bản file, tránh lỗi khi bạn sửa code sau này
+  private static final long serialVersionUID = 1L;
+
   // Tính Đóng gói: Các thuộc tính đều là private
   private int id;
   private String username;
   private String password;
   private BigDecimal balance;
 
-  // Constructor
+  //Constructor không có id
+  public User(String username, String password, BigDecimal balance) {
+    this.username = username;
+    this.password = password;
+    this.balance = balance;
+  }
+
+  // Constructor có id
   public User(int id, String username, String password, BigDecimal balance) {
     this.id = id;
     this.username = username;
@@ -30,6 +42,8 @@ public abstract class User {
   public BigDecimal getBalance() {
     return balance;
   }
+
+  public void setId(int id) { this.id = id; }
 
   public void setBalance(BigDecimal balance) {
     this.balance = balance;

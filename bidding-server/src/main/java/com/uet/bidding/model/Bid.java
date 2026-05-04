@@ -1,8 +1,11 @@
 package com.uet.bidding.model;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;import java.time.LocalDateTime;
 
-public class Bid {
+public class Bid implements Serializable {
+
+  private static final long serialVersionUID = 1L;
+
   private String bidderName;
   private double amount;
   private LocalDateTime time;

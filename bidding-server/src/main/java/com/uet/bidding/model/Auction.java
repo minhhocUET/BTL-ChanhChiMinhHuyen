@@ -3,13 +3,17 @@ package com.uet.bidding.model;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 
-import java.math.BigDecimal;
+import java.io.Serializable;import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Auction {
-  // Các biến phục vụ Database
+public class Auction implements Serializable {
+
+  //Thêm serialVersionUID để bảo vệ dữ liệu file
+  private static final long serialVersionUID = 1L;
+
+  // Các biến phục vụ dữ liệu
   private int id;
   private int itemId;
   private BigDecimal currentPrice;
@@ -22,7 +26,7 @@ public class Auction {
   private List<Bid> bidHistory = new ArrayList<>();
   private transient List<AuctionObserver> observers = new ArrayList<>();
 
-  // Constructor dùng khi đọc DB
+  // Constructor dùng khi đọc dữ liệu
   public Auction(int id, int itemId, BigDecimal currentPrice,
                  LocalDateTime startTime, LocalDateTime endTime, String status) {
     this.id = id;
@@ -31,6 +35,7 @@ public class Auction {
     this.startTime = startTime;
     this.endTime = endTime;
     this.status = status;
+    this.observers = new ArrayList<>(); //khởi tạo lại để tránh null
   }
 
   // Constructor khi tạo mới
@@ -41,6 +46,16 @@ public class Auction {
     this.startTime = startTime;
     this.endTime = endTime;
     this.status = "OPEN";
+    this.observers = new ArrayList<>(); // Khởi tạo lại để tránh null
+  }
+
+  /**
+   * HÀM MỚI: Cần thiết cho Serialization vì transient sẽ làm observers bị null
+   * khi bạn nạp dữ liệu từ file .ser/.dat lên.
+   */
+  private Object readResolve() {
+    if (this.observers == null) this.observers = new ArrayList<>();
+    return this;
   }
 
   // ================== GETTER & SETTER ==================

@@ -1,13 +1,15 @@
 package com.uet.bidding.model;
 
-import java.math.BigDecimal;
+import java.io.Serializable;import java.math.BigDecimal;
 
 /**
  * Abstract class Item
  * - Đại diện cho sản phẩm đấu giá
  * - Không tạo trực tiếp, chỉ dùng qua Art / Electronics
  */
-public abstract class Item {
+public abstract class Item implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   protected int id;
   protected String name;
@@ -41,6 +43,8 @@ public abstract class Item {
   public int getId() {
     return id;
   }
+
+  public void setId(int id) { this.id = id; }
 
   public String getName() {
     return name;

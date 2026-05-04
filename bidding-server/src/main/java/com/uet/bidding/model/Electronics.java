@@ -7,7 +7,9 @@ import java.math.BigDecimal;
  */
 public class Electronics extends Item {
 
-  // Constructor khi đọc từ DB
+  private static final long serialVersionUID = 1L;
+
+  // Constructor khi đọc dữ liệu
   public Electronics(int id, String name, String description, BigDecimal startingPrice, int sellerId) {
     super(id, name, description, startingPrice, sellerId);
   }

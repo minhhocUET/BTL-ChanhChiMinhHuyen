@@ -1,38 +1,38 @@
 package com.uet.bidding.model;
 
-// Tính Trừu tượng: Dùng abstract vì không có "User" chung chung, chỉ có Bidder, Seller hoặc Admin
-public abstract class User {
-    // Tính Đóng gói: Các thuộc tính đều là private
-    private int id;
-    private String username;
-    private String password;
-    private double balance;
+public class User {
+  private int id;
+  private String username;
+  private String password;
+  private String fullName;
+  private String email;
+  private String phone;
+  private String address;
+  private double balance;
+  private String linkedBank;
 
-    // Constructor
-    public User(int id, String username, String password, double balance) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.balance = balance;
-    }
+  public User() {} // Constructor trống bắt buộc
 
-    // Các hàm Getter/Setter để truy xuất an toàn
-    public int getId() {
-        return id;
-    }
+  // Cần có đầy đủ Setter để LoginController và Bidder hoạt động
+  public void setId(int id) { this.id = id; }
+  public void setUsername(String username) { this.username = username; }
+  public void setPassword(String password) { this.password = password; } // Đã bổ sung dòng này để fix lỗi
+  public void setFullName(String fullName) { this.fullName = fullName; }
+  public void setEmail(String email) { this.email = email; }
+  public void setPhone(String phone) { this.phone = phone; }
+  public void setAddress(String address) { this.address = address; }
+  public void setBalance(double balance) { this.balance = balance; }
+  public void setLinkedBank(String linkedBank) { this.linkedBank = linkedBank; }
 
-    public String getUsername() {
-        return username;
-    }
+  // Cần có Getter để UserProfileController hiển thị dữ liệu
+  public String getFullName() { return fullName; }
+  public String getEmail() { return email; }
+  public String getPhone() { return phone; }
+  public String getAddress() { return address; }
+  public double getBalance() { return balance; }
+  public String getLinkedBank() { return linkedBank; }
+  public String getUsername() { return username; }
 
-    public double getBalance() {
-        return balance;
-    }
-
-    public void setBalance(double balance) {
-        this.balance = balance;
-    }
-
-    // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa
-    public abstract String getRole();
+  // Hàm nạp tiền dùng cho màn hình UserProfile
+  public void addFunds(double amount) { this.balance += amount; }
 }

@@ -1,48 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.uet.bidding</groupId>
-  <artifactId>bidding-server</artifactId>
-  <version>1.0-SNAPSHOT</version>
+    <groupId>com.uet.bidding</groupId>
+    <artifactId>bidding-server</artifactId>
+    <version>1.0-SNAPSHOT</version>
 
-  <name>bidding-server</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+    <name>bidding-server</name>
+    <!-- FIXME change it to the project's website -->
+    <url>http://www.example.com</url>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>25</maven.compiler.source>
-    <maven.compiler.target>25</maven.compiler.target>
-  </properties>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+    </properties>
 
-  <dependencies>
-    <!-- 1. GSON: Bắt buộc để truyền tin nhắn JSON qua Socket -->
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.10.1</version>
-    </dependency>
+    <dependencies>
+        <!-- 1. GSON: Bắt buộc để truyền tin nhắn JSON qua Socket -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
 
-    <!-- 2. JUnit Jupiter (Aggregator): Gói này tự động bao gồm cả API và Engine bản chuẩn -->
-    <!-- Xóa bỏ các bản 6.0.0 hay TestNG vì chúng gây xung đột khiến Test không chạy được -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>5.10.0</version>
-      <scope>test</scope>
-    </dependency>
+        <!-- 2. JUnit Jupiter (Aggregator): Gói này tự động bao gồm cả API và Engine bản chuẩn -->
+        <!-- Xóa bỏ các bản 6.0.0 hay TestNG vì chúng gây xung đột khiến Test không chạy được -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
 
-    <!-- JDBC Driver kết nối đến postgresql -->
-    <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>42.7.3</version>
-    </dependency>
+        <!-- JDBC Driver kết nối đến postgresql -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.3</version>
+        </dependency>
 
-  </dependencies>
+    </dependencies>
 
     <build>
         <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->

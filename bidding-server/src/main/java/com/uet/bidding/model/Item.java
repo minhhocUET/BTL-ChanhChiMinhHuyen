@@ -9,86 +9,86 @@ import java.math.BigDecimal;
  */
 public abstract class Item {
 
-    protected int id;
-    protected String name;
-    protected String description;
-    protected BigDecimal startingPrice;
-    protected int sellerId;
+  protected int id;
+  protected String name;
+  protected String description;
+  protected BigDecimal startingPrice;
+  protected int sellerId;
 
-    /**
-     * Constructor dùng khi đọc từ DB (có id)
-     */
-    public Item(int id, String name, String description, BigDecimal startingPrice, int sellerId) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.startingPrice = startingPrice;
-        this.sellerId = sellerId;
-    }
+  /**
+   * Constructor dùng khi đọc từ DB (có id)
+   */
+  public Item(int id, String name, String description, BigDecimal startingPrice, int sellerId) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.startingPrice = startingPrice;
+    this.sellerId = sellerId;
+  }
 
-    /**
-     * Constructor dùng khi tạo mới (chưa có id)
-     */
-    public Item(String name, String description, BigDecimal startingPrice, int sellerId) {
-        this.name = name;
-        this.description = description;
-        this.startingPrice = startingPrice;
-        this.sellerId = sellerId;
-    }
+  /**
+   * Constructor dùng khi tạo mới (chưa có id)
+   */
+  public Item(String name, String description, BigDecimal startingPrice, int sellerId) {
+    this.name = name;
+    this.description = description;
+    this.startingPrice = startingPrice;
+    this.sellerId = sellerId;
+  }
 
-    // ================== GETTER ==================
+  // ================== GETTER ==================
 
-    public int getId() {
-        return id;
-    }
+  public int getId() {
+    return id;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public String getDescription() {
-        return description;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    // ================== SETTER ==================
+  // ================== SETTER ==================
 
-    public BigDecimal getStartingPrice() {
-        return startingPrice;
-    }
+  public BigDecimal getStartingPrice() {
+    return startingPrice;
+  }
 
-    public void setStartingPrice(BigDecimal startingPrice) {
-        this.startingPrice = startingPrice;
-    }
+  public void setStartingPrice(BigDecimal startingPrice) {
+    this.startingPrice = startingPrice;
+  }
 
-    public int getSellerId() {
-        return sellerId;
-    }
+  public int getSellerId() {
+    return sellerId;
+  }
 
-    // ================== ABSTRACT ==================
+  // ================== ABSTRACT ==================
 
-    /**
-     * Trả về loại item (ART / ELECTRONICS)
-     * → dùng cho Factory + DB
-     */
-    public abstract String getType();
+  /**
+   * Trả về loại item (ART / ELECTRONICS)
+   * → dùng cho Factory + DB
+   */
+  public abstract String getType();
 
-    // ================== DEBUG ==================
+  // ================== DEBUG ==================
 
-    @Override
-    public String toString() {
-        return "Item{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", price=" + startingPrice +
-                ", sellerId=" + sellerId +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "Item{" +
+        "id=" + id +
+        ", name='" + name + '\'' +
+        ", price=" + startingPrice +
+        ", sellerId=" + sellerId +
+        '}';
+  }
 }

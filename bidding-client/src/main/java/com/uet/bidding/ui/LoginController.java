@@ -1,74 +1,85 @@
 package com.uet.bidding.ui;
 
+import com.uet.bidding.model.User;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
 import java.io.IOException;
-import java.net.Socket;
 
 public class LoginController {
 
-    @FXML private TextField usernameField;
-    @FXML private PasswordField passwordField;
-    @FXML private Label messageLabel;
+  @FXML
+  private TextField usernameField;
+  @FXML
+  private PasswordField passwordField;
+  @FXML
+  private Label messageLabel;
 
-    @FXML
-    public void handleLogin(ActionEvent event) {
-        // 1. Lấy thông tin từ giao diện
-        String username = usernameField.getText();
-        String password = passwordField.getText();
+  @FXML
+  public void handleLogin(ActionEvent event) {
+    String username = usernameField.getText();
+    String password = passwordField.getText();
 
-        // 2. Kiểm tra dữ liệu rỗng
-        if (username.isEmpty() || password.isEmpty()) {
-            messageLabel.setText("Vui lòng nhập đầy đủ thông tin!");
-            return;
-        }
-
-        // 3. Thông báo đang xử lý để người dùng chờ
-        messageLabel.setText("Đang kiểm tra thông tin...");
-
-        // 4. Gọi hàm kiểm tra database
-        boolean isLoginSuccess = checkUserInDatabase(username, password);
-
-        // 5. Xử lý kết quả trả về
-        if (isLoginSuccess) {
-            messageLabel.setText("Đăng nhập thành công!");
-            // Gọi thẳng hàm chuyển trang mà không cần try-catch lằng nhằng nữa
-            goToMainScreen();
-        } else {
-            messageLabel.setText("Sai tài khoản hoặc mật khẩu!");
-        }
+    if (username.isEmpty() || password.isEmpty()) {
+      messageLabel.setText("Vui lòng nhập đầy đủ thông tin!");
+      return;
     }
 
-    // Hàm tổng quát dùng để kiểm tra tài khoản từ Database
-    private boolean checkUserInDatabase(String username, String password) {
-        // ... (Đoạn code SQL của bạn vẫn giữ nguyên ở đây để sau này dùng) ...
+    messageLabel.setText("Đang kiểm tra thông tin...");
 
-        // Tạm thời trả về TRUE để test việc chuyển trang sang AuctionList
-        return true;
-    }
+    // 1. Xác thực và lấy dữ liệu User
+    User loggedInUser = authenticate(username, password);
 
-    // ĐÃ SỬA: Dùng hàm của Main để chuyển sang giao diện Đấu giá
-    private void goToMainScreen() {
-        // Chỉ cần 1 dòng duy nhất thay vì 4 dòng như cũ
-        Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", 900, 600);
-    }
+    if (loggedInUser != null) {
+      try {
+        // 2. Load file FXML của trang UserProfile
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/UserProfile.fxml"));
+        Parent root = loader.load();
 
-    // ĐÃ SỬA: Nút chuyển sang trang Đăng Ký
-    @FXML
-    public void goToRegister(ActionEvent event) {
-        // Kích thước 400x500 (bạn có thể tự chỉnh lại cho khớp form đăng ký của bạn)
-        Main.changeScene("/Register.fxml", "Hệ thống Đấu giá VNU - Đăng ký", 400, 500);
-    }
+        // 3. Truyền dữ liệu User sang UserProfileController
+        UserProfileController profileController = loader.getController();
+        profileController.setUserData(loggedInUser);
 
-    public void xuLyDangNhap() {
-        try {
-            Socket socket = new Socket("localhost", 8080);
-            System.out.println("🟢 Đã kết nối tới Server thành công!");
-        } catch (IOException e) {
-            System.out.println("🔴 Lỗi: Không tìm thấy Server. Hãy chắc chắn Server đang chạy!");
-        }
+        // 4. Chuyển Scene
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        Scene scene = new Scene(root);
+        stage.setScene(scene);
+        stage.setTitle("Thông tin cá nhân - " + username);
+        stage.show();
+
+      } catch (IOException e) {
+        e.printStackTrace();
+        messageLabel.setText("Lỗi: Không tìm thấy file UserProfile.fxml");
+      }
+    } else {
+      messageLabel.setText("Sai tài khoản hoặc mật khẩu!");
     }
+  }
+
+  private User authenticate(String username, String password) {
+    // Tạm thời chấp nhận mọi login để test giao diện
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+    user.setFullName("Nguyễn Tuấn Hùng");
+    user.setEmail(username + "@vnu.edu.vn");
+    user.setPhone("0912345678");
+    user.setAddress("Hà Nội, Việt Nam");
+    user.setBalance(5000000.0);
+    user.setLinkedBank("Chưa liên kết");
+    return user;
+  }
+
+  @FXML
+  public void goToRegister(ActionEvent event) {
+    Main.changeScene("/Register.fxml", "Hệ thống Đấu giá VNU - Đăng ký", 400, 500);
+  }
 }

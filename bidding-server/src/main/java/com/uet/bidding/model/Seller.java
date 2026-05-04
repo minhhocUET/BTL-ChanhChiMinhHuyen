@@ -4,17 +4,17 @@ import java.math.BigDecimal;
 
 public class Seller extends User {
 
-    public Seller(int id, String username, String password, BigDecimal balance) {
-        super(id, username, password, balance);
-    }
+  public Seller(int id, String username, String password, BigDecimal balance) {
+    super(id, username, password, balance);
+  }
 
-    @Override
-    public String getRole() {
-        return "SELLER";
-    }
+  @Override
+  public String getRole() {
+    return "SELLER";
+  }
 
-    // Hành động đặc thù của người bán
-    public void createItem(String itemName, String description) {
-        System.out.println(getUsername() + " vừa tạo món đồ mới: " + itemName);
-    }
+  // Hành động đặc thù của người bán
+  public void createItem(String itemName, String description) {
+    System.out.println(getUsername() + " vừa tạo món đồ mới: " + itemName);
+  }
 }

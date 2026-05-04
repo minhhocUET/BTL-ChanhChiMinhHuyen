@@ -1,47 +1,44 @@
 package com.uet.bidding.model;
 
+import java.time.LocalDateTime;
+
 public class Auction {
-    private int auctionId;
-    private Item item;            // Món đồ được đem ra đấu giá
-    private double startPrice;    // Giá khởi điểm
-    private double currentPrice;  // Giá cao nhất hiện tại
-    private String status;        // Trạng thái: OPEN, RUNNING, FINISHED
+  private int auctionId;
+  private Item item;                  // Sản phẩm được mang ra đấu giá (Art hoặc Electronics đều được)
+  private double currentHighestBid;   // Giá cao nhất hiện tại
+  private Bidder highestBidder;       // Người đang trả giá cao nhất (Class Bidder của bạn)
+  private LocalDateTime endTime;      // Thời gian kết thúc phiên đấu giá
 
-    public Auction(int auctionId, Item item, double startPrice) {
-        this.auctionId = auctionId;
-        this.item = item;
-        this.startPrice = startPrice;
-        this.currentPrice = startPrice; // Lúc mới tạo, giá hiện tại = giá khởi điểm
-        this.status = "OPEN";
-    }
+  // Constructor
+  public Auction(int auctionId, Item item, LocalDateTime endTime) {
+    this.auctionId = auctionId;
+    this.item = item;
+    this.endTime = endTime;
+    this.currentHighestBid = item.getStartingPrice(); // Ban đầu giá cao nhất chính là giá khởi điểm
+    this.highestBidder = null; // Chưa có ai đấu giá
+  }
 
-    // Các hàm Getter / Setter cơ bản
-    public int getAuctionId() {
-        return auctionId;
-    }
+  // Các hàm Getters và Setters
+  public int getAuctionId() { return auctionId; }
 
-    public Item getItem() {
-        return item;
-    }
+  public Item getItem() { return item; }
 
-    public double getStartPrice() {
-        return startPrice;
-    }
+  public double getCurrentHighestBid() { return currentHighestBid; }
+  public void setCurrentHighestBid(double currentHighestBid) { this.currentHighestBid = currentHighestBid; }
 
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
+  public Bidder getHighestBidder() { return highestBidder; }
+  public void setHighestBidder(Bidder highestBidder) { this.highestBidder = highestBidder; }
 
-    // Hàm này rất quan trọng để cập nhật giá khi có người đặt cao hơn
-    public void setCurrentPrice(double currentPrice) {
-        this.currentPrice = currentPrice;
-    }
+  public LocalDateTime getEndTime() { return endTime; }
+  public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 
-    public String getStatus() {
-        return status;
+  // Thêm hàm logic phụ: Trả giá mới
+  public boolean placeNewBid(Bidder bidder, double bidAmount) {
+    if (bidAmount > currentHighestBid && LocalDateTime.now().isBefore(endTime)) {
+      this.currentHighestBid = bidAmount;
+      this.highestBidder = bidder;
+      return true; // Trả giá thành công
     }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    return false; // Trả giá thất bại (giá thấp hơn hiện tại hoặc đã hết giờ)
+  }
 }

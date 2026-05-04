@@ -63,6 +63,10 @@ public class Auction implements Serializable {
     return id;
   }
 
+  public void setId(int id) {
+    this.id = id;
+  }
+
   public BigDecimal getCurrentPrice() {
     return currentPrice;
   }
@@ -108,7 +112,7 @@ public class Auction implements Serializable {
     // 3. Nếu qua được 2 ải trên thì cập nhật giá thành công
     this.currentPrice = offer;
     this.leadBidder = bidderName;
-    this.bidHistory.add(new Bid(bidderName, bidAmount));
+    this.bidHistory.add(new Bid(bidderName, offer));
 
     System.out.println("✅ " + bidderName + " đặt giá thành công: " + offer);
 

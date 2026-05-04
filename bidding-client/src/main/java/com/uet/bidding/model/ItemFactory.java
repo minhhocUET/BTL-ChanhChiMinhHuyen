@@ -1,33 +1,48 @@
 package com.uet.bidding.model;
 
+import java.math.BigDecimal;
+
+/**
+ * Factory pattern: tạo Item dựa theo type
+ * Đã tối ưu để phối hợp với hệ thống Serialization
+ */
 public class ItemFactory {
-  public static Item createItem(String type, int id, String name) {
+
+  // 1. Hàm này dùng khi nạp dữ liệu (Load) hoặc cập nhật từ Server
+  public static Item createItem(String type,
+                                int id,
+                                String name,
+                                String description,
+                                BigDecimal startingPrice,
+                                int sellerId) {
+    if (type == null) throw new IllegalArgumentException("Type cannot be null");
+
+    if (type.equalsIgnoreCase("ART")) {
+      return new Art(id, name, description, startingPrice, sellerId);
+    }
     if (type.equalsIgnoreCase("ELECTRONICS")) {
-      // Electronics cần đúng 7 tham số theo code bạn gửi:
-      // (int id, String name, String description, double startingPrice, String imagePath, String brand, int warrantyMonths)
-      return new Electronics(
-          id,                     // 1. id
-          name,                   // 2. name
-          "Mô tả đồ điện tử",      // 3. description
-          0.0,                    // 4. startingPrice
-          "electronics_icon.png", // 5. imagePath
-          "Generic Brand",        // 6. brand
-          12                      // 7. warrantyMonths
-      );
-    } else if (type.equalsIgnoreCase("ART")) {
-      // Art cần đúng 8 tham số theo code bạn gửi:
-      // (int id, String name, String description, double startingPrice, String imagePath, String author, int creationYear, String material)
-      return new Art(
-          id,                         // 1. id
-          name,                       // 2. name
-          "Mô tả tác phẩm nghệ thuật",  // 3. description
-          0.0,                        // 4. startingPrice
-          "art_icon.png",             // 5. imagePath
-          "Unknown Artist",           // 6. author
-          2024,                       // 7. creationYear
-          "Canvas"                    // 8. material
-      );
+      return new Electronics(id, name, description, startingPrice, sellerId);
     }
     throw new IllegalArgumentException("Loại sản phẩm không hợp lệ: " + type);
+  }
+
+  // 2. Hàm này dùng khi người dùng tạo mới sản phẩm từ giao diện (Client)
+  public static Item createItem(String type,
+                                String name,
+                                String description,
+                                BigDecimal startingPrice,
+                                int sellerId) {
+
+    if (type == null) throw new IllegalArgumentException("Type cannot be null");
+
+    if (type.equalsIgnoreCase("ART")) {
+      return new Art(name, description, startingPrice, sellerId);
+    }
+
+    if (type.equalsIgnoreCase("ELECTRONICS")) {
+      return new Electronics(name, description, startingPrice, sellerId);
+    }
+
+    throw new IllegalArgumentException("Invalid item type: " + type);
   }
 }

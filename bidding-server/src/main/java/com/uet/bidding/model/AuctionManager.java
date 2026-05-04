@@ -1,25 +1,23 @@
 package com.uet.bidding.model;
 
+import com.uet.bidding.dao.AuctionDAO;
+import com.uet.bidding.exception.AuctionClosedException;
+import com.uet.bidding.exception.InvalidBidException;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * AuctionManager
- * - Singleton
- * - Quản lý tất cả auction
- * - Xử lý concurrent bidding
- */
 public class AuctionManager {
 
-  // ================== SINGLETON ==================
   private static volatile AuctionManager instance;
-  // Lưu auction
   private ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
-  // Lock riêng cho từng auction
   private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
 
-  // ================== DATA ==================
+  // 1. THÊM DAO: Để đọc/ghi file .dat
+  private AuctionDAO auctionDAO;
 
   private AuctionManager() {
     System.out.println("Hệ thống quản lý đấu giá đã được khởi động!");
@@ -28,63 +26,65 @@ public class AuctionManager {
   public static AuctionManager getInstance() {
     if (instance == null) {
       synchronized (AuctionManager.class) {
-        if (instance == null) {
-          instance = new AuctionManager();
-        }
+        if (instance == null) instance = new AuctionManager();
       }
     }
     return instance;
   }
 
-  // ================== QUẢN LÝ ==================
+  /**
+   * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật
+   */
+  public void initialize(AuctionDAO dao) {
+    this.auctionDAO = dao;
+    List<Auction> savedAuctions = dao.getAllAuctions();
+    for (Auction a : savedAuctions) {
+      addAuction(a);
+    }
+    System.out.println("Đã nạp " + auctions.size() + " phiên đấu giá từ file.");
+  }
 
   public void addAuction(Auction auction) {
     auctions.put(auction.getId(), auction);
     locks.put(auction.getId(), new ReentrantLock());
   }
 
+  // Tiện ích để ClientHandler lấy danh sách gửi về cho người dùng
+  public List<Auction> getAllAuctions() {
+    return new ArrayList<>(auctions.values());
+  }
+
   public Auction getAuction(int id) {
     return auctions.get(id);
   }
 
-  public void startAuction(int auctionId) {
-    Auction auction = auctions.get(auctionId);
-    if (auction != null) {
-      auction.setStatus("RUNNING");
-    }
-  }
-
-  // ================== CORE LOGIC ==================
+  // ================== CORE LOGIC (SỬA ĐỂ LƯU FILE) ==================
 
   /**
-   * Đặt giá an toàn (thread-safe)
+   * Đặt giá an toàn (thread-safe) và cập nhật xuống file ngay lập tức
    */
-  public boolean placeBid(int auctionId, Bidder bidder, BigDecimal amount) {
+  public boolean placeBid(int auctionId, String bidderName, BigDecimal amount)
+      throws AuctionClosedException, InvalidBidException {
+
     Auction auction = auctions.get(auctionId);
-    if (auction == null) return false;
+    if (auction == null) throw new InvalidBidException("Không tìm thấy phiên đấu giá!");
 
     ReentrantLock lock = locks.get(auctionId);
-
-    lock.lock(); // 🔥 khóa
+    lock.lock();
     try {
-      // 1. kiểm tra trạng thái
-      if (!auction.isActive()) return false;
+      // Gọi logic placeBid trong class Auction (đã có check status và giá)
+      // Chuyển BigDecimal sang double để khớp với phương thức cũ của bạn
+      boolean success = auction.placeBid(bidderName, amount.doubleValue());
 
-      // 2. kiểm tra giá
-      if (amount.compareTo(auction.getCurrentPrice()) <= 0) return false;
-
-      // 3. kiểm tra tiền
-      if (!bidder.withdraw(amount)) return false;
-
-      // 4. update
-      auction.setCurrentPrice(amount);
-
-      System.out.println(bidder.getUsername() + " bid: " + amount);
-
-      return true;
+      if (success) {
+        // 3. QUAN TRỌNG: Lưu ngay lập tức xuống file auctions.dat qua DAO
+        auctionDAO.updateAuction(auction);
+        System.out.println("[Server] " + bidderName + " bid thành công: " + amount + " cho ID: " + auctionId);
+      }
+      return success;
 
     } finally {
-      lock.unlock(); // 🔥 luôn unlock
+      lock.unlock();
     }
   }
 }

@@ -1,98 +1,82 @@
 package com.uet.bidding.dao;
 
-import com.uet.bidding.model.Bidder;
-import com.uet.bidding.model.Seller;
 import com.uet.bidding.model.User;
-
-import java.math.BigDecimal;
-import java.sql.*;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAO {
-  private final Connection conn;
+  private static final String FILE_PATH = "users.dat";
+  private List<User> users;
 
-  public UserDAO(Connection conn) {
-    this.conn = conn;
+  public UserDAO() {
+    // Không cần Connection nữa, nạp dữ liệu từ file khi khởi tạo
+    this.users = loadData();
   }
 
-  // Thêm user mới vào DB
-  public void addUser(User user) throws SQLException {
-    String sql = "INSERT INTO users (username, password, balance, role) VALUES (?, ?, ?, ?)";
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setString(1, user.getUsername());
-      stmt.setString(2, user.getPassword());
-      stmt.setBigDecimal(3, user.getBalance());
-      stmt.setString(4, user.getRole()); // "BIDDER" hoặc "SELLER"
-      stmt.executeUpdate();
+  // --- HÀM BỔ TRỢ: ĐỌC/GHI FILE ---
+
+  private synchronized void saveData() {
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_PATH))) {
+      oos.writeObject(users);
+    } catch (IOException e) {
+      System.err.println("Lỗi khi lưu file người dùng: " + e.getMessage());
     }
   }
 
-  // Kiểm tra đăng nhập, trả về đối tượng User cụ thể
-  public User checkLogin(String username, String password) throws SQLException {
-    String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setString(1, username);
-      stmt.setString(2, password);
+  @SuppressWarnings("unchecked")
+  private List<User> loadData() {
+    File file = new File(FILE_PATH);
+    if (!file.exists()) return new ArrayList<>();
 
-      try (ResultSet rs = stmt.executeQuery()) {
-        if (rs.next()) {
-          int id = rs.getInt("id");
-          BigDecimal balance = rs.getBigDecimal("balance");
-          String role = rs.getString("role");
+    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+      return (List<User>) ois.readObject();
+    } catch (Exception e) {
+      return new ArrayList<>();
+    }
+  }
 
-          if ("BIDDER".equalsIgnoreCase(role)) {
-            return new Bidder(id, username, password, balance);
-          } else if ("SELLER".equalsIgnoreCase(role)) {
-            return new Seller(id, username, password, balance);
-          }
-        }
+  // --- CÁC HÀM NGHIỆP VỤ (SỬA DỰA TRÊN CODE CŨ) ---
+
+  /**
+   * Thêm user mới vào danh sách và lưu lại file
+   */
+  public synchronized void addUser(User user) {
+    // Tự động tạo ID (lấy ID lớn nhất + 1) tương đương AUTO_INCREMENT trong SQL
+    int nextId = users.stream().mapToInt(User::getId).max().orElse(0) + 1;
+    user.setId(nextId);
+
+    users.add(user);
+    saveData(); // Lưu lại file ngay lập tức
+    System.out.println("Đã thêm người dùng: " + user.getUsername());
+  }
+
+  /**
+   * Kiểm tra đăng nhập (Thay thế câu lệnh SELECT * WHERE...)
+   */
+  public User checkLogin(String username, String password) {
+    for (User u : users) {
+      if (u.getUsername().equals(username) && u.getPassword().equals(password)) {
+        return u;
       }
     }
     return null;
   }
 
-  // Lấy toàn bộ danh sách user
-  public List<User> getAllUsers() throws SQLException {
-    List<User> users = new ArrayList<>();
-    String sql = "SELECT * FROM users";
-    try (Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery(sql)) {
-      while (rs.next()) {
-        int id = rs.getInt("id");
-        String username = rs.getString("username");
-        String password = rs.getString("password");
-        BigDecimal balance = rs.getBigDecimal("balance");
-        String role = rs.getString("role");
-
-        if ("BIDDER".equalsIgnoreCase(role)) {
-          users.add(new Bidder(id, username, password, balance));
-        } else if ("SELLER".equalsIgnoreCase(role)) {
-          users.add(new Seller(id, username, password, balance));
-        }
-      }
-    }
-    return users;
+  /**
+   * Lấy toàn bộ danh sách user
+   */
+  public List<User> getAllUsers() {
+    return new ArrayList<>(users); // Trả về bản sao để an toàn dữ liệu
   }
 
-  // Tìm user theo ID
-  public User findById(int id) throws SQLException {
-    String sql = "SELECT * FROM users WHERE id = ?";
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, id);
-      try (ResultSet rs = stmt.executeQuery()) {
-        if (rs.next()) {
-          String username = rs.getString("username");
-          String password = rs.getString("password");
-          BigDecimal balance = rs.getBigDecimal("balance");
-          String role = rs.getString("role");
-
-          if ("BIDDER".equalsIgnoreCase(role)) {
-            return new Bidder(id, username, password, balance);
-          } else if ("SELLER".equalsIgnoreCase(role)) {
-            return new Seller(id, username, password, balance);
-          }
-        }
+  /**
+   * Tìm user theo ID
+   */
+  public User findById(int id) {
+    for (User u : users) {
+      if (u.getId() == id) {
+        return u;
       }
     }
     return null;

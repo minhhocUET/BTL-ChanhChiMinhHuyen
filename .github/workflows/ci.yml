@@ -23,3 +23,4 @@ jobs:
       - name: Build All Modules
         # Lệnh này sẽ quét qua tất cả các file pom.xml để build và chạy Checkstyle
         run: mvn -B package
+        working-directory: ./bidding-server

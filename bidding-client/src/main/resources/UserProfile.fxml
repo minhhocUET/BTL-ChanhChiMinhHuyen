@@ -5,64 +5,66 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.ui.UserProfileController">
+<AnchorPane prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.ui.UserProfileController">
     <children>
         <VBox alignment="TOP_CENTER" spacing="30.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="40.0" AnchorPane.rightAnchor="40.0" AnchorPane.topAnchor="30.0">
             <children>
-                <Label text="CHI TIẾT TÀI KHOẢN" textFill="#2563eb">
+                <Label text="CHI TIẾT TÀI KHOẢN" textFill="#e84393">
                     <font>
                         <Font name="System Bold" size="28.0" />
                     </font>
                 </Label>
 
-                <HBox spacing="50.0" alignment="TOP_CENTER">
+                <HBox alignment="TOP_CENTER" spacing="50.0">
                     <children>
-                        <VBox spacing="15.0" prefWidth="400.0" style="-fx-background-color: #f8fafc; -fx-padding: 20; -fx-border-color: #e2e8f0; -fx-border-radius: 10; -fx-background-radius: 10;">
+                        <VBox prefWidth="400.0" spacing="15.0" style="-fx-background-color: white; -fx-padding: 20; -fx-border-color: #fd79a8; -fx-border-radius: 10; -fx-background-radius: 10;">
                             <children>
-                                <Label text="Thông tin cá nhân" textFill="#334155">
+                                <Label text="Thông tin cá nhân" textFill="#e84393">
                                     <font>
                                         <Font name="System Bold" size="18.0" />
                                     </font>
                                 </Label>
-                                <Separator />
+                                <Separator style="-fx-background-color: #fd79a8;" />
 
                                 <Label text="Họ và tên:" />
-                                <TextField fx:id="txtName" prefHeight="35.0" promptText="Nhập họ và tên..." />
+                                <TextField fx:id="txtName" prefHeight="35.0" promptText="Nhập họ và tên..." style="-fx-border-color: #fd79a8; -fx-border-radius: 5; -fx-background-radius: 5; -fx-background-color: white;" />
 
                                 <Label text="Email:" />
-                                <TextField fx:id="txtEmail" prefHeight="35.0" promptText="Nhập email..." />
+                                <TextField fx:id="txtEmail" prefHeight="35.0" promptText="Nhập email..." style="-fx-border-color: #fd79a8; -fx-border-radius: 5; -fx-background-radius: 5; -fx-background-color: white;" />
 
                                 <Label text="Số điện thoại:" />
-                                <TextField fx:id="txtPhone" prefHeight="35.0" promptText="Nhập số điện thoại..." />
+                                <TextField fx:id="txtPhone" prefHeight="35.0" promptText="Nhập số điện thoại..." style="-fx-border-color: #fd79a8; -fx-border-radius: 5; -fx-background-radius: 5; -fx-background-color: white;" />
 
                                 <Label text="Địa chỉ:" />
-                                <TextArea fx:id="txtAddress" prefHeight="80.0" promptText="Nhập địa chỉ giao hàng..." />
+                                <TextArea fx:id="txtAddress" prefHeight="80.0" promptText="Nhập địa chỉ giao hàng..." style="-fx-border-color: #fd79a8; -fx-border-radius: 5; -fx-background-radius: 5;" />
                             </children>
                         </VBox>
 
-                        <VBox spacing="15.0" prefWidth="350.0" style="-fx-background-color: #f0fdf4; -fx-padding: 20; -fx-border-color: #bbf7d0; -fx-border-radius: 10; -fx-background-radius: 10;">
+                        <VBox prefWidth="350.0" spacing="15.0" style="-fx-background-color: white; -fx-padding: 20; -fx-border-color: #fd79a8; -fx-border-radius: 10; -fx-background-radius: 10;">
                             <children>
-                                <Label text="Ví Tài Chính" textFill="#166534">
+                                <Label text="Ví Tài Chính" textFill="#e84393">
                                     <font>
                                         <Font name="System Bold" size="18.0" />
                                     </font>
                                 </Label>
-                                <Separator />
+                                <Separator style="-fx-background-color: #fd79a8;" />
 
                                 <VBox alignment="CENTER" spacing="10.0" style="-fx-padding: 15 0 15 0;">
-                                    <Label text="Số dư hiện tại:" textFill="#475569" />
-                                    <Label fx:id="lblBalance" text="5,000,000 VNĐ" textFill="#059669">
-                                        <font>
-                                            <Font name="System Bold" size="24.0" />
-                                        </font>
-                                    </Label>
+                                    <children>
+                                        <Label text="Số dư hiện tại:" textFill="#475569" />
+                                        <Label fx:id="lblBalance" text="5,000,000 VNĐ" textFill="#ff4757">
+                                            <font>
+                                                <Font name="System Bold" size="24.0" />
+                                            </font>
+                                        </Label>
+                                    </children>
                                 </VBox>
 
-                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleAddFunds" prefHeight="40.0" style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="💳 Nạp thêm tiền" />
+                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleAddFunds" prefHeight="40.0" style="-fx-background-color: #ff4757; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="💳 Nạp thêm tiền" />
 
-                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleLinkBank" prefHeight="40.0" style="-fx-background-color: white; -fx-border-color: #10b981; -fx-text-fill: #10b981; -fx-font-weight: bold; -fx-cursor: hand;" text="🏦 Liên kết ngân hàng" />
+                                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleLinkBank" prefHeight="40.0" style="-fx-background-color: white; -fx-border-color: #ff4757; -fx-text-fill: #ff4757; -fx-font-weight: bold; -fx-cursor: hand; -fx-border-radius: 5; -fx-background-radius: 5;" text="🏦 Liên kết ngân hàng" />
 
-                                <Label fx:id="lblBankStatus" text="Trạng thái: Chưa liên kết" textFill="#ef4444" alignment="CENTER" maxWidth="Infinity">
+                                <Label fx:id="lblBankStatus" alignment="CENTER" maxWidth="Infinity" text="Trạng thái: Chưa liên kết" textFill="#e84393">
                                     <VBox.margin>
                                         <Insets top="10.0" />
                                     </VBox.margin>
@@ -74,8 +76,8 @@
 
                 <HBox alignment="CENTER" spacing="20.0">
                     <children>
-                        <Button mnemonicParsing="false" onAction="#handleBack" prefHeight="40.0" prefWidth="120.0" style="-fx-background-color: #64748b; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Danh sách đấu giá" />
-                        <Button mnemonicParsing="false" onAction="#handleSaveInfo" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Lưu thông tin" />
+                        <Button mnemonicParsing="false" onAction="#handleBack" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #fd79a8; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="Danh sách đấu giá" />
+                        <Button mnemonicParsing="false" onAction="#handleSaveInfo" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="Lưu thông tin" />
                     </children>
                     <VBox.margin>
                         <Insets top="20.0" />

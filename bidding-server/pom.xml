@@ -19,57 +19,98 @@
   </properties>
 
   <dependencies>
+    <!-- 1. GSON: Bắt buộc để truyền tin nhắn JSON qua Socket -->
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.10.1</version>
+    </dependency>
+
+    <!-- 2. JUnit Jupiter (Aggregator): Gói này tự động bao gồm cả API và Engine bản chuẩn -->
+    <!-- Xóa bỏ các bản 6.0.0 hay TestNG vì chúng gây xung đột khiến Test không chạy được -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.0</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- JDBC Driver kết nối đến postgresql -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.3</version>
+    </dependency>
+
   </dependencies>
 
-  <build>
-    <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
-      <plugins>
-        <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
-        <plugin>
-          <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
-        </plugin>
-        <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
-        <plugin>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>3.0.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
-        </plugin>
-        <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
-        <plugin>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
+    <build>
+        <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+            <plugins>
+                <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.1.0</version>
+                </plugin>
+                <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.0.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.0.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.8.2</version>
+                </plugin>
+                <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
+                <plugin>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.7.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <!-- Sử dụng bộ quy tắc chuẩn của Google -->
+                    <configLocation>google_checks.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                    <linkXRef>false</linkXRef>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

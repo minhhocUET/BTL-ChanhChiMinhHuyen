@@ -16,17 +16,32 @@ public class Auction {
     }
 
     // Các hàm Getter / Setter cơ bản
-    public int getAuctionId() { return auctionId; }
-    public Item getItem() { return item; }
-    
-    public double getStartPrice() { return startPrice; }
-    public double getCurrentPrice() { return currentPrice; }
-    
-    // Hàm này rất quan trọng để cập nhật giá khi có người đặt cao hơn
-    public void setCurrentPrice(double currentPrice) { 
-        this.currentPrice = currentPrice; 
+    public int getAuctionId() {
+        return auctionId;
     }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public Item getItem() {
+        return item;
+    }
+
+    public double getStartPrice() {
+        return startPrice;
+    }
+
+    public double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    // Hàm này rất quan trọng để cập nhật giá khi có người đặt cao hơn
+    public void setCurrentPrice(double currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

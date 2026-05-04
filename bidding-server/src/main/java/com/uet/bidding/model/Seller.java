@@ -1,8 +1,10 @@
 package com.uet.bidding.model;
 
+import java.math.BigDecimal;
+
 public class Seller extends User {
 
-    public Seller(int id, String username, String password, double balance) {
+    public Seller(int id, String username, String password, BigDecimal balance) {
         super(id, username, password, balance);
     }
 

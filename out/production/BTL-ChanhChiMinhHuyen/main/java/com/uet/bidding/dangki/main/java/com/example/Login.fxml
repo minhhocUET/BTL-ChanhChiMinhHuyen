@@ -8,7 +8,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.ui.LoginController" alignment="CENTER" prefHeight="450.0" prefWidth="350.0" spacing="20.0" styleClass="root-container" stylesheets="@style.css">
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.java.com.uet.bidding.dangki.main.java.com.example.LoginController" alignment="CENTER" prefHeight="450.0" prefWidth="350.0" spacing="20.0" styleClass="root-container" stylesheets="@style.css">
     <children>
         <VBox alignment="CENTER" spacing="5.0">
             <children>

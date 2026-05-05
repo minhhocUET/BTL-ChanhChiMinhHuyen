@@ -16,14 +16,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class server { // Đây là file chạy chính của SERVER
 
+  private static final int SHUTDOWN_DELAY_MS = 60000; // 60.000 mili-giây = 60 giây
   // ==============================================================
   // 1. CÁC BIẾN QUẢN LÝ MẠNG VÀ AUTO-SHUTDOWN
   // ==============================================================
   // Danh sách lưu trữ các Client đang kết nối (Dùng CopyOnWriteArraySet để chống lỗi đa luồng)
   public static Set<ClientHandler> activeClients = new CopyOnWriteArraySet<>();
-
   private static Timer autoShutdownTimer;
-  private static final int SHUTDOWN_DELAY_MS = 60000; // 60.000 mili-giây = 60 giây
 
   // Hàm gửi tin nhắn Broadcast cho tất cả Client đang online
   public static void broadcast(NetworkMessage message) {

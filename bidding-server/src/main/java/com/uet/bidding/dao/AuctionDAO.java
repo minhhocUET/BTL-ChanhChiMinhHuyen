@@ -1,6 +1,7 @@
 package com.uet.bidding.dao;
 
 import com.uet.bidding.model.Auction;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public class AuctionDAO {
   }
 
   /**
-   * Cập nhật một phiên đấu giá (Dùng khi có người đặt giá mới)
+   * Cập nhật một phiên đấu giá (Dùng khi có người đặt giá mới).
    */
   public synchronized void updateAuction(Auction updatedAuction) {
     for (int i = 0; i < auctions.size(); i++) {

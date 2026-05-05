@@ -12,13 +12,19 @@ import java.util.ResourceBundle;
 
 public class UserProfileController implements Initializable {
 
-  @FXML private TextField txtName;
-  @FXML private TextField txtEmail;
-  @FXML private TextField txtPhone;
-  @FXML private TextArea txtAddress;
+  @FXML
+  private TextField txtName;
+  @FXML
+  private TextField txtEmail;
+  @FXML
+  private TextField txtPhone;
+  @FXML
+  private TextArea txtAddress;
 
-  @FXML private Label lblBalance;
-  @FXML private Label lblBankStatus;
+  @FXML
+  private Label lblBalance;
+  @FXML
+  private Label lblBankStatus;
 
   // Biến lưu trữ người dùng đang đăng nhập
   private User currentUser;

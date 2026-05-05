@@ -38,7 +38,7 @@ public class AuctionManager {
   }
 
   /**
-   * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật
+   * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật.
    */
   public void initialize(AuctionDAO dao) {
     this.auctionDAO = dao;
@@ -126,7 +126,7 @@ public class AuctionManager {
   // ================== CORE LOGIC: ĐẶT GIÁ AN TOÀN ==================
 
   /**
-   * Đặt giá an toàn (thread-safe) và cập nhật xuống file ngay lập tức
+   * Đặt giá an toàn (thread-safe) và cập nhật xuống file ngay lập tức.
    * (Đã sửa tham số và logic gọi hàm cho khớp với bản cập nhật mới nhất)
    */
   public boolean placeBid(int auctionId, Bidder bidder, BigDecimal amount)

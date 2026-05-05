@@ -1,6 +1,7 @@
 package com.uet.bidding.dao;
 
 import com.uet.bidding.model.Item;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class ItemDAO {
   // --- CÁC HÀM NGHIỆP VỤ ---
 
   /**
-   * Thêm sản phẩm mới (Dùng sau khi ItemFactory tạo ra Object)
+   * Thêm sản phẩm mới (Dùng sau khi ItemFactory tạo ra Object).
    */
   public synchronized void addItem(Item item) {
     // Tự động gán ID tăng dần
@@ -52,14 +53,14 @@ public class ItemDAO {
   }
 
   /**
-   * Lấy toàn bộ danh sách sản phẩm để hiển thị trên Dashboard
+   * Lấy toàn bộ danh sách sản phẩm để hiển thị trên Dashboard.
    */
   public List<Item> getAllItems() {
     return new ArrayList<>(items);
   }
 
   /**
-   * Tìm sản phẩm theo ID (Dùng khi bắt đầu tạo một phiên đấu giá cho sản phẩm đó)
+   * Tìm sản phẩm theo ID (Dùng khi bắt đầu tạo một phiên đấu giá cho sản phẩm đó).
    */
   public Item findById(int id) {
     for (Item item : items) {
@@ -71,7 +72,7 @@ public class ItemDAO {
   }
 
   /**
-   * Xóa sản phẩm (Nếu cần)
+   * Xóa sản phẩm (Nếu cần).
    */
   public synchronized void deleteItem(int id) {
     items.removeIf(item -> item.getId() == id);

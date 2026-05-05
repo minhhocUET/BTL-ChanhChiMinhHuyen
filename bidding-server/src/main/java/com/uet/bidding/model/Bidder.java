@@ -18,7 +18,7 @@ public class Bidder extends User {
   }
 
   /**
-   * Constructor dùng khi tạo mới Bidder (chưa có ID)
+   * Constructor dùng khi tạo mới Bidder (chưa có ID).
    * Thêm tham số email theo yêu cầu của bạn
    */
   public Bidder(String username, String password, BigDecimal balance, String email) {
@@ -34,7 +34,7 @@ public class Bidder extends User {
   }
 
   /**
-   * Constructor dùng khi đọc từ DB (đã có ID)
+   * Constructor dùng khi đọc từ DB (đã có ID).
    */
   public Bidder(int id, String username, String password, BigDecimal balance, String email) {
     super(id, username, password, balance);
@@ -44,7 +44,7 @@ public class Bidder extends User {
   // ================= OVERRIDE =================
 
   /**
-   * Ghi đè hàm getRole() để phân biệt với Admin và Seller
+   * Ghi đè hàm getRole() để phân biệt với Admin và Seller.
    */
   @Override
   public String getRole() {
@@ -53,21 +53,31 @@ public class Bidder extends User {
 
   // ================= GETTERS AND SETTERS =================
 
-  public int getTotalBids() { return totalBids; }
-  public void setTotalBids(int totalBids) { this.totalBids = totalBids; }
+  public int getTotalBids() {
+    return totalBids;
+  }
 
-  public int getAuctionsWon() { return auctionsWon; }
-  public void setAuctionsWon(int auctionsWon) { this.auctionsWon = auctionsWon; }
+  public void setTotalBids(int totalBids) {
+    this.totalBids = totalBids;
+  }
+
+  public int getAuctionsWon() {
+    return auctionsWon;
+  }
+
+  public void setAuctionsWon(int auctionsWon) {
+    this.auctionsWon = auctionsWon;
+  }
 
   // ================= TO STRING =================
 
   @Override
   public String toString() {
     return "Bidder {" +
-            "username = '" + getUsername() + '\'' +
-            ", email = '" + getEmail() + '\'' +
-            ", balance = " + getBalance() +
-            ", totalBids = " + totalBids +
-            '}';
+        "username = '" + getUsername() + '\'' +
+        ", email = '" + getEmail() + '\'' +
+        ", balance = " + getBalance() +
+        ", totalBids = " + totalBids +
+        '}';
   }
 }

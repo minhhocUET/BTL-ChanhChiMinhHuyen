@@ -1,7 +1,9 @@
 package com.uet.bidding.model;
 
-import java.io.Serializable; /**
- *
+import java.io.Serializable;
+
+/**
+ *.
  */
 public class NetworkMessage implements Serializable {
 
@@ -36,7 +38,9 @@ public class NetworkMessage implements Serializable {
     return data;
   }
 
-  public void setData(Object data) { this.data = data; }
+  public void setData(Object data) {
+    this.data = data;
+  }
 
   public void setContent(Object data) {
     this.data = data;
@@ -44,7 +48,7 @@ public class NetworkMessage implements Serializable {
 
 
   /**
-   * Tiện ích để debug nhanh nội dung tin nhắn
+   * Tiện ích để debug nhanh nội dung tin nhắn.
    */
   @Override
   public String toString() {

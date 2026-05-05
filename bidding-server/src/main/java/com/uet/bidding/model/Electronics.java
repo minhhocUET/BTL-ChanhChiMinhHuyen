@@ -3,7 +3,7 @@ package com.uet.bidding.model;
 import java.math.BigDecimal;
 
 /**
- * Electronics Item (điện tử)
+ * Electronics Item (điện tử).
  */
 public class Electronics extends Item {
 

@@ -3,7 +3,7 @@ package com.uet.bidding.model;
 import java.math.BigDecimal;
 
 /**
- * Factory pattern: tạo Item dựa theo type
+ * Factory pattern: tạo Item dựa theo type.
  * Đã tối ưu để phối hợp với hệ thống Serialization
  */
 public class ItemFactory {

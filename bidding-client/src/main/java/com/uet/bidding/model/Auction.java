@@ -60,22 +60,49 @@ public class Auction implements Serializable {
   }
 
   // ================== GETTER & SETTER ==================
-  public int getId() { return id; }
-  public void setId(int id) { this.id = id; }
+  public int getId() {
+    return id;
+  }
 
-  public Item getItem() { return item; }
-  public void setItem(Item item) { this.item = item; }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-  public BigDecimal getCurrentPrice() { return currentPrice; }
-  public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
+  public Item getItem() {
+    return item;
+  }
 
-  public String getStatus() { return status; }
-  public void setStatus(String status) { this.status = status; }
+  public void setItem(Item item) {
+    this.item = item;
+  }
 
-  public Bidder getHighestBidder() { return highestBidder; }
+  public BigDecimal getCurrentPrice() {
+    return currentPrice;
+  }
 
-  public LocalDateTime  getStartTime() { return startTime; }
-  public LocalDateTime getEndTime() { return endTime; }
+  public void setCurrentPrice(BigDecimal currentPrice) {
+    this.currentPrice = currentPrice;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public Bidder getHighestBidder() {
+    return highestBidder;
+  }
+
+  public LocalDateTime getStartTime() {
+    return startTime;
+  }
+
+  public LocalDateTime getEndTime() {
+    return endTime;
+  }
 
   // ================== LOGIC ==================
   public boolean isActive() {

@@ -16,11 +16,10 @@ import java.net.Socket;
 
 public class ClientHandler implements Runnable {
   private final Socket clientSocket;
-  private PrintWriter out;
-  private BufferedReader in;
   private final UserDAO userDAO;
   private final Gson gson = new Gson();
-
+  private PrintWriter out;
+  private BufferedReader in;
   private Bidder loggedInUser = null;
 
   public ClientHandler(Socket socket, UserDAO userDAO) {
@@ -113,11 +112,11 @@ public class ClientHandler implements Runnable {
               }
 
               User newUser = new Seller("hoang_an_99",             // username
-                      "matkhau123",              // password
-                      new BigDecimal("5000000"), // balance (5 triệu VNĐ)
-                      4.9,                       // rating (4.9 sao)
-                      "0312456789",              // taxId (Mã số thuế)
-                      "An Hoàng Luxury Watch");
+                  "matkhau123",              // password
+                  new BigDecimal("5000000"), // balance (5 triệu VNĐ)
+                  4.9,                       // rating (4.9 sao)
+                  "0312456789",              // taxId (Mã số thuế)
+                  "An Hoàng Luxury Watch");
               userDAO.addUser(newUser);
               responseContent = "Đăng ký thành công tài khoản [" + newUsername + "]!";
               break;

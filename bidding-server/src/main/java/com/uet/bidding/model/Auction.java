@@ -3,7 +3,8 @@ package com.uet.bidding.model;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 
-import java.io.Serializable;import java.math.BigDecimal;
+import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,11 +94,8 @@ public class Auction implements Serializable {
   }
 
   // --- XỬ LÝ ĐA LUỒNG & NGOẠI LỆ ---
-  public synchronized boolean placeBid(String bidderName, double bidAmount)
+  public synchronized boolean placeBid(String bidderName, BigDecimal bidAmount)
       throws AuctionClosedException, InvalidBidException {
-
-    // Chuyển double sang BigDecimal để so sánh chuẩn xác với Database
-    BigDecimal offer = BigDecimal.valueOf(bidAmount);
 
     // 1. Kiểm tra trạng thái (Dùng String status)
     if (!this.status.equals("RUNNING")) {
@@ -105,16 +103,16 @@ public class Auction implements Serializable {
     }
 
     // 2. Kiểm tra giá (Dùng compareTo: trả về <= 0 nghĩa là nhỏ hơn hoặc bằng)
-    if (offer.compareTo(this.currentPrice) <= 0) {
-      throw new InvalidBidException("Giá đặt (" + offer + ") phải cao hơn giá hiện tại (" + currentPrice + ")!");
+    if (bidAmount.compareTo(this.currentPrice) <= 0) {
+      throw new InvalidBidException("Giá đặt (" + bidAmount + ") phải cao hơn giá hiện tại (" + currentPrice + ")!");
     }
 
     // 3. Nếu qua được 2 ải trên thì cập nhật giá thành công
-    this.currentPrice = offer;
+    this.currentPrice = bidAmount;
     this.leadBidder = bidderName;
-    this.bidHistory.add(new Bid(bidderName, offer));
+    this.bidHistory.add(new Bid(bidderName, bidAmount));
 
-    System.out.println("✅ " + bidderName + " đặt giá thành công: " + offer);
+    System.out.println("✅ " + bidderName + " đặt giá thành công: " + bidAmount);
 
     notifyObservers();
     return true;

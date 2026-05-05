@@ -19,7 +19,7 @@ public class Seller extends User {
   }
 
   /**
-   * Constructor dùng khi tạo mới người bán (chưa có ID từ DB)
+   * Constructor dùng khi tạo mới người bán (chưa có ID từ DB).
    */
   public Seller(String username, String password, BigDecimal balance,
                 Double rating, String taxId, String shopName) {
@@ -33,7 +33,7 @@ public class Seller extends User {
   }
 
   /**
-   * Constructor dùng khi đọc dữ liệu người bán từ Database lên (đã có ID)
+   * Constructor dùng khi đọc dữ liệu người bán từ Database lên (đã có ID).
    */
   public Seller(int id, String username, String password, BigDecimal balance,
                 Double rating, String taxId, String shopName) {
@@ -87,11 +87,11 @@ public class Seller extends User {
   @Override
   public String toString() {
     return "Seller {" +
-            "id = " + getId() + // Mặc dù User không có hàm getId() trong code bạn gửi, nhưng nó kế thừa từ Entity nên chắc chắn sẽ có hàm này
-            ", username = '" + getUsername() + '\'' +
-            ", shopName = '" + shopName + '\'' +
-            ", rating = " + rating +
-            ", balance = " + getBalance() +
-            '}';
+        "id = " + getId() + // Mặc dù User không có hàm getId() trong code bạn gửi, nhưng nó kế thừa từ Entity nên chắc chắn sẽ có hàm này
+        ", username = '" + getUsername() + '\'' +
+        ", shopName = '" + shopName + '\'' +
+        ", rating = " + rating +
+        ", balance = " + getBalance() +
+        '}';
   }
 }

@@ -2,7 +2,7 @@ package com.uet.bidding.model;
 
 import java.math.BigDecimal;
 
-class Art extends Item  {
+class Art extends Item {
 
   private static final long serialVersionUID = 1L;
 

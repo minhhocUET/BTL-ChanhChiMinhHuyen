@@ -103,7 +103,7 @@ public class ClientApp {
     System.out.println(" 5. Thoát app    : EXIT");
     System.out.println("----------------------------------------------------");
   }
-  
+
   private static void handleServerResponse(String rawResponse) {
     try {
       NetworkMessage serverMsg = networkGson.fromJson(rawResponse, NetworkMessage.class);

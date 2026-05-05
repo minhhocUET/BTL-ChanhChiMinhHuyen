@@ -2,6 +2,7 @@ package com.uet.bidding.dao;
 
 import com.uet.bidding.model.Seller;
 import com.uet.bidding.model.User;
+
 import java.io.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -14,25 +15,25 @@ public class UserDAO {
   public UserDAO() {
     this.users = loadData();
 
-    // Tự động tạo dữ liệu mẫu nếu hệ thống chưa có ai
+    // Tự động tạo dữ liệu mẫu nếu hệ thống chưa có ai.
     if (this.users.isEmpty()) {
       System.out.println("File dữ liệu trống. Đang tạo tài khoản mẫu...");
-      // Lưu ý: pass các thông số ID, Username, Password, Balance cho khớp Constructor của bạn
+      // Lưu ý: pass các thông số ID, Username, Password, Balance cho khớp Constructor của bạn.
       addUser(new Seller(
-              "hoang_an_99",              // username
-              "matkhau123",               // password
-              new BigDecimal("5000000"),  // balance
-              4.9,                        // rating
-              "0312456789",               // taxId
-              "An Hoàng Luxury Watch"     // shopName
+          "hoang_an_99",              // username
+          "matkhau123",               // password
+          new BigDecimal("5000000"),  // balance
+          4.9,                        // rating
+          "0312456789",               // taxId
+          "An Hoàng Luxury Watch"     // shopName
       ));
       addUser(new Seller(
-              "hoang_an_99",              // username
-              "matkhau123",               // password
-              new BigDecimal("5000000"),  // balance
-              4.9,                        // rating
-              "0312456789",               // taxId
-              "An Hoàng Luxury Watch"     // shopName
+          "hoang_an_99",              // username
+          "matkhau123",               // password
+          new BigDecimal("5000000"),  // balance
+          4.9,                        // rating
+          "0312456789",               // taxId
+          "An Hoàng Luxury Watch"     // shopName
       ));
     }
   }
@@ -62,10 +63,10 @@ public class UserDAO {
   // --- CÁC HÀM NGHIỆP VỤ (SỬA DỰA TRÊN CODE CŨ) ---
 
   /**
-   * Thêm user mới vào danh sách và lưu lại file
+   * Thêm user mới vào danh sách và lưu lại file.
    */
   public synchronized void addUser(User user) {
-    // Tự động tạo ID (lấy ID lớn nhất + 1) tương đương AUTO_INCREMENT trong SQL
+    // Tự động tạo ID (lấy ID lớn nhất + 1) tương đương AUTO_INCREMENT trong SQL.
     int nextId = users.stream().mapToInt(User::getId).max().orElse(0) + 1;
     user.setId(nextId);
 
@@ -75,7 +76,7 @@ public class UserDAO {
   }
 
   /**
-   * Kiểm tra đăng nhập (Thay thế câu lệnh SELECT * WHERE...)
+   * Kiểm tra đăng nhập (Thay thế câu lệnh SELECT * WHERE...).
    */
   public User checkLogin(String username, String password) {
     for (User u : users) {
@@ -87,14 +88,14 @@ public class UserDAO {
   }
 
   /**
-   * Lấy toàn bộ danh sách user
+   * Lấy toàn bộ danh sách user.
    */
   public List<User> getAllUsers() {
     return new ArrayList<>(users); // Trả về bản sao để an toàn dữ liệu
   }
 
   /**
-   * Tìm user theo ID
+   * Tìm user theo ID.
    */
   public User findById(int id) {
     for (User u : users) {

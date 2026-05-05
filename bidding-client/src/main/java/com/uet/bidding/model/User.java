@@ -17,7 +17,8 @@ public abstract class User extends Entity implements Serializable {
   private BigDecimal balance;
   private String linkedBank;
 
-  public User() {} // Constructor trống bắt buộc
+  public User() {
+  } // Constructor trống bắt buộc
 
   //constructor không có id
   public User(String username, String password, BigDecimal balance) {
@@ -33,34 +34,87 @@ public abstract class User extends Entity implements Serializable {
     this.password = password;
     this.balance = balance;
   }
+
   // Cần có đầy đủ Setter để LoginController và Bidder hoạt động
-  public void setId(int id) { this.id = id; }
-  public void setUsername(String username) { this.username = username; }
-  public void setPassword(String password) { this.password = password; } // Đã bổ sung dòng này để fix lỗi
-  public void setFullName(String fullName) { this.fullName = fullName; }
-  public void setEmail(String email) { this.email = email; }
-  public void setPhone(String phone) { this.phone = phone; }
-  public void setAddress(String address) { this.address = address; }
-  public void setBalance(BigDecimal balance) { this.balance = balance; }
-  public void setLinkedBank(String linkedBank) { this.linkedBank = linkedBank; }
+  public void setId(int id) {
+    this.id = id;
+  }
 
   // Cần có Getter để UserProfileController hiển thị dữ liệu
-  public String getFullName() { return fullName; }
-  public String getEmail() { return email; }
-  public String getPhone() { return phone; }
-  public String getAddress() { return address; }
-  public BigDecimal getBalance() { return balance; }
-  public String getLinkedBank() { return linkedBank; }
-  public String getUsername() { return username; }
-  public String getPassword() { return password; }
+  public String getFullName() {
+    return fullName;
+  }
+
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  public String getPhone() {
+    return phone;
+  }
+
+  public void setPhone(String phone) {
+    this.phone = phone;
+  }
+
+  public String getAddress() {
+    return address;
+  }
+
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
+  public BigDecimal getBalance() {
+    return balance;
+  }
+
+  public void setBalance(BigDecimal balance) {
+    this.balance = balance;
+  }
+
+  public String getLinkedBank() {
+    return linkedBank;
+  }
+
+  public void setLinkedBank(String linkedBank) {
+    this.linkedBank = linkedBank;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  } // Đã bổ sung dòng này để fix lỗi
+
   // Hàm nạp tiền dùng cho màn hình UserProfile
   public void addFunds(BigDecimal amount) {
     this.balance = this.balance.add(amount);
   }
 
   public String getRole() {
-      return "";
-  };
+    return "";
+  }
+
+  ;
 
   public boolean withdraw(BigDecimal amount) {
     if (this.balance != null && this.balance.compareTo(amount) >= 0) {

@@ -26,12 +26,24 @@ public class Electronics extends Item {
   }
 
   // Các hàm Getters và Setters
-  public String getBrand() { return brand; }
-  public void setBrand(String brand) { this.brand = brand; }
+  public String getBrand() {
+    return brand;
+  }
 
-  public int getWarrantyMonths() { return warrantyMonths; }
-  public void setWarrantyMonths(int warrantyMonths) { this.warrantyMonths = warrantyMonths; }
+  public void setBrand(String brand) {
+    this.brand = brand;
+  }
+
+  public int getWarrantyMonths() {
+    return warrantyMonths;
+  }
+
+  public void setWarrantyMonths(int warrantyMonths) {
+    this.warrantyMonths = warrantyMonths;
+  }
 
   @Override
-  public String getType() { return "ELECTRONICS"; }
+  public String getType() {
+    return "ELECTRONICS";
+  }
 }

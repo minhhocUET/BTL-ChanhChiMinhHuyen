@@ -21,8 +21,19 @@ public class AuctionItem implements Serializable {
     this.interestedCount = new SimpleIntegerProperty(interestedCount);
   }
 
-  public int getStt() { return stt.get(); }
-  public String getCity() { return city.get(); }
-  public String getProductType() { return productType.get(); }
-  public int getInterestedCount() { return interestedCount.get(); }
+  public int getStt() {
+    return stt.get();
+  }
+
+  public String getCity() {
+    return city.get();
+  }
+
+  public String getProductType() {
+    return productType.get();
+  }
+
+  public int getInterestedCount() {
+    return interestedCount.get();
+  }
 }

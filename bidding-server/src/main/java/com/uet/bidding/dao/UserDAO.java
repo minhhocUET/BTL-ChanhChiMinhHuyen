@@ -1,6 +1,7 @@
 package com.uet.bidding.dao;
 
 import com.uet.bidding.model.User;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class UserDAO {
   // --- CÁC HÀM NGHIỆP VỤ (SỬA DỰA TRÊN CODE CŨ) ---
 
   /**
-   * Thêm user mới vào danh sách và lưu lại file
+   * Thêm user mới vào danh sách và lưu lại file.
    */
   public synchronized void addUser(User user) {
     // Tự động tạo ID (lấy ID lớn nhất + 1) tương đương AUTO_INCREMENT trong SQL
@@ -52,7 +53,7 @@ public class UserDAO {
   }
 
   /**
-   * Kiểm tra đăng nhập (Thay thế câu lệnh SELECT * WHERE...)
+   * Kiểm tra đăng nhập (Thay thế câu lệnh SELECT * WHERE...).
    */
   public User checkLogin(String username, String password) {
     for (User u : users) {
@@ -64,14 +65,14 @@ public class UserDAO {
   }
 
   /**
-   * Lấy toàn bộ danh sách user
+   * Lấy toàn bộ danh sách user.
    */
   public List<User> getAllUsers() {
     return new ArrayList<>(users); // Trả về bản sao để an toàn dữ liệu
   }
 
   /**
-   * Tìm user theo ID
+   * Tìm user theo ID.
    */
   public User findById(int id) {
     for (User u : users) {

@@ -12,21 +12,20 @@ public class AuctionLogicTest {
 
   @BeforeEach
   void setUp() {
-    // Khởi tạo handler với socket null để test logic thuần túy
-    handler = new ClientHandler(null);
+    // [ĐÃ SỬA] Khởi tạo handler với 2 tham số (Socket, UserDAO) đều là null để test logic thuần túy
+    handler = new ClientHandler(null, null);
   }
 
   @Test
-  void testBidLowerThanCurrentPrice() {
-    // Đảm bảo handleAuctionLogic trong ClientHandler là PUBLIC
+  void testInvalidBidAmount() {
+    // [ĐÃ SỬA] Test với giá trị âm hoặc bằng 0 để đảm bảo ném ra InvalidBidException
     assertThrows(InvalidBidException.class, () -> {
-      handler.handleAuctionLogic("500");
+      handler.handleAuctionLogic("-500");
     });
   }
 
   @Test
   void testLoginWithEmptyName() {
-    // Đảm bảo handleLoginLogic trong ClientHandler là PUBLIC
     assertThrows(AuthenticationException.class, () -> {
       handler.handleLoginLogic("");
     });

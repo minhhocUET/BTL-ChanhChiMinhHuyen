@@ -26,15 +26,24 @@ import java.util.Locale;
 
 public class ProductDetailController {
 
-  @FXML private ImageView imgProduct;
-  @FXML private Label lblProductName;
-  @FXML private Label lblAuctionId;
-  @FXML private Label lblCurrentPrice;
-  @FXML private Label lblHighestBidder;
-  @FXML private Label lblCountdown;
-  @FXML private Label lblDescription;
-  @FXML private TextField txtBidAmount;
-  @FXML private Label lblMinBid;
+  @FXML
+  private ImageView imgProduct;
+  @FXML
+  private Label lblProductName;
+  @FXML
+  private Label lblAuctionId;
+  @FXML
+  private Label lblCurrentPrice;
+  @FXML
+  private Label lblHighestBidder;
+  @FXML
+  private Label lblCountdown;
+  @FXML
+  private Label lblDescription;
+  @FXML
+  private TextField txtBidAmount;
+  @FXML
+  private Label lblMinBid;
 
   private Auction currentAuction;
   private Timeline timeline; // Dùng để làm đồng hồ đếm ngược

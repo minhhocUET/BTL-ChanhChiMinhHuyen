@@ -26,15 +26,32 @@ public class Art extends Item {
     this.material = material;
   }
 
-  public String getAuthor() { return author; }
-  public void setAuthor(String author) { this.author = author; }
+  public String getAuthor() {
+    return author;
+  }
 
-  public int getCreationYear() { return creationYear; }
-  public void setCreationYear(int creationYear) { this.creationYear = creationYear; }
+  public void setAuthor(String author) {
+    this.author = author;
+  }
 
-  public String getMaterial() { return material; }
-  public void setMaterial(String material) { this.material = material; }
+  public int getCreationYear() {
+    return creationYear;
+  }
+
+  public void setCreationYear(int creationYear) {
+    this.creationYear = creationYear;
+  }
+
+  public String getMaterial() {
+    return material;
+  }
+
+  public void setMaterial(String material) {
+    this.material = material;
+  }
 
   @Override // Thêm dòng này để báo cho Java biết đây là hàm ghi đè từ lớp cha
-  public String getType() { return "ART"; }
+  public String getType() {
+    return "ART";
+  }
 }

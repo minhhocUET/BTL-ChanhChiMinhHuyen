@@ -23,15 +23,22 @@ import java.util.ResourceBundle;
 public class AuctionListController implements Initializable {
 
   // Khai báo các ID phải trùng khớp 100% với FXML
-  @FXML private TableView<AuctionItem> tableView;
-  @FXML private TableColumn<AuctionItem, Integer> colStt;
-  @FXML private TableColumn<AuctionItem, String> colCity;
-  @FXML private TableColumn<AuctionItem, String> colProduct;
-  @FXML private TableColumn<AuctionItem, Integer> colInterested;
-  @FXML private TableColumn<AuctionItem, Void> colAction;
+  @FXML
+  private TableView<AuctionItem> tableView;
+  @FXML
+  private TableColumn<AuctionItem, Integer> colStt;
+  @FXML
+  private TableColumn<AuctionItem, String> colCity;
+  @FXML
+  private TableColumn<AuctionItem, String> colProduct;
+  @FXML
+  private TableColumn<AuctionItem, Integer> colInterested;
+  @FXML
+  private TableColumn<AuctionItem, Void> colAction;
 
   // Đã thay thế TextField bằng ComboBox
-  @FXML private ComboBox<String> cityComboBox;
+  @FXML
+  private ComboBox<String> cityComboBox;
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
@@ -76,6 +83,7 @@ public class AuctionListController implements Initializable {
       public TableCell<AuctionItem, Void> call(final TableColumn<AuctionItem, Void> param) {
         return new TableCell<>() {
           private final Button btn = new Button("Đăng kí đấu giá");
+
           {
             btn.setStyle("-fx-background-color: white; -fx-border-color: black; " +
                 "-fx-border-radius: 20; -fx-background-radius: 20; " +
@@ -135,6 +143,7 @@ public class AuctionListController implements Initializable {
               }
             });
           }
+
           @Override
           protected void updateItem(Void item, boolean empty) {
             super.updateItem(item, empty);

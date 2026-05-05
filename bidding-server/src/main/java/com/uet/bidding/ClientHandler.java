@@ -19,11 +19,10 @@ import java.net.Socket;
 
 public class ClientHandler implements Runnable {
   private final Socket clientSocket;
-  private PrintWriter out;
-  private BufferedReader in;
   private final UserDAO userDAO;
   private final Gson gson = new Gson();
-
+  private PrintWriter out;
+  private BufferedReader in;
   // Biến lưu trữ người dùng đang đăng nhập trên luồng (Socket) này
   private Bidder loggedInUser = null;
 
@@ -77,10 +76,13 @@ public class ClientHandler implements Runnable {
               }
 
               int auctionId = Integer.parseInt(bidParts[0]);
+
+              handleAuctionLogic(bidParts[1]);
+
               BigDecimal bidAmount = new BigDecimal(bidParts[1]);
 
               // Gọi tới DAO và logic đồng bộ của hệ thống
-              boolean success = AuctionManager.getInstance().placeBid(auctionId, String.valueOf(loggedInUser), bidAmount);
+              boolean success = AuctionManager.getInstance().placeBid(auctionId, loggedInUser.getUsername(), bidAmount);
 
               if (success) {
                 responseContent = "Chúc mừng! Đặt giá thành công " + bidAmount + " VNĐ cho phiên #" + auctionId;
@@ -120,6 +122,17 @@ public class ClientHandler implements Runnable {
     }
     if (credentials.toLowerCase().contains("root")) {
       throw new AuthenticationException("Tài khoản 'root' đã bị khóa!");
+    }
+  }
+
+  public void handleAuctionLogic(String amountStr) throws InvalidBidException, AuctionClosedException {
+    try {
+      BigDecimal bidAmount = new BigDecimal(amountStr);
+      if (bidAmount.compareTo(BigDecimal.ZERO) <= 0) {
+        throw new InvalidBidException("Giá đặt phải lớn hơn 0!");
+      }
+    } catch (NumberFormatException e) {
+      throw new InvalidBidException("Vui lòng nhập số tiền hợp lệ!");
     }
   }
 

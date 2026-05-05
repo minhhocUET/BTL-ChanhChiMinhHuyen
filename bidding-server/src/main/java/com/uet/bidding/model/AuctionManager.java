@@ -16,7 +16,7 @@ public class AuctionManager {
   private ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
   private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
 
-  // 1. THÊM DAO: Để đọc/ghi file .dat
+  // 1. THÊM DAO: Để đọc/ghi file .dat.
   private AuctionDAO auctionDAO;
 
   private AuctionManager() {
@@ -33,7 +33,7 @@ public class AuctionManager {
   }
 
   /**
-   * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật
+   * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật.
    */
   public void initialize(AuctionDAO dao) {
     this.auctionDAO = dao;
@@ -49,7 +49,7 @@ public class AuctionManager {
     locks.put(auction.getId(), new ReentrantLock());
   }
 
-  // Tiện ích để ClientHandler lấy danh sách gửi về cho người dùng
+  // Tiện ích để ClientHandler lấy danh sách gửi về cho người dùng.
   public List<Auction> getAllAuctions() {
     return new ArrayList<>(auctions.values());
   }
@@ -61,7 +61,7 @@ public class AuctionManager {
   // ================== CORE LOGIC (SỬA ĐỂ LƯU FILE) ==================
 
   /**
-   * Đặt giá an toàn (thread-safe) và cập nhật xuống file ngay lập tức
+   * Đặt giá an toàn (thread-safe) và cập nhật xuống file ngay lập tức.
    */
   public boolean placeBid(int auctionId, String bidderName, BigDecimal amount)
       throws AuctionClosedException, InvalidBidException {
@@ -74,7 +74,7 @@ public class AuctionManager {
     try {
       // Gọi logic placeBid trong class Auction (đã có check status và giá)
       // Chuyển BigDecimal sang double để khớp với phương thức cũ của bạn
-      boolean success = auction.placeBid(bidderName, amount.doubleValue());
+      boolean success = auction.placeBid(bidderName, amount);
 
       if (success) {
         // 3. QUAN TRỌNG: Lưu ngay lập tức xuống file auctions.dat qua DAO

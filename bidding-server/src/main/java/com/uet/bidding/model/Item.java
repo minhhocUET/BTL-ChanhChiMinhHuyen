@@ -1,9 +1,10 @@
 package com.uet.bidding.model;
 
-import java.io.Serializable;import java.math.BigDecimal;
+import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
- * Abstract class Item
+ * Abstract class Item.
  * - Đại diện cho sản phẩm đấu giá
  * - Không tạo trực tiếp, chỉ dùng qua Art / Electronics
  */
@@ -18,7 +19,7 @@ public abstract class Item implements Serializable {
   protected int sellerId;
 
   /**
-   * Constructor dùng khi đọc từ DB (có id)
+   * Constructor dùng khi đọc từ DB (có id).
    */
   public Item(int id, String name, String description, BigDecimal startingPrice, int sellerId) {
     this.id = id;
@@ -29,7 +30,7 @@ public abstract class Item implements Serializable {
   }
 
   /**
-   * Constructor dùng khi tạo mới (chưa có id)
+   * Constructor dùng khi tạo mới (chưa có id).
    */
   public Item(String name, String description, BigDecimal startingPrice, int sellerId) {
     this.name = name;
@@ -44,7 +45,9 @@ public abstract class Item implements Serializable {
     return id;
   }
 
-  public void setId(int id) { this.id = id; }
+  public void setId(int id) {
+    this.id = id;
+  }
 
   public String getName() {
     return name;
@@ -79,7 +82,7 @@ public abstract class Item implements Serializable {
   // ================== ABSTRACT ==================
 
   /**
-   * Trả về loại item (ART / ELECTRONICS)
+   * Trả về loại item (ART / ELECTRONICS).
    * → dùng cho Factory + DB
    */
   public abstract String getType();

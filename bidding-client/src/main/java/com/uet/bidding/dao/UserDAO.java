@@ -1,5 +1,6 @@
 package com.uet.bidding.dao;
 
+import com.uet.bidding.model.Seller;
 import com.uet.bidding.model.User;
 import java.io.*;
 import java.math.BigDecimal;
@@ -17,8 +18,22 @@ public class UserDAO {
     if (this.users.isEmpty()) {
       System.out.println("File dữ liệu trống. Đang tạo tài khoản mẫu...");
       // Lưu ý: pass các thông số ID, Username, Password, Balance cho khớp Constructor của bạn
-      addUser(new User(1, "test1", "123456", new BigDecimal("10000000")));
-      addUser(new User(2, "test2", "123456", new BigDecimal("5000000")));
+      addUser(new Seller(
+              "hoang_an_99",              // username
+              "matkhau123",               // password
+              new BigDecimal("5000000"),  // balance
+              4.9,                        // rating
+              "0312456789",               // taxId
+              "An Hoàng Luxury Watch"     // shopName
+      ));
+      addUser(new Seller(
+              "hoang_an_99",              // username
+              "matkhau123",               // password
+              new BigDecimal("5000000"),  // balance
+              4.9,                        // rating
+              "0312456789",               // taxId
+              "An Hoàng Luxury Watch"     // shopName
+      ));
     }
   }
 

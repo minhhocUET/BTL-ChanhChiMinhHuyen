@@ -3,7 +3,12 @@ package com.uet.bidding.model;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 
-public class AuctionItem {
+import java.io.Serializable;
+
+public class AuctionItem implements Serializable {
+
+  private static final long serialVersionUID = 1L;
+
   private final SimpleIntegerProperty stt;
   private final SimpleStringProperty city;
   private final SimpleStringProperty productType;

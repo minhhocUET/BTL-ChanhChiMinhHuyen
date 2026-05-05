@@ -2,6 +2,7 @@ package com.uet.bidding.dao;
 
 import com.uet.bidding.model.User;
 import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,8 +11,15 @@ public class UserDAO {
   private List<User> users;
 
   public UserDAO() {
-    // Không cần Connection nữa, nạp dữ liệu từ file khi khởi tạo
     this.users = loadData();
+
+    // Tự động tạo dữ liệu mẫu nếu hệ thống chưa có ai
+    if (this.users.isEmpty()) {
+      System.out.println("File dữ liệu trống. Đang tạo tài khoản mẫu...");
+      // Lưu ý: pass các thông số ID, Username, Password, Balance cho khớp Constructor của bạn
+      addUser(new User(1, "test1", "123456", new BigDecimal("10000000")));
+      addUser(new User(2, "test2", "123456", new BigDecimal("5000000")));
+    }
   }
 
   // --- HÀM BỔ TRỢ: ĐỌC/GHI FILE ---

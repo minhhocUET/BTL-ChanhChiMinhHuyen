@@ -24,12 +24,20 @@ public class ClientHandler implements Runnable {
   private final UserDAO userDAO;
   private final Gson gson = new Gson();
 
-  // Biến lưu trữ người dùng đang đăng nhập trên luồng (Socket) này
   private Bidder loggedInUser = null;
 
   public ClientHandler(Socket socket, UserDAO userDAO) {
     this.clientSocket = socket;
     this.userDAO = userDAO;
+  }
+
+  // ==============================================================
+  // HÀM GỬI TIN NHẮN (GIÚP SERVER GỌI ĐƯỢC - FIX LỖI sendMessage)
+  // ==============================================================
+  public void sendMessage(NetworkMessage msg) {
+    if (out != null) {
+      out.println(gson.toJson(msg));
+    }
   }
 
   @Override
@@ -39,7 +47,6 @@ public class ClientHandler implements Runnable {
       in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
       String inputLine;
-      // Đọc dữ liệu JSON gửi từ Client
       while ((inputLine = in.readLine()) != null) {
         try {
           NetworkMessage msg = gson.fromJson(inputLine, NetworkMessage.class);
@@ -48,15 +55,17 @@ public class ClientHandler implements Runnable {
           switch (msg.getType()) {
             case "LOGIN":
               String credentials = String.valueOf(msg.getData());
-              handleLoginLogic(credentials);
-
               String[] loginData = credentials.split(" ");
-              if (loginData.length < 2) throw new AuthenticationException("Thiếu mật khẩu!");
 
-              // Gọi UserDAO check DB
+              if (loginData.length < 2) {
+                throw new AuthenticationException("Sai cú pháp! Mẫu: LOGIN <tài_khoản> <mật_khẩu>");
+              }
+
+              // Kiểm tra các logic cấm (Ví dụ: root)
+              handleLoginLogic(loginData[0]);
+
               User user = userDAO.checkLogin(loginData[0], loginData[1]);
               if (user != null) {
-                // Nếu thành công, lưu lại tài khoản vào biến loggedInUser
                 this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance());
                 responseContent = "Đăng nhập thành công! Xin chào " + user.getUsername();
               } else {
@@ -69,7 +78,6 @@ public class ClientHandler implements Runnable {
                 throw new AuthenticationException("Bạn phải đăng nhập (LOGIN) trước khi đặt giá!");
               }
 
-              // Client gửi chuỗi theo mẫu: BID <ID_Phiên> <Số_tiền> (Ví dụ: BID 1 5000000)
               String bidData = String.valueOf(msg.getData());
               String[] bidParts = bidData.split(" ");
               if (bidParts.length < 2) {
@@ -79,12 +87,37 @@ public class ClientHandler implements Runnable {
               int auctionId = Integer.parseInt(bidParts[0]);
               BigDecimal bidAmount = new BigDecimal(bidParts[1]);
 
-              // Gọi tới DAO và logic đồng bộ của hệ thống
               boolean success = AuctionManager.getInstance().placeBid(auctionId, loggedInUser, bidAmount);
-
               if (success) {
                 responseContent = "Chúc mừng! Đặt giá thành công " + bidAmount + " VNĐ cho phiên #" + auctionId;
+
+                // Gửi thông báo cho TẤT CẢ mọi người biết có người vừa nâng giá
+                server.broadcast(new NetworkMessage("BROADCAST",
+                    "Người dùng [" + loggedInUser.getUsername() + "] đã đặt giá " + bidAmount + " cho phiên #" + auctionId));
               }
+              break;
+
+            case "REGISTER":
+              String regData = (String) msg.getData();
+              String[] regParts = regData.split(" ");
+
+              if (regParts.length < 2) {
+                throw new AuthenticationException("Sai cú pháp! Mẫu chuẩn: REGISTER <tài_khoản> <mật_khẩu>");
+              }
+
+              String newUsername = regParts[0];
+              String newPassword = regParts[1];
+
+              boolean isExist = userDAO.getAllUsers().stream()
+                  .anyMatch(u -> u.getUsername().equalsIgnoreCase(newUsername));
+
+              if (isExist) {
+                throw new AuthenticationException("Tên đăng nhập '" + newUsername + "' đã tồn tại!");
+              }
+
+              User newUser = new User(0, newUsername, newPassword, new BigDecimal("5000000"));
+              userDAO.addUser(newUser);
+              responseContent = "Đăng ký thành công tài khoản [" + newUsername + "]!";
               break;
 
             default:
@@ -100,26 +133,32 @@ public class ClientHandler implements Runnable {
         }
       }
     } catch (IOException e) {
-      System.out.println("Mất kết nối với client: " + e.getMessage());
+      System.out.println("Mất kết nối với client.");
     } finally {
+      // Dọn dẹp danh sách khi Client thoát
+      server.activeClients.remove(this);
       closeSocket();
+
+      System.out.println("Một Client đã thoát. Còn lại: " + server.activeClients.size());
+
+      // Kích hoạt đếm ngược 30s nếu không còn ai
+      if (server.activeClients.isEmpty()) {
+        server.startShutdownTimer();
+      }
     }
   }
 
-  // Hàm gửi trả JSON cho Client
   private void sendResponse(String type, Object data) {
-    if (out != null) {
-      NetworkMessage response = new NetworkMessage(type, data);
-      out.println(gson.toJson(response));
-    }
+    sendMessage(new NetworkMessage(type, data));
   }
 
-  public void handleLoginLogic(String credentials) throws AuthenticationException {
-    if (credentials == null || credentials.trim().isEmpty()) {
+  // Sửa lại hàm check logic đăng nhập cho hợp lý
+  public void handleLoginLogic(String username) throws AuthenticationException {
+    if (username == null || username.trim().isEmpty()) {
       throw new AuthenticationException("Tên đăng nhập không được để trống!");
     }
-    if (credentials.toLowerCase().contains("root")) {
-      throw new AuthenticationException("Tài khoản 'root' đã bị khóa!");
+    if (username.toLowerCase().equals("root")) {
+      throw new AuthenticationException("Tài khoản 'root' đã bị khóa vì lý do bảo mật!");
     }
   }
 

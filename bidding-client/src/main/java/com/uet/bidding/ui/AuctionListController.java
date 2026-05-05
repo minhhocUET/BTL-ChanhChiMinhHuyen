@@ -15,7 +15,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
+import java.math.BigDecimal;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 
 public class AuctionListController implements Initializable {
@@ -79,7 +81,7 @@ public class AuctionListController implements Initializable {
                 "-fx-border-radius: 20; -fx-background-radius: 20; " +
                 "-fx-text-fill: #e84393; -fx-font-weight: bold; -fx-cursor: hand;");
 
-            // ĐÂY CHÍNH LÀ ĐOẠN HANDLER XỬ LÝ CHUYỂN TRANG
+            // ĐÂY CHÍNH LÀ ĐOẠN HANDLER XỬ LÝ CHUYỂN TRANG ĐÃ ĐƯỢC FIX LỖI
             btn.setOnAction(event -> {
               // Lấy dữ liệu của sản phẩm trên hàng vừa click
               AuctionItem selectedItem = getTableView().getItems().get(getIndex());
@@ -92,21 +94,26 @@ public class AuctionListController implements Initializable {
                 // 2. Lấy Controller của trang Chi tiết
                 ProductDetailController detailController = loader.getController();
 
-                // 3. Tạo dữ liệu giả lập để truyền sang (Sau này bạn thay bằng gọi Database)
+                // 3. TẠO DỮ LIỆU GIẢ LẬP ĐÃ FIX LỖI ĐỒNG BỘ MODEL MỚI (Dùng BigDecimal)
                 com.uet.bidding.model.Electronics fakeProduct = new com.uet.bidding.model.Electronics(
                     selectedItem.getStt(),
                     selectedItem.getProductType(),
                     "Mô tả chi tiết: " + selectedItem.getProductType() + " chính hãng, bảo hành đầy đủ.",
-                    1500000,
-                    "",
+                    new BigDecimal("1500000"), // Sửa int thành BigDecimal
+                    "/images/default.jpg",
+                    1,
                     "Thương hiệu VNU",
                     12
                 );
+
                 com.uet.bidding.model.Auction fakeAuction = new com.uet.bidding.model.Auction(
-                    selectedItem.getStt() + 1000,
                     fakeProduct,
-                    java.time.LocalDateTime.now().plusDays(3)
+                    fakeProduct.getStartingPrice(),
+                    LocalDateTime.now(),
+                    LocalDateTime.now().plusDays(3)
                 );
+                // Gán ID thủ công cho fakeAuction
+                fakeAuction.setId(selectedItem.getStt() + 1000);
 
                 // 4. Truyền dữ liệu sang Controller mới
                 detailController.setAuctionData(fakeAuction);
@@ -140,7 +147,6 @@ public class AuctionListController implements Initializable {
     colAction.setCellFactory(cellFactory);
   }
 
-  // Đã cập nhật lại logic lấy dữ liệu từ ComboBox thay vì TextField
   @FXML
   public void handleSearch(ActionEvent event) {
     String selectedCity = cityComboBox.getValue();

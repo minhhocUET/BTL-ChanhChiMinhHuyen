@@ -18,6 +18,7 @@ import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -46,17 +47,22 @@ public class ProductDetailController {
     // 1. Nạp dữ liệu lên giao diện
     lblProductName.setText(item.getName());
     lblDescription.setText(item.getDescription());
-    lblAuctionId.setText("Mã phiên: #" + auction.getAuctionId());
+
+    // Đã sửa getAuctionId() thành getId()
+    lblAuctionId.setText("Mã phiên: #" + auction.getId());
 
     // Format tiền tệ kiểu Việt Nam (1.000.000 VNĐ)
     NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
-    lblCurrentPrice.setText(currencyFormat.format(auction.getCurrentHighestBid()) + " VNĐ");
 
-    // Mức giá tối thiểu phải lớn hơn giá hiện tại
-    lblMinBid.setText("(Tối thiểu: > " + currencyFormat.format(auction.getCurrentHighestBid()) + "đ)");
+    // Đã sửa getCurrentHighestBid() thành getCurrentPrice()
+    lblCurrentPrice.setText(currencyFormat.format(auction.getCurrentPrice()) + " VNĐ");
+
+    // Đã sửa getCurrentHighestBid() thành getCurrentPrice()
+    lblMinBid.setText("(Tối thiểu: > " + currencyFormat.format(auction.getCurrentPrice()) + "đ)");
 
     if (auction.getHighestBidder() != null) {
-      lblHighestBidder.setText("bởi: " + auction.getHighestBidder().toString()); // Thay bằng getName() tuỳ model của bạn
+      // Đã sửa để lấy đúng Username của người dùng thay vì toString() mặc định
+      lblHighestBidder.setText("bởi: " + auction.getHighestBidder().getUsername());
     } else {
       lblHighestBidder.setText("Chưa có ai đặt giá");
     }
@@ -91,15 +97,26 @@ public class ProductDetailController {
   @FXML
   public void handlePlaceBid(ActionEvent event) {
     try {
-      double bidAmount = Double.parseDouble(txtBidAmount.getText().replaceAll("[^\\d.]", ""));
+      // 1. Lấy chuỗi từ TextField và lọc bỏ các ký tự không phải là số
+      String cleanText = txtBidAmount.getText().replaceAll("[^\\d.]", "");
 
-      if (bidAmount <= currentAuction.getCurrentHighestBid()) {
+      // Kiểm tra rỗng
+      if (cleanText.isEmpty()) {
+        showAlert("Lỗi nhập liệu", "Vui lòng nhập số tiền hợp lệ!", Alert.AlertType.WARNING);
+        return;
+      }
+
+      // 2. Chuyển thành BigDecimal thay vì dùng B.parseDouble
+      BigDecimal bidAmount = new BigDecimal(cleanText);
+
+      // 3. So sánh bằng compareTo (<= 0 tức là nhỏ hơn hoặc bằng)
+      if (bidAmount.compareTo(currentAuction.getCurrentPrice()) <= 0) {
         showAlert("Lỗi đặt giá", "Số tiền phải lớn hơn giá cao nhất hiện tại!", Alert.AlertType.ERROR);
         return;
       }
 
-      // GỌI MODEL ĐỂ XỬ LÝ LOGIC (Giả lập cập nhật giá)
-      currentAuction.setCurrentHighestBid(bidAmount);
+      // 4. GỌI MODEL ĐỂ XỬ LÝ LOGIC (Giả lập cập nhật giá)
+      currentAuction.setCurrentPrice(bidAmount);
 
       // Cập nhật lại giao diện
       NumberFormat format = NumberFormat.getInstance(new Locale("vi", "VN"));
@@ -111,7 +128,9 @@ public class ProductDetailController {
       showAlert("Thành công", "Bạn đã đặt giá thành công!", Alert.AlertType.INFORMATION);
 
     } catch (NumberFormatException e) {
-      showAlert("Lỗi nhập liệu", "Vui lòng nhập số tiền hợp lệ!", Alert.AlertType.WARNING);
+      showAlert("Lỗi nhập liệu", "Vui lòng nhập số tiền hợp lệ (không chứa chữ cái)!", Alert.AlertType.WARNING);
+    } catch (Exception e) {
+      showAlert("Lỗi hệ thống", "Đã xảy ra lỗi: " + e.getMessage(), Alert.AlertType.ERROR);
     }
   }
 

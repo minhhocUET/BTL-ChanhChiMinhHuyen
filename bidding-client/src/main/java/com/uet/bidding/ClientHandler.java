@@ -57,7 +57,7 @@ public class ClientHandler implements Runnable {
               User user = userDAO.checkLogin(loginData[0], loginData[1]);
               if (user != null) {
                 // Nếu thành công, lưu lại tài khoản vào biến loggedInUser
-                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getEmail(), user.getBalance());
+                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance());
                 responseContent = "Đăng nhập thành công! Xin chào " + user.getUsername();
               } else {
                 throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");

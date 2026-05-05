@@ -1,8 +1,12 @@
 package com.uet.bidding.model;
 
+import java.math.BigDecimal;
+
 public class Seller extends User {
 
-  public Seller(int id, String username, String password, double balance) {
+  private static final long  serialVersionUID = 1L;
+
+  public Seller(int id, String username, String password, BigDecimal balance) {
     // Thay vì gọi super(), ta dùng setter
     this.setId(id);
     this.setUsername(username);

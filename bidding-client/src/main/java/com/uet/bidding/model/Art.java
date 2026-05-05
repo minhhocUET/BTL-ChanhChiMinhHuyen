@@ -1,20 +1,31 @@
 package com.uet.bidding.model;
 
-public class Art extends Item {
-  private String author;       // Tên tác giả
-  private int creationYear;    // Năm sáng tác
-  private String material;     // Chất liệu (VD: Sơn dầu, lụa...)
+import java.math.BigDecimal;
 
-  // Constructor gọi super() để nạp dữ liệu cho class cha
-  public Art(int id, String name, String description, double startingPrice, String imagePath,
+public class Art extends Item {
+
+  private static final long serialVersionUID = 1L;
+
+  private String author;
+  private int creationYear;
+  private String material;
+
+  public Art(int id, String name, String description, BigDecimal startingPrice, String imagePath, int sellerId,
              String author, int creationYear, String material) {
-    super(id, name, description, startingPrice, imagePath); // Gọi Constructor của Item
+    super(id, name, description, startingPrice, imagePath, sellerId);
     this.author = author;
     this.creationYear = creationYear;
     this.material = material;
   }
 
-  // Các hàm Getters và Setters riêng của Art
+  public Art(String name, String description, BigDecimal startingPrice, String imagePath, int sellerId,
+             String author, int creationYear, String material) {
+    super(name, description, startingPrice, imagePath, sellerId);
+    this.author = author;
+    this.creationYear = creationYear;
+    this.material = material;
+  }
+
   public String getAuthor() { return author; }
   public void setAuthor(String author) { this.author = author; }
 
@@ -23,4 +34,7 @@ public class Art extends Item {
 
   public String getMaterial() { return material; }
   public void setMaterial(String material) { this.material = material; }
+
+  @Override // Thêm dòng này để báo cho Java biết đây là hàm ghi đè từ lớp cha
+  public String getType() { return "ART"; }
 }

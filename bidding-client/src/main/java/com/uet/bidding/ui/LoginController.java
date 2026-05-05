@@ -13,6 +13,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 public class LoginController {
 
@@ -73,7 +74,7 @@ public class LoginController {
     user.setEmail(username + "@vnu.edu.vn");
     user.setPhone("0912345678");
     user.setAddress("Hà Nội, Việt Nam");
-    user.setBalance(5000000.0);
+    user.setBalance(BigDecimal.valueOf(5000000));
     user.setLinkedBank("Chưa liên kết");
     return user;
   }

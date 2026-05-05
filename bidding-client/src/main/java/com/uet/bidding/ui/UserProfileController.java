@@ -6,6 +6,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 
+import java.math.BigDecimal;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -65,7 +66,7 @@ public class UserProfileController implements Initializable {
         double amount = Double.parseDouble(amountStr);
         if (amount > 0) {
           // Cập nhật vào Model
-          currentUser.addFunds(amount);
+          currentUser.addFunds(BigDecimal.valueOf(amount));
           // Cập nhật giao diện
           updateBalanceLabel();
           showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã nạp: " + String.format("%,.0f VNĐ", amount));

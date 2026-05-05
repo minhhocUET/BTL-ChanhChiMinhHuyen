@@ -1,6 +1,7 @@
 package com.uet.bidding;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.uet.bidding.model.NetworkMessage;
 
 import java.io.BufferedReader;
@@ -10,11 +11,12 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class App {
+public class ClientApp {
   public static void main(String[] args) {
     String hostname = "localhost";
     int port = 8888;
-    Gson gson = new Gson();
+    // Dùng GsonBuilder để in JSON đẹp hơn (nếu data là Object phức tạp)
+    Gson gson = new GsonBuilder().setPrettyPrinting().create();
     Scanner scanner = new Scanner(System.in);
 
     System.out.println("=== HỆ THỐNG ĐẤU GIÁ UET - CLIENT (SPACE VERSION) ===");
@@ -55,12 +57,25 @@ public class App {
           // Giải mã JSON thành đối tượng NetworkMessage
           NetworkMessage serverMsg = gson.fromJson(rawResponse, NetworkMessage.class);
 
+          // LẤY DỮ LIỆU TỪ HÀM getData() THAY VÌ getContent()
+          Object responseData = serverMsg.getData();
+
+          // Xử lý chuỗi in ra (Nếu data là Object phức tạp như Auction, Item thì parse ngược lại ra JSON để dễ đọc)
+          String displayString;
+          if (responseData instanceof String) {
+            displayString = (String) responseData;
+          } else {
+            // Nếu server gửi về một Object (List, Item, Auction...), Gson sẽ in nó ra định dạng JSON cho dễ nhìn
+            displayString = gson.toJson(responseData);
+          }
           // Chỉ in ra phần content, có thể thêm tiền tố dựa trên Type
           if ("SUCCESS".equals(serverMsg.getType())) {
-            System.out.println("[Server]: " + serverMsg.getContent());
+            System.out.println("[Server]: " + displayString);
           } else if ("ERROR".equals(serverMsg.getType())) {
-            // In lỗi màu đỏ cho chuyên nghiệp (System.err)
-            System.err.println("[Lỗi]: " + serverMsg.getContent());
+            System.err.println("[Lỗi]: " + displayString);
+          } else {
+            // Bắt các type khác (như UPDATE, INFO...)
+            System.out.println("[" + serverMsg.getType() + "]: " + displayString);
           }
         }
       }

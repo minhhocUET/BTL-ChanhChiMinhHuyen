@@ -5,10 +5,7 @@ import com.uet.bidding.dao.UserDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.InvalidBidException;
-import com.uet.bidding.model.AuctionManager;
-import com.uet.bidding.model.Bidder;
-import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.User;
+import com.uet.bidding.model.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -66,7 +63,7 @@ public class ClientHandler implements Runnable {
 
               User user = userDAO.checkLogin(loginData[0], loginData[1]);
               if (user != null) {
-                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance());
+                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance(), user.getEmail());
                 responseContent = "Đăng nhập thành công! Xin chào " + user.getUsername();
               } else {
                 throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
@@ -115,7 +112,12 @@ public class ClientHandler implements Runnable {
                 throw new AuthenticationException("Tên đăng nhập '" + newUsername + "' đã tồn tại!");
               }
 
-              User newUser = new User(0, newUsername, newPassword, new BigDecimal("5000000"));
+              User newUser = new Seller("hoang_an_99",             // username
+                      "matkhau123",              // password
+                      new BigDecimal("5000000"), // balance (5 triệu VNĐ)
+                      4.9,                       // rating (4.9 sao)
+                      "0312456789",              // taxId (Mã số thuế)
+                      "An Hoàng Luxury Watch");
               userDAO.addUser(newUser);
               responseContent = "Đăng ký thành công tài khoản [" + newUsername + "]!";
               break;

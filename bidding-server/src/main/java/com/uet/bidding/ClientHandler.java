@@ -57,7 +57,7 @@ public class ClientHandler implements Runnable {
               User user = userDAO.checkLogin(loginData[0], loginData[1]);
               if (user != null) {
                 // Nếu thành công, lưu lại tài khoản vào biến loggedInUser
-                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getEmail(), user.getBalance());
+                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance(), user.getEmail());
                 responseContent = "Đăng nhập thành công! Xin chào " + user.getUsername();
               } else {
                 throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
@@ -80,7 +80,7 @@ public class ClientHandler implements Runnable {
               BigDecimal bidAmount = new BigDecimal(bidParts[1]);
 
               // Gọi tới DAO và logic đồng bộ của hệ thống
-              boolean success = AuctionManager.getInstance().placeBid(auctionId, loggedInUser, bidAmount);
+              boolean success = AuctionManager.getInstance().placeBid(auctionId, String.valueOf(loggedInUser), bidAmount);
 
               if (success) {
                 responseContent = "Chúc mừng! Đặt giá thành công " + bidAmount + " VNĐ cho phiên #" + auctionId;

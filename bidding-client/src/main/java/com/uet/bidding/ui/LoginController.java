@@ -1,5 +1,6 @@
 package com.uet.bidding.ui;
 
+import com.uet.bidding.model.Seller;
 import com.uet.bidding.model.User;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -67,7 +68,7 @@ public class LoginController {
 
   private User authenticate(String username, String password) {
     // Tạm thời chấp nhận mọi login để test giao diện
-    User user = new User();
+    User user = new Seller();
     user.setId(1);
     user.setUsername(username);
     user.setFullName("Nguyễn Tuấn Hùng");

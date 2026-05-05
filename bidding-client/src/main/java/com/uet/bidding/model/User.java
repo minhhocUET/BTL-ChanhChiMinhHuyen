@@ -3,7 +3,7 @@ package com.uet.bidding.model;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
-public class User implements Serializable {
+public abstract class User extends Entity implements Serializable {
   //Dòng này cố định phiên bản file, tránh lỗi khi sửa code sau này
   private static final long serialVersionUID = 1L;
 
@@ -52,9 +52,7 @@ public class User implements Serializable {
   public BigDecimal getBalance() { return balance; }
   public String getLinkedBank() { return linkedBank; }
   public String getUsername() { return username; }
-  public int getId() { return id; }
   public String getPassword() { return password; }
-
   // Hàm nạp tiền dùng cho màn hình UserProfile
   public void addFunds(BigDecimal amount) {
     this.balance = this.balance.add(amount);

@@ -3,58 +3,64 @@ package com.uet.bidding.model;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
-// Tính Trừu tượng: Dùng abstract vì không có "User" chung chung, chỉ có Bidder, Seller hoặc Admin
-public abstract class User implements Serializable {
-
-  //Dòng này để cố định phiên bản file, tránh lỗi khi bạn sửa code sau này
+public abstract class User extends Entity implements Serializable {
+  //Dòng này cố định phiên bản file, tránh lỗi khi sửa code sau này
   private static final long serialVersionUID = 1L;
 
-  // Tính Đóng gói: Các thuộc tính đều là private
   private int id;
   private String username;
   private String password;
+  private String fullName;
+  private String email;
+  private String phone;
+  private String address;
   private BigDecimal balance;
+  private String linkedBank;
 
-  //Constructor không có id
+  public User() {} // Constructor trống bắt buộc
+
+  //constructor không có id
   public User(String username, String password, BigDecimal balance) {
     this.username = username;
     this.password = password;
     this.balance = balance;
   }
 
-  // Constructor có id
+  //cóntructor có id
   public User(int id, String username, String password, BigDecimal balance) {
     this.id = id;
     this.username = username;
     this.password = password;
     this.balance = balance;
   }
-
-  // Các hàm Getter/Setter để truy xuất an toàn
-  public int getId() {
-    return id;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public BigDecimal getBalance() {
-    return balance;
-  }
-
+  // Cần có đầy đủ Setter để LoginController và Bidder hoạt động
   public void setId(int id) { this.id = id; }
+  public void setUsername(String username) { this.username = username; }
+  public void setPassword(String password) { this.password = password; } // Đã bổ sung dòng này để fix lỗi
+  public void setFullName(String fullName) { this.fullName = fullName; }
+  public void setEmail(String email) { this.email = email; }
+  public void setPhone(String phone) { this.phone = phone; }
+  public void setAddress(String address) { this.address = address; }
+  public void setBalance(BigDecimal balance) { this.balance = balance; }
+  public void setLinkedBank(String linkedBank) { this.linkedBank = linkedBank; }
 
-  public void setBalance(BigDecimal balance) {
-    this.balance = balance;
+  // Cần có Getter để UserProfileController hiển thị dữ liệu
+  public String getFullName() { return fullName; }
+  public String getEmail() { return email; }
+  public String getPhone() { return phone; }
+  public String getAddress() { return address; }
+  public BigDecimal getBalance() { return balance; }
+  public String getLinkedBank() { return linkedBank; }
+  public String getUsername() { return username; }
+  public String getPassword() { return password; }
+  // Hàm nạp tiền dùng cho màn hình UserProfile
+  public void addFunds(BigDecimal amount) {
+    this.balance = this.balance.add(amount);
   }
 
-  public String getPassword() {
-    return password;
-  }
-
-  // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa
-  public abstract String getRole();
+  public String getRole() {
+    return "";
+  };
 
   public boolean withdraw(BigDecimal amount) {
     if (this.balance != null && this.balance.compareTo(amount) >= 0) {

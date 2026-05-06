@@ -11,6 +11,20 @@ import java.util.List;
 
 public class UserSqlDAO implements IUserDAO {
 
+  /**
+   * HÀM HỖ TRỢ: Chống lỗi UNIQUE constraint bằng cách chuyển chuỗi rỗng ("") thành NULL chuẩn.
+   */
+  private void setStringOrNull(PreparedStatement pstmt, int index, String value) throws SQLException {
+    if (value == null || value.trim().isEmpty()) {
+      pstmt.setNull(index, java.sql.Types.VARCHAR);
+    } else {
+      pstmt.setString(index, value.trim());
+    }
+  }
+
+  /**
+   * CREATE: Thêm mới User vào database.
+   */
   @Override
   public void addUser(User user) throws UserException {
     String sqlUser = "INSERT INTO users (username, password, fullName, email, phone, address, balance, linkedBank) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -21,16 +35,16 @@ public class UserSqlDAO implements IUserDAO {
       try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser, Statement.RETURN_GENERATED_KEYS)) {
         stmtUser.setString(1, user.getUsername());
         stmtUser.setString(2, user.getPassword());
-        stmtUser.setString(3, user.getFullName());
-        stmtUser.setString(4, user.getEmail());
-        stmtUser.setString(5, user.getPhone());
-        stmtUser.setString(6, user.getAddress());
 
-        // CHỐT CHẶN AN TOÀN: Tránh lỗi NullPointerException khi Insert
+        setStringOrNull(stmtUser, 3, user.getFullName());
+        setStringOrNull(stmtUser, 4, user.getEmail());
+        setStringOrNull(stmtUser, 5, user.getPhone());
+        setStringOrNull(stmtUser, 6, user.getAddress());
+
         BigDecimal balance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
         stmtUser.setBigDecimal(7, balance);
 
-        stmtUser.setString(8, user.getLinkedBank());
+        setStringOrNull(stmtUser, 8, user.getLinkedBank());
 
         stmtUser.executeUpdate();
 
@@ -39,9 +53,8 @@ public class UserSqlDAO implements IUserDAO {
           if (gk.next()) generatedUserId = gk.getInt(1);
         }
 
-        if (generatedUserId == -1) throw new SQLException("Không thể lấy ID tự sinh!");
+        if (generatedUserId == -1) throw new SQLException("Không thể tạo ID cho User");
         user.setId(generatedUserId);
-        System.out.println("[SQL] Đã INSERT User thành công. ID cấp phát: " + generatedUserId);
 
         if (user instanceof Admin) {
           Admin admin = (Admin) user;
@@ -82,7 +95,11 @@ public class UserSqlDAO implements IUserDAO {
       }
 
     } catch (SQLIntegrityConstraintViolationException e) {
-      throw new UserException("Thông tin đăng nhập, Email hoặc SĐT đã tồn tại!");
+      // DÒNG NÀY RẤT QUAN TRỌNG: In lỗi thật ra màn hình Console (Terminal) của NetBeans/IntelliJ
+      e.printStackTrace();
+
+      // Kèm luôn mã lỗi gốc lên giao diện để chúng ta biết chính xác cột nào đang cản đường
+      throw new UserException("Lỗi trùng lặp hoặc vi phạm DB: " + e.getMessage());
     } catch (SQLException e) {
       throw new UserException("Lỗi SQL: " + e.getMessage());
     }
@@ -116,11 +133,7 @@ public class UserSqlDAO implements IUserDAO {
     user.setEmail(rs.getString("email"));
     user.setPhone(rs.getString("phone"));
     user.setAddress(rs.getString("address"));
-
-    // CHỐT CHẶN AN TOÀN: Đọc BigDecimal từ DB
-    BigDecimal dbBalance = rs.getBigDecimal("balance");
-    user.setBalance(dbBalance != null ? dbBalance : BigDecimal.ZERO);
-
+    user.setBalance(rs.getBigDecimal("balance"));
     user.setLinkedBank(rs.getString("linkedBank"));
 
     return user;
@@ -145,7 +158,6 @@ public class UserSqlDAO implements IUserDAO {
       try (ResultSet rs = stmt.executeQuery()) {
         if (rs.next()) {
           if (rs.getString("password").equals(password)) {
-            System.out.println("[SQL] Login OK. ID: " + rs.getInt("id") + " | User: " + username);
             return mapResultSetToUser(rs);
           } else {
             throw new AuthenticationException("Sai mật khẩu!");
@@ -162,19 +174,55 @@ public class UserSqlDAO implements IUserDAO {
   @Override
   public List<User> getAllUsers() {
     List<User> users = new ArrayList<>();
-    // ... (Giữ nguyên logic của bạn)
+    String sql = "SELECT u.*, " +
+        "a.user_id AS admin_id, a.adminLevel, a.department, " +
+        "s.user_id AS seller_id, s.rating, s.taxId, s.shopName, " +
+        "b.user_id AS bidder_id, b.totalBids, b.auctionsWon " +
+        "FROM users u " +
+        "LEFT JOIN admins a ON u.id = a.user_id " +
+        "LEFT JOIN sellers s ON u.id = s.user_id " +
+        "LEFT JOIN bidders b ON u.id = b.user_id";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+
+      while (rs.next()) {
+        users.add(mapResultSetToUser(rs));
+      }
+    } catch (SQLException e) {
+      System.err.println("Lỗi load danh sách user: " + e.getMessage());
+    }
     return users;
   }
 
   @Override
   public User findById(int id) throws UserException {
-    // ... (Giữ nguyên logic của bạn)
-    return null;
+    String sql = "SELECT u.*, " +
+        "a.user_id AS admin_id, a.adminLevel, a.department, " +
+        "s.user_id AS seller_id, s.rating, s.taxId, s.shopName, " +
+        "b.user_id AS bidder_id, b.totalBids, b.auctionsWon " +
+        "FROM users u " +
+        "LEFT JOIN admins a ON u.id = a.user_id " +
+        "LEFT JOIN sellers s ON u.id = s.user_id " +
+        "LEFT JOIN bidders b ON u.id = b.user_id " +
+        "WHERE u.id = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+      stmt.setInt(1, id);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) return mapResultSetToUser(rs);
+      }
+    } catch (SQLException e) {
+      throw new UserException("Lỗi truy vấn ID: " + e.getMessage());
+    }
+    throw new UserException("Không tìm thấy User với ID: " + id);
   }
 
   @Override
   public void updateUser(User updatedUser) throws UserException {
-    System.out.println("[SQL] Bắt đầu gọi UPDATE cho ID: " + updatedUser.getId());
     String sqlUser = "UPDATE users SET password = ?, fullName = ?, email = ?, phone = ?, address = ?, balance = ?, linkedBank = ? WHERE id = ?";
 
     try (Connection conn = DatabaseConnection.getConnection()) {
@@ -182,22 +230,18 @@ public class UserSqlDAO implements IUserDAO {
 
       try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
         stmtUser.setString(1, updatedUser.getPassword());
-        stmtUser.setString(2, updatedUser.getFullName());
-        stmtUser.setString(3, updatedUser.getEmail());
-        stmtUser.setString(4, updatedUser.getPhone());
-        stmtUser.setString(5, updatedUser.getAddress());
 
-        // CHỐT CHẶN AN TOÀN
-        BigDecimal balance = updatedUser.getBalance() != null ? updatedUser.getBalance() : BigDecimal.ZERO;
-        stmtUser.setBigDecimal(6, balance);
+        setStringOrNull(stmtUser, 2, updatedUser.getFullName());
+        setStringOrNull(stmtUser, 3, updatedUser.getEmail());
+        setStringOrNull(stmtUser, 4, updatedUser.getPhone());
+        setStringOrNull(stmtUser, 5, updatedUser.getAddress());
+        stmtUser.setBigDecimal(6, updatedUser.getBalance());
+        setStringOrNull(stmtUser, 7, updatedUser.getLinkedBank());
 
-        stmtUser.setString(7, updatedUser.getLinkedBank());
         stmtUser.setInt(8, updatedUser.getId());
 
         int rows = stmtUser.executeUpdate();
-        System.out.println("[SQL] Số dòng dữ liệu User bị thay đổi: " + rows);
-
-        if (rows == 0) throw new UserException("Cập nhật thất bại! Không tìm thấy ID: " + updatedUser.getId());
+        if (rows == 0) throw new UserException("Cập nhật thất bại! ID không tồn tại.");
 
         if (updatedUser instanceof Admin) {
           Admin admin = (Admin) updatedUser;
@@ -211,19 +255,26 @@ public class UserSqlDAO implements IUserDAO {
         } else if (updatedUser instanceof Seller) {
           Seller seller = (Seller) updatedUser;
           String sqlSeller = "UPDATE sellers SET rating = ?, taxId = ?, shopName = ? WHERE user_id = ?";
-          try (PreparedStatement stmtSeller =prepareStatement(conn, sqlSeller, seller.getRating(), seller.getTaxId(), seller.getShopName(), seller.getId())) {
+          try (PreparedStatement stmtSeller = conn.prepareStatement(sqlSeller)) {
+            stmtSeller.setDouble(1, seller.getRating());
+            stmtSeller.setString(2, seller.getTaxId());
+            stmtSeller.setString(3, seller.getShopName());
+            stmtSeller.setInt(4, seller.getId());
             stmtSeller.executeUpdate();
           }
         } else if (updatedUser instanceof Bidder) {
           Bidder bidder = (Bidder) updatedUser;
           String sqlBidder = "UPDATE bidders SET totalBids = ?, auctionsWon = ? WHERE user_id = ?";
-          try (PreparedStatement stmtBidder = prepareStatement(conn, sqlBidder, bidder.getTotalBids(), bidder.getAuctionsWon(), bidder.getId())) {
+          // ĐÃ FIX: Viết lại khối try-with-resources chuẩn xác
+          try (PreparedStatement stmtBidder = conn.prepareStatement(sqlBidder)) {
+            stmtBidder.setInt(1, bidder.getTotalBids());
+            stmtBidder.setInt(2, bidder.getAuctionsWon());
+            stmtBidder.setInt(3, bidder.getId());
             stmtBidder.executeUpdate();
           }
         }
 
         conn.commit();
-        System.out.println("[SQL] COMMIT THÀNH CÔNG DỮ LIỆU CẬP NHẬT!");
       } catch (SQLException ex) {
         conn.rollback();
         throw ex;
@@ -231,23 +282,26 @@ public class UserSqlDAO implements IUserDAO {
         conn.setAutoCommit(true);
       }
 
+    } catch (SQLIntegrityConstraintViolationException e) {
+      throw new UserException("Email hoặc Số điện thoại này đã được tài khoản khác sử dụng!");
     } catch (SQLException e) {
-      System.err.println("[SQL] Lỗi UPDATE: " + e.getMessage());
       throw new UserException("Lỗi cập nhật SQL: " + e.getMessage());
     }
   }
 
-  // Hàm Helper để code trên ngắn gọn hơn
-  private PreparedStatement prepareStatement(Connection conn, String sql, Object... params) throws SQLException {
-    PreparedStatement stmt = conn.prepareStatement(sql);
-    for (int i = 0; i < params.length; i++) {
-      stmt.setObject(i + 1, params[i]);
-    }
-    return stmt;
-  }
-
   @Override
   public void deleteUser(int id) throws UserException {
-    // ... (Giữ nguyên logic của bạn)
+    String sql = "DELETE FROM users WHERE id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+      stmt.setInt(1, id);
+      int rows = stmt.executeUpdate();
+      if (rows == 0) throw new UserException("Xóa thất bại! ID không tồn tại.");
+      System.out.println("Đã xóa User ID: " + id);
+
+    } catch (SQLException e) {
+      throw new UserException("Lỗi xóa dữ liệu: " + e.getMessage());
+    }
   }
 }

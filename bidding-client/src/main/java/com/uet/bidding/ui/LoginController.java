@@ -48,12 +48,17 @@ public class LoginController {
       // NẾU CODE CHẠY XUỐNG ĐÂY LÀ ĐĂNG NHẬP THÀNH CÔNG
       // ==========================================
 
-      // 3. Phân luồng người dùng (Routing / Progressive Profiling)
-      if (loggedInUser.getEmail() != null && loggedInUser.getEmail().endsWith("@temp.uet.bidding.vn")) {
-        // Luồng 1: Người mới đăng ký (Thông tin ảo) -> Bắt vào trang Profile cập nhật
+      // 3. Phân luồng người dùng (Routing)
+      boolean isMissingInfo = (loggedInUser.getFullName() == null || loggedInUser.getFullName().trim().isEmpty() ||
+          loggedInUser.getEmail() == null || loggedInUser.getEmail().trim().isEmpty());
+
+      if (isMissingInfo) {
+        // Luồng 1: Người mới (chưa có họ tên/email) -> Bắt vào trang Profile để cập nhật
+        System.out.println("Tài khoản chưa đủ thông tin, chuyển hướng sang UserProfile...");
         loadNextScene(event, "/UserProfile.fxml", "Hoàn thiện hồ sơ - " + username, loggedInUser);
       } else {
-        // Luồng 2: Người dùng cũ đã có đủ thông tin -> Cho vào trang chủ Dashboard
+        // Luồng 2: Đã có đủ thông tin -> Cho vào trang chủ Dashboard
+        System.out.println("Tài khoản hợp lệ, vào Dashboard...");
         loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", loggedInUser);
       }
 

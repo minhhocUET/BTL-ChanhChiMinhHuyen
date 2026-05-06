@@ -22,8 +22,6 @@ public class UserProfileController implements Initializable {
   @FXML private Label lblBankStatus;
 
   private User currentUser;
-
-  // Tích hợp Service để thao tác với Database
   private UserService userService = new UserService();
 
   @Override
@@ -33,23 +31,30 @@ public class UserProfileController implements Initializable {
   public void setUserData(User user) {
     this.currentUser = user;
 
-    // Nếu là tài khoản mới đăng ký (dùng email ảo), nhắc nhở họ
-    if (user.getEmail().endsWith("@temp.uet.bidding.vn")) {
-      txtName.setPromptText("Vui lòng nhập họ tên thật");
-      txtEmail.setText(""); // Xóa email ảo đi để họ phải nhập mới
-      txtEmail.setPromptText("Vui lòng nhập email thật");
-      showAlert(Alert.AlertType.WARNING, "Cập nhật hồ sơ", "Vui lòng cập nhật Họ Tên và Email thật để sử dụng hệ thống!");
-    } else {
-      txtName.setText(user.getFullName());
-      txtEmail.setText(user.getEmail());
+    // 1. Kiểm tra xem tài khoản có phải là mới (thiếu thông tin) không
+    boolean isMissingInfo = (user.getFullName() == null || user.getEmail() == null);
+
+    if (isMissingInfo) {
+      txtName.setPromptText("Bắt buộc nhập họ tên");
+      txtEmail.setPromptText("Bắt buộc nhập email");
+      txtPhone.setPromptText("Bắt buộc nhập số điện thoại");
+      txtAddress.setPromptText("Bắt buộc nhập địa chỉ");
+      showAlert(Alert.AlertType.WARNING, "Cập nhật hồ sơ", "Vui lòng điền ĐẦY ĐỦ tất cả thông tin cá nhân và liên kết ngân hàng trước khi sử dụng hệ thống!");
     }
 
+    // 2. Đổ dữ liệu cũ lên giao diện (nếu là null thì set thành chuỗi rỗng để tránh lỗi)
+    txtName.setText(user.getFullName() != null ? user.getFullName() : "");
+    txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
     txtPhone.setText(user.getPhone() != null ? user.getPhone() : "");
     txtAddress.setText(user.getAddress() != null ? user.getAddress() : "");
 
-    if (user.getLinkedBank() != null && !user.getLinkedBank().equals("Chưa liên kết")) {
+    // 3. Hiển thị trạng thái ngân hàng
+    if (user.getLinkedBank() != null && !user.getLinkedBank().trim().isEmpty()) {
       lblBankStatus.setText("Trạng thái: Đã liên kết (" + user.getLinkedBank() + ")");
-      lblBankStatus.setStyle("-fx-text-fill: #059669;");
+      lblBankStatus.setStyle("-fx-text-fill: #059669;"); // Màu xanh lá
+    } else {
+      lblBankStatus.setText("Trạng thái: Chưa liên kết");
+      lblBankStatus.setStyle("-fx-text-fill: red;");
     }
 
     updateBalanceLabel();
@@ -66,33 +71,42 @@ public class UserProfileController implements Initializable {
   @FXML
   public void handleSaveInfo(ActionEvent event) {
     if (currentUser != null) {
-      String newName = txtName.getText().trim();
-      String newEmail = txtEmail.getText().trim();
-
-      // Chặn không cho lưu nếu vẫn dùng thông tin ảo hoặc bỏ trống
-      if (newName.isEmpty() || newName.startsWith("User ")) {
-        showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng nhập Họ tên thật hợp lệ!");
-        return;
-      }
-      if (newEmail.isEmpty() || newEmail.endsWith("@temp.uet.bidding.vn")) {
-        showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng nhập Email thật hợp lệ!");
-        return;
-      }
-
-      // Gán dữ liệu vào Object
-      currentUser.setFullName(newName);
-      currentUser.setEmail(newEmail);
+      // 1. Gán toàn bộ dữ liệu từ form vào Object (Bao gồm cả việc họ để rỗng)
+      currentUser.setFullName(txtName.getText().trim());
+      currentUser.setEmail(txtEmail.getText().trim());
       currentUser.setPhone(txtPhone.getText().trim());
       currentUser.setAddress(txtAddress.getText().trim());
 
       try {
-        // Gọi Service để LƯU XUỐNG DATABASE (TiDB)
+        // 2. Gọi Service để LƯU XUỐNG DATABASE
+        // Không cần `if-else` ở Controller nữa, vì Service đã bao thầu toàn bộ bài test khắt khe nhất!
         userService.updateUser(currentUser);
-        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật thông tin xuống Cơ sở dữ liệu!");
+        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật hồ sơ vào hệ thống! Bạn có thể vào Trang chủ.");
+
       } catch (UserException e) {
+        // Nếu bắt được bất kỳ lỗi nào từ Service (thiếu tên, sđt chứa chữ cái...), hiển thị đỏ chót!
         showAlert(Alert.AlertType.ERROR, "Lỗi cập nhật", e.getMessage());
       }
     }
+  }
+
+  @FXML
+  public void handleLinkBank(ActionEvent event) {
+    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+    alert.setTitle("Liên kết ngân hàng");
+    alert.setContentText("Bạn có muốn liên kết với Vietcombank?");
+
+    alert.showAndWait().ifPresent(response -> {
+      if (response == ButtonType.OK) {
+        // Gán trạng thái vào User hiện tại và đổi màu UI
+        currentUser.setLinkedBank("Vietcombank");
+        lblBankStatus.setText("Trạng thái: Đã liên kết (Vietcombank)");
+        lblBankStatus.setStyle("-fx-text-fill: #059669;");
+
+        // CẢNH BÁO UX: Khuyên người dùng ấn Lưu để ghi nhận đồng loạt xuống DB
+        showAlert(Alert.AlertType.INFORMATION, "Ghi nhận", "Đã ghi nhận yêu cầu liên kết. Vui lòng ấn nút 'Lưu thông tin' để hoàn tất!");
+      }
+    });
   }
 
   @FXML
@@ -104,16 +118,10 @@ public class UserProfileController implements Initializable {
 
     dialog.showAndWait().ifPresent(amountStr -> {
       try {
-        // Chuẩn hóa dùng BigDecimal
         BigDecimal amount = new BigDecimal(amountStr);
-
-        // Gọi Service để nạp tiền (Service sẽ lo cộng dồn và lưu DB)
         userService.addBalance(currentUser, amount);
-
-        // Cập nhật lại giao diện
         updateBalanceLabel();
         showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã nạp thành công: " + String.format("%,.0f VNĐ", amount));
-
       } catch (NumberFormatException e) {
         showAlert(Alert.AlertType.ERROR, "Lỗi", "Số tiền nhập vào không phải là số hợp lệ!");
       } catch (UserException e) {
@@ -123,37 +131,24 @@ public class UserProfileController implements Initializable {
   }
 
   @FXML
-  public void handleLinkBank(ActionEvent event) {
-    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-    alert.setTitle("Liên kết ngân hàng");
-    alert.setContentText("Bạn có muốn liên kết với Vietcombank?");
-
-    alert.showAndWait().ifPresent(response -> {
-      if (response == ButtonType.OK) {
-        currentUser.setLinkedBank("Vietcombank");
-        try {
-          // Lưu trạng thái liên kết ngân hàng xuống Database
-          userService.updateUser(currentUser);
-          lblBankStatus.setText("Trạng thái: Đã liên kết (Vietcombank)");
-          lblBankStatus.setStyle("-fx-text-fill: #059669;");
-          showAlert(Alert.AlertType.INFORMATION, "Thành công", "Liên kết ngân hàng thành công!");
-        } catch (UserException e) {
-          showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Không thể lưu trạng thái liên kết: " + e.getMessage());
-        }
-      }
-    });
-  }
-
-  @FXML
   public void handleBack(ActionEvent event) {
-    // Bắt buộc phải điền đủ thông tin mới cho thoát ra Dashboard
-    if (currentUser.getEmail() == null || currentUser.getEmail().endsWith("@temp.uet.bidding.vn")) {
-      showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Bạn phải Lưu thông tin (Họ tên & Email) trước khi sử dụng hệ thống!");
-      return;
+    // NGƯỜI GÁC CỔNG: Kiểm tra KHẮT KHE xem các trường đã có dữ liệu thật trong Object chưa
+    boolean isInvalid = (currentUser.getFullName() == null || currentUser.getFullName().isEmpty() ||
+        currentUser.getEmail() == null || currentUser.getEmail().isEmpty() ||
+        currentUser.getPhone() == null || currentUser.getPhone().isEmpty() ||
+        currentUser.getAddress() == null || currentUser.getAddress().isEmpty() ||
+        currentUser.getLinkedBank() == null || currentUser.getLinkedBank().isEmpty());
+
+    if (isInvalid) {
+      showAlert(Alert.AlertType.WARNING, "Cảnh báo bảo mật", "Bạn phải điền ĐẦY ĐỦ thông tin và ấn LƯU trước khi vào hệ thống đấu giá!");
+      return; // Chặn đứng lệnh chuyển trang
     }
+
+    // Nếu pass qua được trạm gác trên -> Cho phép vào thẳng Dashboard
     Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", 900, 600);
   }
 
+  // Hàm tiện ích hiển thị Popup
   private void showAlert(Alert.AlertType type, String title, String content) {
     Alert alert = new Alert(type);
     alert.setTitle(title);

@@ -14,14 +14,14 @@ public class DatabaseConnection {
 
   public static Connection getConnection() throws SQLException {
     try {
-      // 3. Khai báo rõ việc sử dụng Driver của MySQL (vì TiDB dùng chung Driver này)
+      // Đảm bảo đã load Driver (Dành cho các bản MySQL Connector cũ, bản mới có thể bỏ qua)
       Class.forName("com.mysql.cj.jdbc.Driver");
-
-      // 4. Thực hiện kết nối
-      return DriverManager.getConnection(URL, USER, PASSWORD);
-
     } catch (ClassNotFoundException e) {
-      throw new SQLException("LỖI: Chưa thêm thư viện mysql-connector-j vào project!", e);
+      System.err.println("Không tìm thấy MySQL JDBC Driver!");
+      e.printStackTrace();
     }
+
+    // 3. TRUYỀN 3 THAM SỐ VÀO HÀM GET CONNECTION
+    return DriverManager.getConnection(URL, USER, PASSWORD);
   }
 }

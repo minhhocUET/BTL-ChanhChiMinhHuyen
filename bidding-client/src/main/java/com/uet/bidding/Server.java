@@ -14,7 +14,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-public class server { // Đây là file chạy chính của SERVER
+public class Server { // Đây là file chạy chính của SERVER
 
   private static final int SHUTDOWN_DELAY_MS = 60000; // 60.000 mili-giây = 60 giây
   // ==============================================================

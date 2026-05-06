@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class server { // Đây là file chạy chính của SERVER
+public class Server { // Đây là file chạy chính của SERVER
   public static void main(String[] args) {
     int port = 8888;
 

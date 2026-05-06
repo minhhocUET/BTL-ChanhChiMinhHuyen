@@ -1,7 +1,8 @@
 package com.uet.bidding.ui;
 
-import com.uet.bidding.model.Seller;
+import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.model.User;
+import com.uet.bidding.service.UserService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -14,70 +15,87 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 
 public class LoginController {
 
-  @FXML
-  private TextField usernameField;
-  @FXML
-  private PasswordField passwordField;
-  @FXML
-  private Label messageLabel;
+  @FXML private TextField usernameField;
+  @FXML private PasswordField passwordField;
+  @FXML private Label messageLabel;
+
+  // 1. Khởi tạo Service để giao tiếp với Cơ sở dữ liệu
+  private UserService userService = new UserService();
 
   @FXML
   public void handleLogin(ActionEvent event) {
-    String username = usernameField.getText();
-    String password = passwordField.getText();
+    String username = usernameField.getText().trim();
+    String password = passwordField.getText().trim();
 
     if (username.isEmpty() || password.isEmpty()) {
-      messageLabel.setText("Vui lòng nhập đầy đủ thông tin!");
+      messageLabel.setStyle("-fx-text-fill: red;");
+      messageLabel.setText("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
       return;
     }
 
+    messageLabel.setStyle("-fx-text-fill: #2563eb;"); // Màu xanh blue báo trạng thái
     messageLabel.setText("Đang kiểm tra thông tin...");
 
-    // 1. Xác thực và lấy dữ liệu User
-    User loggedInUser = authenticate(username, password);
+    try {
+      // 2. Gọi UserService để xác thực với DB THẬT
+      // Hàm này sẽ ném ra AuthenticationException nếu sai mật khẩu hoặc tài khoản không tồn tại
+      User loggedInUser = userService.login(username, password);
 
-    if (loggedInUser != null) {
-      try {
-        // 2. Load file FXML của trang UserProfile
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/UserProfile.fxml"));
-        Parent root = loader.load();
+      // ==========================================
+      // NẾU CODE CHẠY XUỐNG ĐÂY LÀ ĐĂNG NHẬP THÀNH CÔNG
+      // ==========================================
 
-        // 3. Truyền dữ liệu User sang UserProfileController
-        UserProfileController profileController = loader.getController();
-        profileController.setUserData(loggedInUser);
-
-        // 4. Chuyển Scene
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        Scene scene = new Scene(root);
-        stage.setScene(scene);
-        stage.setTitle("Thông tin cá nhân - " + username);
-        stage.show();
-
-      } catch (IOException e) {
-        e.printStackTrace();
-        messageLabel.setText("Lỗi: Không tìm thấy file UserProfile.fxml");
+      // 3. Phân luồng người dùng (Routing / Progressive Profiling)
+      if (loggedInUser.getEmail() != null && loggedInUser.getEmail().endsWith("@temp.uet.bidding.vn")) {
+        // Luồng 1: Người mới đăng ký (Thông tin ảo) -> Bắt vào trang Profile cập nhật
+        loadNextScene(event, "/UserProfile.fxml", "Hoàn thiện hồ sơ - " + username, loggedInUser);
+      } else {
+        // Luồng 2: Người dùng cũ đã có đủ thông tin -> Cho vào trang chủ Dashboard
+        loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", loggedInUser);
       }
-    } else {
-      messageLabel.setText("Sai tài khoản hoặc mật khẩu!");
+
+    } catch (AuthenticationException e) {
+      // Bắt lỗi từ Database và in ra màn hình
+      messageLabel.setStyle("-fx-text-fill: red;");
+      messageLabel.setText(e.getMessage()); // Sẽ hiện "Sai mật khẩu!" hoặc "Tài khoản không tồn tại!"
+      passwordField.clear(); // Tiện ích UX: Xóa pass sai đi để người dùng tiện nhập lại
     }
   }
 
-  private User authenticate(String username, String password) {
-    // Tạm thời chấp nhận mọi login để test giao diện
-    User user = new Seller();
-    user.setId(1);
-    user.setUsername(username);
-    user.setFullName("Nguyễn Tuấn Hùng");
-    user.setEmail(username + "@vnu.edu.vn");
-    user.setPhone("0912345678");
-    user.setAddress("Hà Nội, Việt Nam");
-    user.setBalance(BigDecimal.valueOf(5000000));
-    user.setLinkedBank("Chưa liên kết");
-    return user;
+  /**
+   * Hàm Helper: Hỗ trợ load FXML mới, đổi Scene và truyền Object User sang Controller tiếp theo
+   */
+  private void loadNextScene(ActionEvent event, String fxmlPath, String title, User user) {
+    try {
+      FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+      Parent root = loader.load();
+
+      // Lấy Controller của màn hình sắp chuyển tới và truyền dữ liệu
+      Object controller = loader.getController();
+
+      if (controller instanceof UserProfileController) {
+        ((UserProfileController) controller).setUserData(user);
+      }
+      // Nếu trang AuctionList của bạn cũng cần biết ai đang đăng nhập, bạn có thể thêm:
+      // else if (controller instanceof AuctionListController) {
+      //     ((AuctionListController) controller).setCurrentUser(user);
+      // }
+
+      // Chuyển cửa sổ
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      Scene scene = new Scene(root);
+      stage.setScene(scene);
+      stage.setTitle(title);
+      stage.show();
+
+    } catch (IOException e) {
+      e.printStackTrace();
+      messageLabel.setStyle("-fx-text-fill: red;");
+      messageLabel.setText("Lỗi hệ thống: Không thể tải giao diện " + fxmlPath);
+    }
   }
 
   @FXML

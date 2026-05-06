@@ -14,7 +14,7 @@ public abstract class User extends Entity implements Serializable {
   private String email;
   private String phone;
   private String address;
-  private BigDecimal balance;
+  private BigDecimal balance = BigDecimal.ZERO;
   private String linkedBank;
 
   public User() {
@@ -113,8 +113,6 @@ public abstract class User extends Entity implements Serializable {
   public String getRole() {
     return "";
   }
-
-  ;
 
   public boolean withdraw(BigDecimal amount) {
     if (this.balance != null && this.balance.compareTo(amount) >= 0) {

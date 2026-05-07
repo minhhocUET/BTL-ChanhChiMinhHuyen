@@ -1,8 +1,8 @@
 package com.uet.bidding;
 
-import com.uet.bidding.dao.AuctionDAO;
-import com.uet.bidding.dao.ItemDAO;
-import com.uet.bidding.dao.UserDAO;
+import com.uet.bidding.dao.AuctionSqlDAO;
+import com.uet.bidding.dao.ItemFileDAO; // Đã đổi từ ItemDAO sang ItemFileDAO
+import com.uet.bidding.dao.UserSqlDAO; // Đã đổi từ UserDAO sang UserSqlDAO
 import com.uet.bidding.model.AuctionManager;
 import com.uet.bidding.model.NetworkMessage;
 import java.io.IOException;
@@ -69,13 +69,12 @@ public class Server { // Đây là file chạy chính của SERVER
     int port = 8888;
 
     // 1. KHỞI TẠO CÁC DAO
-    UserDAO userDAO = new UserDAO();
-    ItemDAO itemDAO = new ItemDAO();
-    AuctionDAO auctionDAO = new AuctionDAO();
+    UserSqlDAO userSqlDAO = new UserSqlDAO();
+    ItemFileDAO itemFileDAO = new ItemFileDAO();
+    AuctionSqlDAO auctionSqlDAO = new AuctionSqlDAO();
 
     // 2. NẠP DỮ LIỆU TỪ FILE LÊN RAM
     System.out.println("Đang khởi động hệ thống và nạp dữ liệu...");
-    AuctionManager.getInstance().initialize(auctionDAO);
 
     // Sử dụng try-with-resources để tự động đóng ServerSocket
     try (ServerSocket serverSocket = new ServerSocket(port)) {
@@ -99,7 +98,7 @@ public class Server { // Đây là file chạy chính của SERVER
         System.out.println("Có kết nối mới từ: " + clientSocket.getInetAddress());
 
         // 3. FIX LỖI XUNG ĐỘT: Truyền thêm userDAO vào để khớp với Constructor
-        ClientHandler handler = new ClientHandler(clientSocket, userDAO);
+        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO);
 
         // LƯU NGƯỜI CHƠI VÀO DANH SÁCH QUẢN LÝ
         activeClients.add(handler);

@@ -1,5 +1,6 @@
 package com.uet.bidding.model;
 
+import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 
@@ -16,7 +17,7 @@ public class AuctionManager {
   private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
 
   // 1. THÊM DAO: Để đọc/ghi file .dat.
-  private AuctionDAO auctionDAO;
+  private AuctionSqlDAO auctionSqlDAO;
 
   private AuctionManager() {
     System.out.println("Hệ thống quản lý đấu giá đã được khởi động!");
@@ -34,8 +35,8 @@ public class AuctionManager {
   /**
    * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật.
    */
-  public void initialize(AuctionDAO dao) {
-    this.auctionDAO = dao;
+  public void initialize(AuctionSqlDAO dao) {
+    this.auctionSqlDAO = dao;
     List<Auction> savedAuctions = dao.getAllAuctions();
     for (Auction a : savedAuctions) {
       addAuction(a);
@@ -77,7 +78,15 @@ public class AuctionManager {
 
       if (success) {
         // 3. QUAN TRỌNG: Lưu ngay lập tức xuống file auctions.dat qua DAO
-        auctionDAO.updateAuction(auction);
+        if (auctionSqlDAO != null) {
+          try {
+            // PHẢI dùng try-catch ở đây vì interface định nghĩa throws Exception
+            auctionSqlDAO.updateAuction(auction);
+          } catch (Exception e) {
+            System.err.println("Lỗi lưu DB khi đặt giá: " + e.getMessage());
+            // Có thể ném ngược lại một RuntimeException để báo hiệu lỗi hệ thống
+          }
+        }
         System.out.println("[Server] " + bidderName + " bid thành công: " + amount + " cho ID: " + auctionId);
       }
       return success;

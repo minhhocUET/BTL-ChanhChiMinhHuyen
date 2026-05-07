@@ -3,7 +3,6 @@ package com.uet.bidding;
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemFileDAO; // Đã đổi từ ItemDAO sang ItemFileDAO
 import com.uet.bidding.dao.UserSqlDAO; // Đã đổi từ UserDAO sang UserSqlDAO
-import com.uet.bidding.model.AuctionManager;
 import com.uet.bidding.model.NetworkMessage;
 import java.io.IOException;
 import java.net.ServerSocket;

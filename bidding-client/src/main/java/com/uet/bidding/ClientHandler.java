@@ -88,7 +88,7 @@ public class ClientHandler implements Runnable {
                 responseContent = "Chúc mừng! Đặt giá thành công " + bidAmount + " VNĐ cho phiên #" + auctionId;
 
                 // Gửi thông báo cho TẤT CẢ mọi người biết có người vừa nâng giá
-                server.broadcast(new NetworkMessage("BROADCAST",
+                Server.broadcast(new NetworkMessage("BROADCAST",
                     "Người dùng [" + loggedInUser.getUsername() + "] đã đặt giá " + bidAmount + " cho phiên #" + auctionId));
               }
               break;
@@ -137,14 +137,14 @@ public class ClientHandler implements Runnable {
       System.out.println("Mất kết nối với client.");
     } finally {
       // Dọn dẹp danh sách khi Client thoát
-      server.activeClients.remove(this);
+      Server.activeClients.remove(this);
       closeSocket();
 
-      System.out.println("Một Client đã thoát. Còn lại: " + server.activeClients.size());
+      System.out.println("Một Client đã thoát. Còn lại: " + Server.activeClients.size());
 
       // Kích hoạt đếm ngược 30s nếu không còn ai
-      if (server.activeClients.isEmpty()) {
-        server.startShutdownTimer();
+      if (Server.activeClients.isEmpty()) {
+        Server.startShutdownTimer();
       }
     }
   }

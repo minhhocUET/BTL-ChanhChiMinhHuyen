@@ -50,5 +50,5 @@
 .profile-card {
     -fx-background-color: white;
     -fx-background-radius: 10px;
-    -fx-effect: dropshadow(three-pass-box, rgba(232,67,147,0.2), 10, 0, 0, 5); /* Đổ bóng màu hồng */
+    -fx-effect: dropshadow(three-pass-box, rgba(232, 67, 147, 0.2), 10, 0, 0, 5); /* Đổ bóng màu hồng */
 }

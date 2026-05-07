@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 public abstract class User extends Entity implements Serializable {
-  //Dòng này cố định phiên bản file, tránh lỗi khi sửa code sau này
+  // Dòng này cố định phiên bản file, tránh lỗi khi sửa code sau này
   private static final long serialVersionUID = 1L;
 
   private int id;

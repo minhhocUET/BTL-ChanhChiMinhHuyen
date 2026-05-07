@@ -41,26 +41,13 @@ public class LoginController {
 
     try {
       // 2. Gọi UserService để xác thực với DB THẬT
-      // Hàm này sẽ ném ra AuthenticationException nếu sai mật khẩu hoặc tài khoản không tồn tại
       User loggedInUser = userService.login(username, password);
 
       // ==========================================
-      // NẾU CODE CHẠY XUỐNG ĐÂY LÀ ĐĂNG NHẬP THÀNH CÔNG
+      // ĐĂNG NHẬP THÀNH CÔNG: CHUYỂN THẲNG SANG AUCTION LIST
       // ==========================================
-
-      // 3. Phân luồng người dùng (Routing)
-      boolean isMissingInfo = (loggedInUser.getFullName() == null || loggedInUser.getFullName().trim().isEmpty() ||
-          loggedInUser.getEmail() == null || loggedInUser.getEmail().trim().isEmpty());
-
-      if (isMissingInfo) {
-        // Luồng 1: Người mới (chưa có họ tên/email) -> Bắt vào trang Profile để cập nhật
-        System.out.println("Tài khoản chưa đủ thông tin, chuyển hướng sang UserProfile...");
-        loadNextScene(event, "/UserProfile.fxml", "Hoàn thiện hồ sơ - " + username, loggedInUser);
-      } else {
-        // Luồng 2: Đã có đủ thông tin -> Cho vào trang chủ Dashboard
-        System.out.println("Tài khoản hợp lệ, vào Dashboard...");
-        loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", loggedInUser);
-      }
+      System.out.println("Đăng nhập thành công, vào thẳng Dashboard...");
+      loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", loggedInUser);
 
     } catch (AuthenticationException e) {
       // Bắt lỗi từ Database và in ra màn hình
@@ -81,13 +68,12 @@ public class LoginController {
       // Lấy Controller của màn hình sắp chuyển tới và truyền dữ liệu
       Object controller = loader.getController();
 
-      if (controller instanceof UserProfileController) {
-        ((UserProfileController) controller).setUserData(user);
+      // Nếu trang AuctionList của bạn có hàm set dữ liệu User, có thể bỏ comment đoạn dưới đây:
+      /*
+      if (controller instanceof AuctionListController) {
+          ((AuctionListController) controller).setCurrentUser(user);
       }
-      // Nếu trang AuctionList của bạn cũng cần biết ai đang đăng nhập, bạn có thể thêm:
-      // else if (controller instanceof AuctionListController) {
-      //     ((AuctionListController) controller).setCurrentUser(user);
-      // }
+      */
 
       // Chuyển cửa sổ
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();

@@ -37,7 +37,7 @@ public class Server { // Đây là file chạy chính của SERVER
       autoShutdownTimer.cancel(); // Hủy bộ đếm cũ (nếu có) để đếm lại từ đầu
     }
     autoShutdownTimer = new Timer();
-    System.out.println("⚠️ [Cảnh báo] Không còn Client nào kết nối. Server sẽ tự tắt sau 30 giây...");
+    System.out.println("⚠️ [Cảnh báo] Không còn Client nào kết nối. Server sẽ tự tắt sau 60 giây...");
 
     autoShutdownTimer.schedule(new TimerTask() {
       @Override

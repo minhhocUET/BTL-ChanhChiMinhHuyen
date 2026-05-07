@@ -12,6 +12,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
@@ -22,7 +23,6 @@ import java.util.ResourceBundle;
 
 public class AuctionListController implements Initializable {
 
-  // Khai báo các ID phải trùng khớp 100% với FXML
   @FXML
   private TableView<AuctionItem> tableView;
   @FXML
@@ -36,7 +36,6 @@ public class AuctionListController implements Initializable {
   @FXML
   private TableColumn<AuctionItem, Void> colAction;
 
-  // Đã thay thế TextField bằng ComboBox
   @FXML
   private ComboBox<String> cityComboBox;
 
@@ -89,25 +88,19 @@ public class AuctionListController implements Initializable {
                 "-fx-border-radius: 20; -fx-background-radius: 20; " +
                 "-fx-text-fill: #e84393; -fx-font-weight: bold; -fx-cursor: hand;");
 
-            // ĐÂY CHÍNH LÀ ĐOẠN HANDLER XỬ LÝ CHUYỂN TRANG ĐÃ ĐƯỢC FIX LỖI
             btn.setOnAction(event -> {
-              // Lấy dữ liệu của sản phẩm trên hàng vừa click
               AuctionItem selectedItem = getTableView().getItems().get(getIndex());
 
               try {
-                // 1. Tải giao diện Chi tiết sản phẩm
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/ProductDetail.fxml"));
-                Parent root = loader.load(); // Phải load() trước khi lấy Controller
-
-                // 2. Lấy Controller của trang Chi tiết
+                Parent root = loader.load();
                 ProductDetailController detailController = loader.getController();
 
-                // 3. TẠO DỮ LIỆU GIẢ LẬP ĐÃ FIX LỖI ĐỒNG BỘ MODEL MỚI (Dùng BigDecimal)
                 com.uet.bidding.model.Electronics fakeProduct = new com.uet.bidding.model.Electronics(
                     selectedItem.getStt(),
                     selectedItem.getProductType(),
                     "Mô tả chi tiết: " + selectedItem.getProductType() + " chính hãng, bảo hành đầy đủ.",
-                    new BigDecimal("1500000"), // Sửa int thành BigDecimal
+                    new BigDecimal("1500000"),
                     "/images/default.jpg",
                     1,
                     "Thương hiệu VNU",
@@ -120,13 +113,10 @@ public class AuctionListController implements Initializable {
                     LocalDateTime.now(),
                     LocalDateTime.now().plusDays(3)
                 );
-                // Gán ID thủ công cho fakeAuction
                 fakeAuction.setId(selectedItem.getStt() + 1000);
 
-                // 4. Truyền dữ liệu sang Controller mới
                 detailController.setAuctionData(fakeAuction);
 
-                // 5. Đổi cửa sổ hiển thị (Chuyển Scene)
                 Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
                 stage.setScene(new Scene(root));
                 stage.setTitle("Chi tiết sản phẩm - " + selectedItem.getProductType());
@@ -134,7 +124,6 @@ public class AuctionListController implements Initializable {
 
               } catch (Exception e) {
                 e.printStackTrace();
-                // Hiện thông báo lỗi nếu không tìm thấy file FXML
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Lỗi");
                 alert.setHeaderText("Không thể mở trang chi tiết");
@@ -156,6 +145,10 @@ public class AuctionListController implements Initializable {
     colAction.setCellFactory(cellFactory);
   }
 
+  // ==========================================
+  // CÁC HÀM XỬ LÝ SỰ KIỆN NÚT BẤM / CHUYỂN TRANG
+  // ==========================================
+
   @FXML
   public void handleSearch(ActionEvent event) {
     String selectedCity = cityComboBox.getValue();
@@ -168,14 +161,43 @@ public class AuctionListController implements Initializable {
 
   @FXML
   public void handleLogout(ActionEvent event) {
+    switchScene(event, "/Login.fxml", "Hệ thống Đấu giá VNU - Đăng nhập");
+  }
+
+  // ĐÃ SỬA LẠI ĐƯỜNG DẪN Ở ĐÂY
+  @FXML
+  public void handleGoToMyManagement(ActionEvent event) {
+    switchScene(event, "/MyManagement.fxml", "Quản lý của tôi");
+  }
+
+  /**
+   * Xử lý sự kiện khi click vào cụm Avatar / "My Profile"
+   */
+  @FXML
+  public void handleGoToMyProfile(MouseEvent event) {
     try {
-      Parent root = FXMLLoader.load(getClass().getResource("/Login.fxml"));
+      Parent root = FXMLLoader.load(getClass().getResource("/UserProfile.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       stage.setScene(new Scene(root));
-      stage.setTitle("Hệ thống Đấu giá VNU - Đăng nhập");
+      stage.setTitle("Hồ sơ cá nhân");
       stage.show();
     } catch (Exception e) {
       e.printStackTrace();
+      System.out.println("Lỗi khi chuyển sang trang UserProfile.fxml");
+    }
+  }
+
+  // Hàm tiện ích để chuyển trang (dùng cho các nút bấm)
+  private void switchScene(ActionEvent event, String fxmlPath, String title) {
+    try {
+      Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      stage.setScene(new Scene(root));
+      stage.setTitle(title);
+      stage.show();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("Lỗi khi chuyển sang trang: " + fxmlPath);
     }
   }
 }

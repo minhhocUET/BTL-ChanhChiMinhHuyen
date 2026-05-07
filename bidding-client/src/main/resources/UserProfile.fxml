@@ -4,12 +4,16 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="900.0"
-            style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17"
-            fx:controller="com.uet.bidding.ui.UserProfileController">
+
+<AnchorPane prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.ui.UserProfileController">
     <children>
-        <VBox alignment="TOP_CENTER" spacing="30.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="40.0"
-              AnchorPane.rightAnchor="40.0" AnchorPane.topAnchor="30.0">
+        <Button mnemonicParsing="false" onAction="#handleGoToMyManagement"
+                prefHeight="35.0" prefWidth="150.0"
+                style="-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 20;"
+                text="Quản lý của tôi"
+                AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0" />
+
+        <VBox alignment="TOP_CENTER" spacing="30.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="40.0" AnchorPane.rightAnchor="40.0" AnchorPane.topAnchor="30.0">
             <children>
                 <Label text="CHI TIẾT TÀI KHOẢN" textFill="#e84393">
                     <font>

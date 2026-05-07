@@ -5,8 +5,13 @@ import com.uet.bidding.model.User;
 import com.uet.bidding.service.UserService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 import java.math.BigDecimal;
 import java.net.URL;
@@ -39,7 +44,7 @@ public class UserProfileController implements Initializable {
       txtEmail.setPromptText("Bắt buộc nhập email");
       txtPhone.setPromptText("Bắt buộc nhập số điện thoại");
       txtAddress.setPromptText("Bắt buộc nhập địa chỉ");
-      showAlert(Alert.AlertType.WARNING, "Cập nhật hồ sơ", "Vui lòng điền ĐẦY ĐỦ tất cả thông tin cá nhân và liên kết ngân hàng trước khi sử dụng hệ thống!");
+      showAlert(Alert.AlertType.WARNING, "Cập nhật hồ sơ", "Vui lòng điền ĐẦY ĐỦ tất cả thông tin cá nhân và liên kết ngân hàng trước khi tham gia đấu giá!");
     }
 
     // 2. Đổ dữ liệu cũ lên giao diện (nếu là null thì set thành chuỗi rỗng để tránh lỗi)
@@ -71,7 +76,7 @@ public class UserProfileController implements Initializable {
   @FXML
   public void handleSaveInfo(ActionEvent event) {
     if (currentUser != null) {
-      // 1. Gán toàn bộ dữ liệu từ form vào Object (Bao gồm cả việc họ để rỗng)
+      // 1. Gán toàn bộ dữ liệu từ form vào Object
       currentUser.setFullName(txtName.getText().trim());
       currentUser.setEmail(txtEmail.getText().trim());
       currentUser.setPhone(txtPhone.getText().trim());
@@ -79,12 +84,11 @@ public class UserProfileController implements Initializable {
 
       try {
         // 2. Gọi Service để LƯU XUỐNG DATABASE
-        // Không cần `if-else` ở Controller nữa, vì Service đã bao thầu toàn bộ bài test khắt khe nhất!
         userService.updateUser(currentUser);
-        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật hồ sơ vào hệ thống! Bạn có thể vào Trang chủ.");
+        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật hồ sơ vào hệ thống!");
 
       } catch (UserException e) {
-        // Nếu bắt được bất kỳ lỗi nào từ Service (thiếu tên, sđt chứa chữ cái...), hiển thị đỏ chót!
+        // Nếu bắt được lỗi từ Service (thiếu tên, sđt chứa chữ cái...)
         showAlert(Alert.AlertType.ERROR, "Lỗi cập nhật", e.getMessage());
       }
     }
@@ -98,12 +102,10 @@ public class UserProfileController implements Initializable {
 
     alert.showAndWait().ifPresent(response -> {
       if (response == ButtonType.OK) {
-        // Gán trạng thái vào User hiện tại và đổi màu UI
         currentUser.setLinkedBank("Vietcombank");
         lblBankStatus.setText("Trạng thái: Đã liên kết (Vietcombank)");
         lblBankStatus.setStyle("-fx-text-fill: #059669;");
 
-        // CẢNH BÁO UX: Khuyên người dùng ấn Lưu để ghi nhận đồng loạt xuống DB
         showAlert(Alert.AlertType.INFORMATION, "Ghi nhận", "Đã ghi nhận yêu cầu liên kết. Vui lòng ấn nút 'Lưu thông tin' để hoàn tất!");
       }
     });
@@ -130,22 +132,38 @@ public class UserProfileController implements Initializable {
     });
   }
 
+  // ==========================================
+  // XỬ LÝ CHUYỂN TRANG
+  // ==========================================
+
   @FXML
   public void handleBack(ActionEvent event) {
-    // NGƯỜI GÁC CỔNG: Kiểm tra KHẮT KHE xem các trường đã có dữ liệu thật trong Object chưa
-    boolean isInvalid = (currentUser.getFullName() == null || currentUser.getFullName().isEmpty() ||
-        currentUser.getEmail() == null || currentUser.getEmail().isEmpty() ||
-        currentUser.getPhone() == null || currentUser.getPhone().isEmpty() ||
-        currentUser.getAddress() == null || currentUser.getAddress().isEmpty() ||
-        currentUser.getLinkedBank() == null || currentUser.getLinkedBank().isEmpty());
-
-    if (isInvalid) {
-      showAlert(Alert.AlertType.WARNING, "Cảnh báo bảo mật", "Bạn phải điền ĐẦY ĐỦ thông tin và ấn LƯU trước khi vào hệ thống đấu giá!");
-      return; // Chặn đứng lệnh chuyển trang
+    try {
+      // Load trực tiếp file AuctionList.fxml
+      Parent root = FXMLLoader.load(getClass().getResource("/AuctionList.fxml"));
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      stage.setScene(new Scene(root));
+      stage.setTitle("Hệ thống Đấu giá VNU - Dashboard");
+      stage.show();
+    } catch (Exception e) {
+      e.printStackTrace();
+      showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể mở trang Danh sách đấu giá: " + e.getMessage());
     }
+  }
 
-    // Nếu pass qua được trạm gác trên -> Cho phép vào thẳng Dashboard
-    Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", 900, 600);
+  // HÀM MỚI THÊM: Xử lý nút chuyển sang trang Quản lý của tôi
+  @FXML
+  public void handleGoToMyManagement(ActionEvent event) {
+    try {
+      Parent root = FXMLLoader.load(getClass().getResource("/MyManagement.fxml"));
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      stage.setScene(new Scene(root));
+      stage.setTitle("Quản lý của tôi");
+      stage.show();
+    } catch (Exception e) {
+      e.printStackTrace();
+      showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể mở trang Quản lý của tôi: " + e.getMessage());
+    }
   }
 
   // Hàm tiện ích hiển thị Popup

@@ -3,6 +3,7 @@ package com.uet.bidding.ui;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.model.User;
 import com.uet.bidding.service.UserService;
+import com.uet.bidding.util.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -43,6 +44,8 @@ public class LoginController {
       // 2. Gọi UserService để xác thực với DB THẬT
       User loggedInUser = userService.login(username, password);
 
+      // === BƯỚC QUAN TRỌNG: Lưu người dùng vào Session ===
+      UserSession.setCurrentUser(loggedInUser);
       // ==========================================
       // ĐĂNG NHẬP THÀNH CÔNG: CHUYỂN THẲNG SANG AUCTION LIST
       // ==========================================

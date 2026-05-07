@@ -16,6 +16,7 @@ public abstract class User extends Entity implements Serializable {
   private String address;
   private BigDecimal balance = BigDecimal.ZERO;
   private String linkedBank;
+  private boolean isProfileComplete = false; //Mặc định là FAlSE
 
   public User() {
   } // Constructor trống bắt buộc
@@ -105,14 +106,28 @@ public abstract class User extends Entity implements Serializable {
     this.password = password;
   } // Đã bổ sung dòng này để fix lỗi
 
+  public boolean isProfileComplete() {
+    return isProfileComplete;
+  }
+
+  public void setProfileComplete(boolean profileComplete) {
+    isProfileComplete = profileComplete;
+  }
+
+  // THÊM METHOD CHECK ĐẦY ĐỦ INFO
+  public boolean hasCompleteProfile() {
+    return fullName != null && !fullName.trim().isEmpty() &&
+        phone != null && !phone.trim().isEmpty() &&
+        address != null && !address.trim().isEmpty() &&
+        linkedBank != null && !linkedBank.trim().isEmpty();
+  }
+
   // Hàm nạp tiền dùng cho màn hình UserProfile
   public void addFunds(BigDecimal amount) {
     this.balance = this.balance.add(amount);
   }
 
-  public String getRole() {
-    return "";
-  }
+  public abstract String getRole();
 
   public boolean withdraw(BigDecimal amount) {
     if (this.balance != null && this.balance.compareTo(amount) >= 0) {

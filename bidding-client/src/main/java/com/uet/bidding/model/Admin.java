@@ -19,4 +19,6 @@ public class Admin extends User {
   public void setDepartment(String department) {
     this.department = department;
   }
+
+  public String getRole() { return "ADMIN" ;}
 }

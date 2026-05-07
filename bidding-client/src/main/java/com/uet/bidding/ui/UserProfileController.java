@@ -3,6 +3,7 @@ package com.uet.bidding.ui;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.User;
 import com.uet.bidding.service.UserService;
+import com.uet.bidding.util.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -31,6 +32,37 @@ public class UserProfileController implements Initializable {
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
+    // Lấy thông tin từ Session ngay khi mở màn hình
+    this.currentUser = UserSession.getCurrentUser();
+
+    if (currentUser != null) {
+      fillDataToFields();
+      updateBalanceLabel();
+      updateBankStatusDisplay();
+
+      // Thông báo nhắc nhở nếu hồ sơ chưa hoàn thiện
+      if (currentUser.getFullName() == null || currentUser.getFullName().isEmpty()) {
+        showAlert(Alert.AlertType.WARNING, "Yêu cầu cập nhật",
+            "Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán sản phẩm.");
+      }
+    }
+  }
+
+  private void fillDataToFields() {
+    txtName.setText(currentUser.getFullName() != null ? currentUser.getFullName() : "");
+    txtEmail.setText(currentUser.getEmail() != null ? currentUser.getEmail() : "");
+    txtPhone.setText(currentUser.getPhone() != null ? currentUser.getPhone() : "");
+    txtAddress.setText(currentUser.getAddress() != null ? currentUser.getAddress() : "");
+  }
+
+  private void updateBankStatusDisplay() {
+    if (currentUser.getLinkedBank() != null && !currentUser.getLinkedBank().trim().isEmpty()) {
+      lblBankStatus.setText("Trạng thái: Đã liên kết (" + currentUser.getLinkedBank() + ")");
+      lblBankStatus.setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;");
+    } else {
+      lblBankStatus.setText("Trạng thái: Chưa liên kết (Bắt buộc)");
+      lblBankStatus.setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
+    }
   }
 
   public void setUserData(User user) {
@@ -75,22 +107,39 @@ public class UserProfileController implements Initializable {
 
   @FXML
   public void handleSaveInfo(ActionEvent event) {
-    if (currentUser != null) {
-      // 1. Gán toàn bộ dữ liệu từ form vào Object
-      currentUser.setFullName(txtName.getText().trim());
-      currentUser.setEmail(txtEmail.getText().trim());
-      currentUser.setPhone(txtPhone.getText().trim());
-      currentUser.setAddress(txtAddress.getText().trim());
+    if (currentUser == null) return;
 
-      try {
-        // 2. Gọi Service để LƯU XUỐNG DATABASE
-        userService.updateUser(currentUser);
-        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật hồ sơ vào hệ thống!");
+    // 1. KIỂM TRA ĐẦY ĐỦ THÔNG TIN (VALIDATION)
+    String fullName = txtName.getText().trim();
+    String email = txtEmail.getText().trim();
+    String phone = txtPhone.getText().trim();
+    String address = txtAddress.getText().trim();
+    String bank = currentUser.getLinkedBank();
 
-      } catch (UserException e) {
-        // Nếu bắt được lỗi từ Service (thiếu tên, sđt chứa chữ cái...)
-        showAlert(Alert.AlertType.ERROR, "Lỗi cập nhật", e.getMessage());
-      }
+    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()) {
+      showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
+      return;
+    }
+
+    if (bank == null || bank.trim().isEmpty()) {
+      showAlert(Alert.AlertType.ERROR, "Chưa liên kết ngân hàng", "Bạn bắt buộc phải liên kết ngân hàng để đảm bảo giao dịch!");
+      return;
+    }
+
+    // 2. Gán dữ liệu vào đối tượng
+    currentUser.setFullName(fullName);
+    currentUser.setEmail(email);
+    currentUser.setPhone(phone);
+    currentUser.setAddress(address);
+
+    try {
+      currentUser.setProfileComplete(currentUser.hasCompleteProfile());
+
+      // 3. Lưu xuống Database
+      userService.updateUser(currentUser);
+      showAlert(Alert.AlertType.INFORMATION, "Thành công", "Hồ sơ của bạn đã được cập nhật đầy đủ.");
+    } catch (UserException e) {
+      showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", e.getMessage());
     }
   }
 
@@ -113,6 +162,11 @@ public class UserProfileController implements Initializable {
 
   @FXML
   public void handleAddFunds(ActionEvent event) {
+    if (currentUser.getLinkedBank() == null) {
+      showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng liên kết ngân hàng trước khi nạp tiền!");
+      return;
+    }
+
     TextInputDialog dialog = new TextInputDialog("1000000");
     dialog.setTitle("Nạp tiền");
     dialog.setHeaderText("Nạp tiền vào tài khoản");
@@ -138,35 +192,27 @@ public class UserProfileController implements Initializable {
 
   @FXML
   public void handleBack(ActionEvent event) {
-    try {
-      // Load trực tiếp file AuctionList.fxml
-      Parent root = FXMLLoader.load(getClass().getResource("/AuctionList.fxml"));
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      stage.setScene(new Scene(root));
-      stage.setTitle("Hệ thống Đấu giá VNU - Dashboard");
-      stage.show();
-    } catch (Exception e) {
-      e.printStackTrace();
-      showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể mở trang Danh sách đấu giá: " + e.getMessage());
-    }
+    switchScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU");
   }
 
-  // HÀM MỚI THÊM: Xử lý nút chuyển sang trang Quản lý của tôi
   @FXML
   public void handleGoToMyManagement(ActionEvent event) {
+    switchScene(event, "/MyManagement.fxml", "Quản lý của tôi");
+  }
+
+  // Hàm bổ trợ chuyển trang để tránh lặp code
+  private void switchScene(ActionEvent event, String fxmlPath, String title) {
     try {
-      Parent root = FXMLLoader.load(getClass().getResource("/MyManagement.fxml"));
+      Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       stage.setScene(new Scene(root));
-      stage.setTitle("Quản lý của tôi");
+      stage.setTitle(title);
       stage.show();
     } catch (Exception e) {
-      e.printStackTrace();
-      showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể mở trang Quản lý của tôi: " + e.getMessage());
+      showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể chuyển trang: " + e.getMessage());
     }
   }
 
-  // Hàm tiện ích hiển thị Popup
   private void showAlert(Alert.AlertType type, String title, String content) {
     Alert alert = new Alert(type);
     alert.setTitle(title);

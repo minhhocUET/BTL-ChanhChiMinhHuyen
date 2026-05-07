@@ -5,10 +5,7 @@ import com.uet.bidding.dao.UserDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.InvalidBidException;
-import com.uet.bidding.model.AuctionManager;
-import com.uet.bidding.model.Bidder;
-import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.User;
+import com.uet.bidding.model.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +14,7 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
 
-public class ClientHandler implements Runnable {
+public class ClientHandler implements Runnable, AuctionObserver {
   private final Socket clientSocket;
   private final UserDAO userDAO;
   private final Gson gson = new Gson();
@@ -134,6 +131,11 @@ public class ClientHandler implements Runnable {
     } catch (NumberFormatException e) {
       throw new InvalidBidException("Vui lòng nhập số tiền hợp lệ!");
     }
+  }
+
+  public void updatePrice(String itemName, double newPrice, String topBidder) {
+    String realtimeData = "Sản phẩm: "+ itemName + " | Giá mới: " + newPrice + " | Đang dẫn đầu: " + topBidder;
+    sendResponse("PRICE_UPDATE", realtimeData);
   }
 
   private void closeSocket() {

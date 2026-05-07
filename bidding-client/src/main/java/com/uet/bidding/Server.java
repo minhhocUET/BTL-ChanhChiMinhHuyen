@@ -5,7 +5,6 @@ import com.uet.bidding.dao.ItemDAO;
 import com.uet.bidding.dao.UserDAO;
 import com.uet.bidding.model.AuctionManager;
 import com.uet.bidding.model.NetworkMessage;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,10 +12,16 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server { // Đây là file chạy chính của SERVER
 
   private static final int SHUTDOWN_DELAY_MS = 60000; // 60.000 mili-giây = 60 giây
+
+  private static final int MAX_THREADS = 50; // Giới hạn tối đa 50 client xử lý cùng lúc
+  // KHAI BÁO THREAD POOL: Thay vì tạo Thread thủ công, ta dùng Pool để quản lý
+  private static final ExecutorService threadPool = Executors.newFixedThreadPool(MAX_THREADS);
   // ==============================================================
   // 1. CÁC BIẾN QUẢN LÝ MẠNG VÀ AUTO-SHUTDOWN
   // ==============================================================
@@ -79,6 +84,11 @@ public class Server { // Đây là file chạy chính của SERVER
       // Bật đếm ngược ngay khi Server vừa khởi động
       startShutdownTimer();
 
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        System.out.println("\n🛑 Đang giải phóng tài nguyên Thread Pool...");
+        threadPool.shutdown();
+      }));
+
       while (true) {
         // Đợi và chấp nhận kết nối từ Client
         Socket clientSocket = serverSocket.accept();
@@ -94,8 +104,7 @@ public class Server { // Đây là file chạy chính của SERVER
         // LƯU NGƯỜI CHƠI VÀO DANH SÁCH QUẢN LÝ
         activeClients.add(handler);
 
-        Thread thread = new Thread(handler);
-        thread.start();
+        threadPool.execute(handler);
       }
     } catch (IOException e) {
       System.err.println("Lỗi Server: " + e.getMessage());

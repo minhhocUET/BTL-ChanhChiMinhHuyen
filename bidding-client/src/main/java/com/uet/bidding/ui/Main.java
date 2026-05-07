@@ -1,9 +1,11 @@
 package com.uet.bidding.ui; // Thêm package cho khớp với thư mục của bạn
 
+import com.uet.bidding.network.ClientService; // Import cái "hệ thần kinh" bạn vừa tạo
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -47,9 +49,30 @@ public class Main extends Application {
   public void start(Stage primaryStage) {
     window = primaryStage;
 
-    // 1. Mặc định mở Giao diện đăng nhập đầu tiên khi chạy
-    // Dùng luôn hàm changeScene cho đồng nhất code
+    // --- PHẦN THÊM VÀO: KẾT NỐI MẠNG ---
+    try {
+      // Thử kết nối đến Server (localhost, cổng 8888)
+      ClientService.getInstance().connect("127.0.0.1", 8888);
+      System.out.println("✅ Network initialized successfully.");
+    } catch (IOException e) {
+      // Nếu không thấy Server, hiện thông báo lỗi cho người dùng
+      showErrorAlert("Không thể kết nối đến Server!",
+          "Vui lòng kiểm tra xem Server đã được bật chưa trước khi chạy Client.");
+      // Tùy chọn: Dừng app luôn nếu không có mạng
+      // System.exit(0);
+    }
+    // ------------------------------------
+
     changeScene("/Login.fxml", "Hệ thống Đấu giá VNU - Đăng nhập", 400, 500);
     window.show();
+  }
+
+  // Hàm bổ trợ để hiện thông báo lỗi đẹp hơn
+  private void showErrorAlert(String title, String content) {
+    Alert alert = new Alert(Alert.AlertType.ERROR);
+    alert.setTitle("Lỗi kết nối");
+    alert.setHeaderText(title);
+    alert.setContentText(content);
+    alert.showAndWait();
   }
 }

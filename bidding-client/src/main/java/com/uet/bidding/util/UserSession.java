@@ -6,12 +6,12 @@ public class UserSession {
   // Lưu trữ toàn bộ đối tượng User đang đăng nhập
   private static User currentUser;
 
-  public static void setCurrentUser(User user) {
-    currentUser = user;
-  }
-
   public static User getCurrentUser() {
     return currentUser;
+  }
+
+  public static void setCurrentUser(User user) {
+    currentUser = user;
   }
 
   // Khi đăng xuất thì gọi hàm này

@@ -1,9 +1,7 @@
 package com.uet.bidding.ui;
 
-import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.model.User;
 import com.uet.bidding.service.UserService;
-import com.uet.bidding.util.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -19,9 +17,12 @@ import java.io.IOException;
 
 public class LoginController {
 
-  @FXML private TextField usernameField;
-  @FXML private PasswordField passwordField;
-  @FXML private Label messageLabel;
+  @FXML
+  private TextField usernameField;
+  @FXML
+  private PasswordField passwordField;
+  @FXML
+  private Label messageLabel;
 
   // 1. Khởi tạo Service để giao tiếp với Cơ sở dữ liệu
   private UserService userService = new UserService();
@@ -40,30 +41,31 @@ public class LoginController {
     messageLabel.setStyle("-fx-text-fill: #2563eb;"); // Màu xanh blue báo trạng thái
     messageLabel.setText("Đang kiểm tra thông tin...");
 
-    try {
-      // 2. Gọi UserService để xác thực với DB THẬT
-      User loggedInUser = userService.login(username, password);
+    userService.login(username, password);
+    // try {
+    // 2. Gọi UserService để xác thực với DB THẬT
+    // User loggedInUser = userService.login(username, password);
 
-      // === BƯỚC QUAN TRỌNG: Lưu người dùng vào Session ===
-      UserSession.setCurrentUser(loggedInUser);
-      // ==========================================
-      // ĐĂNG NHẬP THÀNH CÔNG: CHUYỂN THẲNG SANG AUCTION LIST
-      // ==========================================
-      System.out.println("Đăng nhập thành công, vào thẳng Dashboard...");
-      if ("ADMIN".equals(loggedInUser.getRole())) {
-        // Nếu là Admin -> Qua Dashboard quản trị
-        loadNextScene(event, "/AdminDashboard.fxml", "Admin Control Panel", loggedInUser);
-      } else {
-        // Nếu là người dùng thường -> Vào danh sách đấu giá
-        loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU", loggedInUser);
-      }
+    // === BƯỚC QUAN TRỌNG: Lưu người dùng vào Session ===
+    // UserSession.setCurrentUser(loggedInUser);
+    // ==========================================
+    // ĐĂNG NHẬP THÀNH CÔNG: CHUYỂN THẲNG SANG AUCTION LIST
+    // ==========================================
+    // System.out.println("Đăng nhập thành công, vào thẳng Dashboard...");
+    // if ("ADMIN".equals(loggedInUser.getRole())) {
+    // Nếu là Admin -> Qua Dashboard quản trị
+    // loadNextScene(event, "/AdminDashboard.fxml", "Admin Control Panel", loggedInUser);
+    // } else {
+    // Nếu là người dùng thường -> Vào danh sách đấu giá
+    // loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU", loggedInUser);
+    // }
 
-    } catch (AuthenticationException e) {
-      // Bắt lỗi từ Database và in ra màn hình
-      messageLabel.setStyle("-fx-text-fill: red;");
-      messageLabel.setText(e.getMessage()); // Sẽ hiện "Sai mật khẩu!" hoặc "Tài khoản không tồn tại!"
-      passwordField.clear(); // Tiện ích UX: Xóa pass sai đi để người dùng tiện nhập lại
-    }
+    // } catch (AuthenticationException e) {
+    // Bắt lỗi từ Database và in ra màn hình
+    // messageLabel.setStyle("-fx-text-fill: red;");
+    // messageLabel.setText(e.getMessage()); // Sẽ hiện "Sai mật khẩu!" hoặc "Tài khoản không tồn tại!"
+    // passwordField.clear(); // Tiện ích UX: Xóa pass sai đi để người dùng tiện nhập lại
+    // }
   }
 
   /**

@@ -35,7 +35,8 @@
                 <PasswordField fx:id="passwordField" promptText="Mật khẩu" styleClass="input-field"/>
                 <PasswordField fx:id="confirmPasswordField" promptText="Nhập lại mật khẩu" styleClass="input-field"/>
 
-                <Label text="* Mật khẩu bắt buộc phải có từ 6 ký tự trở lên" style="-fx-text-fill: #777777; -fx-font-size: 11px;">
+                <Label text="* Mật khẩu bắt buộc phải có từ 6 ký tự trở lên"
+                       style="-fx-text-fill: #777777; -fx-font-size: 11px;">
                     <VBox.margin>
                         <Insets top="-5.0" left="5.0"/>
                     </VBox.margin>

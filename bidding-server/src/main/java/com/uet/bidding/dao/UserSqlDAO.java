@@ -71,8 +71,8 @@ public class UserSqlDAO implements IUserDAO {
           String sqlAdmin = "INSERT INTO admins (user_id, adminLevel, department) VALUES (?, ?, ?)";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
             stmtAdmin.setInt(1, generatedUserId);
-            stmtAdmin.setInt(2, admin.getAdminLevel());
-            stmtAdmin.setString(3, admin.getDepartment());
+            // stmtAdmin.setInt(2, admin.getAdminLevel());
+            // stmtAdmin.setString(3, admin.getDepartment());
             stmtAdmin.executeUpdate();
           }
         } else {
@@ -113,9 +113,9 @@ public class UserSqlDAO implements IUserDAO {
     User user;
 
     if (rs.getInt("admin_id") > 0) {
-      Admin admin = new Admin();
-      admin.setAdminLevel(rs.getInt("adminLevel"));
-      admin.setDepartment(rs.getString("department"));
+      Admin admin = new Admin("chi", "ababbaba", BigDecimal.ZERO);
+      // admin.setAdminLevel(rs.getInt("adminLevel"));
+      // admin.setDepartment(rs.getString("department"));
       user = admin;
     } else if (rs.getInt("seller_id") > 0) {
       Seller seller = new Seller();
@@ -244,13 +244,14 @@ public class UserSqlDAO implements IUserDAO {
         // Dùng Username làm điều kiện để định danh đúng người
         stmtUser.setString(6, updatedUser.getUsername());
         int rows = stmtUser.executeUpdate();
-        if (rows == 0) throw new UserException("Cập nhật thất bại! Người dùng " + updatedUser.getUsername() + " không tồn tại.");
+        if (rows == 0)
+          throw new UserException("Cập nhật thất bại! Người dùng " + updatedUser.getUsername() + " không tồn tại.");
         if (updatedUser instanceof Admin) {
           Admin admin = (Admin) updatedUser;
           String sqlAdmin = "UPDATE admins SET adminLevel = ?, department = ? WHERE user_id = ?";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
-            stmtAdmin.setInt(1, admin.getAdminLevel());
-            stmtAdmin.setString(2, admin.getDepartment());
+            // stmtAdmin.setInt(1, admin.getAdminLevel());
+            // stmtAdmin.setString(2, admin.getDepartment());
             stmtAdmin.setInt(3, admin.getId());
             stmtAdmin.executeUpdate();
           }

@@ -3,12 +3,10 @@ package com.uet.bidding.model;
 import java.math.BigDecimal;
 
 public class Admin extends User {
-
-  // Constructor không có ID (dùng khi tạo mới Admin chưa lưu DB)
   public Admin(String username, String password, BigDecimal balance) {
     super(username, password, BigDecimal.ZERO);
   }
-  // Constructor có ID (dùng khi load từ SQL lên)
+
   public Admin(int id, String username, String password, BigDecimal balance) {
     super(id, username, password, BigDecimal.ZERO);
   }
@@ -18,7 +16,8 @@ public class Admin extends User {
     return "ADMIN";
   }
 
-  /** * Các phương thức đặc thù của Admin (để trống để xử lý logic sau)
+  /**
+   * Các phương thức đặc thù của Admin (để trống để xử lý logic sau)
    * Đây là nơi thể hiện sự khác biệt giữa Admin và Bidder/Seller
    */
   public void banUser(int userId) {

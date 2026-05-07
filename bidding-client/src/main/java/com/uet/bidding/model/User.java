@@ -7,7 +7,6 @@ public abstract class User extends Entity implements Serializable {
   //Dòng này cố định phiên bản file, tránh lỗi khi sửa code sau này
   private static final long serialVersionUID = 1L;
 
-  private int id;
   private String username;
   private String password;
   private String fullName;
@@ -30,16 +29,14 @@ public abstract class User extends Entity implements Serializable {
 
   //cóntructor có id
   public User(int id, String username, String password, BigDecimal balance) {
-    this.id = id;
+    super(); // Gọi constructor của Entity
+    this.setId(id);
     this.username = username;
     this.password = password;
     this.balance = balance;
   }
 
   // Cần có đầy đủ Setter để LoginController và Bidder hoạt động
-  public void setId(int id) {
-    this.id = id;
-  }
 
   // Cần có Getter để UserProfileController hiển thị dữ liệu
   public String getFullName() {

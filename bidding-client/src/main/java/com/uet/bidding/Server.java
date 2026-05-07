@@ -4,6 +4,7 @@ import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemFileDAO; // Đã đổi từ ItemDAO sang ItemFileDAO
 import com.uet.bidding.dao.UserSqlDAO; // Đã đổi từ UserDAO sang UserSqlDAO
 import com.uet.bidding.model.NetworkMessage;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -97,7 +98,7 @@ public class Server { // Đây là file chạy chính của SERVER
         System.out.println("Có kết nối mới từ: " + clientSocket.getInetAddress());
 
         // 3. FIX LỖI XUNG ĐỘT: Truyền thêm userDAO vào để khớp với Constructor
-        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO);
+        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO, itemFileDAO, auctionSqlDAO);
 
         // LƯU NGƯỜI CHƠI VÀO DANH SÁCH QUẢN LÝ
         activeClients.add(handler);

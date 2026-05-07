@@ -1,100 +1,72 @@
 package com.uet.bidding.service;
 
-import com.uet.bidding.dao.IUserDAO;
-import com.uet.bidding.dao.UserSqlDAO;
-import com.uet.bidding.exception.AuthenticationException;
-import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.Bidder;
 import com.uet.bidding.model.User;
+import com.uet.bidding.network.ClientService;
 
 import java.math.BigDecimal;
 
+/**
+ * Lớp này chịu trách nhiệm gửi các yêu cầu nghiệp vụ từ UI tới Server
+ * thông qua ClientService (Socket).
+ */
 public class UserService {
-  // Khởi tạo DAO giao tiếp với TiDB/MySQL
-  private IUserDAO userDAO = new UserSqlDAO();
+  // Lấy instance duy nhất của ClientService để sử dụng ống dẫn Socket
+  private ClientService clientService = ClientService.getInstance();
 
   /**
-   * Nghiệp vụ Đăng ký (Rút gọn: Chỉ cần Username và Password)
+   * Gửi yêu cầu đăng nhập lên Server.
+   * Lưu ý: Hàm trả về void vì kết quả sẽ được nhận sau ở luồng đọc dữ liệu của ClientService.
    */
-  public void registerBidder(String username, String password) throws UserException {
-    if (username.length() < 5) {
-      throw new UserException("Tên đăng nhập phải có ít nhất 5 ký tự!");
-    }
-    if (password.length() < 6) {
-      throw new UserException("Mật khẩu phải từ 6 ký tự trở lên!");
-    }
+  public void login(String username, String password) {
+    if (username == null || password == null) return;
 
-    Bidder newBidder = new Bidder();
-    newBidder.setUsername(username);
-    newBidder.setPassword(password);
-    newBidder.setTotalBids(0);
-    newBidder.setAuctionsWon(0);
+    // Gửi chuỗi định dạng "user pass" để Server dễ dàng split(" ")
+    String credentials = username.trim() + " " + password.trim();
 
-    userDAO.addUser(newBidder);
+    // Gửi gói tin có type là LOGIN
+    clientService.sendRequest("LOGIN", username.trim() + " " + password.trim());  }
+
+  /**
+   * Gửi yêu cầu đăng ký tài khoản mới.
+   */
+  public void register(String username, String password) {
+    if (username == null || password == null) return;
+
+    String regData = username.trim() + " " + password.trim();
+
+    // Gửi gói tin có type là REGISTER
+    clientService.sendRequest("REGISTER", regData);
   }
 
   /**
-   * Nghiệp vụ Đăng nhập
+   * Gửi yêu cầu nạp tiền.
+   * Server sẽ nhận số tiền này và cập nhật vào Database cho User đang đăng nhập.
    */
-  public User login(String username, String password) throws AuthenticationException {
-    if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
-      throw new AuthenticationException("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
-    }
-    return userDAO.checkLogin(username, password);
+  public void addBalance(BigDecimal amount) {
+    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+
+    // Gửi gói tin có type là ADD_BALANCE kèm theo số tiền (Object)
+    clientService.sendRequest("ADD_BALANCE", amount);
   }
 
   /**
-   * Nghiệp vụ Nạp tiền vào tài khoản
+   * Gửi yêu cầu cập nhật thông tin cá nhân.
+   * Truyền nguyên đối tượng User, Gson sẽ tự động biến thành JSON gửi đi.
    */
-  public void addBalance(User user, BigDecimal amount) throws UserException {
-    if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new UserException("Số tiền nạp phải lớn hơn 0!");
-    }
+  public void updateUser(User user) {
+    if (user == null) return;
 
-    BigDecimal currentBalance = user.getBalance();
-    if (currentBalance == null) currentBalance = BigDecimal.ZERO;
-
-    BigDecimal newBalance = currentBalance.add(amount);
-    user.setBalance(newBalance);
-
-    userDAO.updateUser(user);
-  }
-
-  /**
-   * Nghiệp vụ Cập nhật thông tin người dùng (Bắt buộc nhập đủ 100% thông tin)
-   */
-  public void updateUser(User user) throws UserException {
-    // 1. Kiểm tra Họ và Tên
-    if (user.getFullName() == null || user.getFullName().trim().isEmpty()) {
-      throw new UserException("Họ và tên không được để trống!");
-    }
-
-    // 2. Kiểm tra Email (Vừa check rỗng, vừa check định dạng có chữ @)
-    if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-      throw new UserException("Email không được để trống!");
-    } else if (!user.getEmail().contains("@")) {
-      throw new UserException("Định dạng Email không hợp lệ!");
-    }
-
-    // 3. Kiểm tra Số điện thoại (Check rỗng và check chỉ chứa số)
-    if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
-      throw new UserException("Số điện thoại không được để trống!");
-    } else if (!user.getPhone().matches("\\d+")) {
-      throw new UserException("Số điện thoại chỉ được chứa các chữ số!");
-    }
-
-    // 4. Kiểm tra Địa chỉ
-    if (user.getAddress() == null || user.getAddress().trim().isEmpty()) {
-      throw new UserException("Địa chỉ không được để trống!");
-    }
-
-    // 5. Kiểm tra Ngân hàng liên kết
-    if (user.getLinkedBank() == null || user.getLinkedBank().trim().isEmpty()) {
-      throw new UserException("Vui lòng nhập thông tin liên kết ngân hàng!");
-    }
-
+    // Trước khi gửi, đảm bảo trạng thái profile được đánh dấu (fix lỗi symbol bạn gặp)
     user.setProfileComplete(true);
-    // NẾU VƯỢT QUA ĐƯỢC TOÀN BỘ 5 BÀI TEST TRÊN -> Mới cho phép cập nhật xuống CSDL
-    userDAO.updateUser(user);
+
+    // Gửi gói tin có type là UPDATE_PROFILE
+    clientService.sendRequest("UPDATE_PROFILE", user);
+  }
+
+  /**
+   * Yêu cầu Server gửi lại danh sách đấu giá mới nhất.
+   */
+  public void fetchAllAuctions() {
+    clientService.sendRequest("GET_ALL_AUCTIONS", "");
   }
 }

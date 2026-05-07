@@ -20,12 +20,18 @@ import java.util.ResourceBundle;
 
 public class UserProfileController implements Initializable {
 
-  @FXML private TextField txtName;
-  @FXML private TextField txtEmail;
-  @FXML private TextField txtPhone;
-  @FXML private TextArea txtAddress;
-  @FXML private Label lblBalance;
-  @FXML private Label lblBankStatus;
+  @FXML
+  private TextField txtName;
+  @FXML
+  private TextField txtEmail;
+  @FXML
+  private TextField txtPhone;
+  @FXML
+  private TextArea txtAddress;
+  @FXML
+  private Label lblBalance;
+  @FXML
+  private Label lblBankStatus;
 
   private User currentUser;
   private UserService userService = new UserService();
@@ -175,7 +181,7 @@ public class UserProfileController implements Initializable {
     dialog.showAndWait().ifPresent(amountStr -> {
       try {
         BigDecimal amount = new BigDecimal(amountStr);
-        userService.addBalance(currentUser, amount);
+        userService.addBalance(BigDecimal.ZERO);
         updateBalanceLabel();
         showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã nạp thành công: " + String.format("%,.0f VNĐ", amount));
       } catch (NumberFormatException e) {

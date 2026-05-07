@@ -21,20 +21,32 @@ import java.util.ResourceBundle;
 public class MyManagementController implements Initializable {
 
   // --- BẢNG ĐANG THAM GIA ĐẤU GIÁ ---
-  @FXML private TableView<BidItem> bidTableView;
-  @FXML private TableColumn<BidItem, Integer> colBidStt;
-  @FXML private TableColumn<BidItem, String> colBidName;
-  @FXML private TableColumn<BidItem, String> colBidCurrentPrice;
-  @FXML private TableColumn<BidItem, String> colBidMyPrice;
-  @FXML private TableColumn<BidItem, String> colBidStatus;
+  @FXML
+  private TableView<BidItem> bidTableView;
+  @FXML
+  private TableColumn<BidItem, Integer> colBidStt;
+  @FXML
+  private TableColumn<BidItem, String> colBidName;
+  @FXML
+  private TableColumn<BidItem, String> colBidCurrentPrice;
+  @FXML
+  private TableColumn<BidItem, String> colBidMyPrice;
+  @FXML
+  private TableColumn<BidItem, String> colBidStatus;
 
   // --- BẢNG ĐANG GIAO BÁN ---
-  @FXML private TableView<SellItem> sellTableView;
-  @FXML private TableColumn<SellItem, Integer> colSellStt;
-  @FXML private TableColumn<SellItem, String> colSellName;
-  @FXML private TableColumn<SellItem, String> colSellStartPrice;
-  @FXML private TableColumn<SellItem, String> colSellHighestBid;
-  @FXML private TableColumn<SellItem, Integer> colSellInterested;
+  @FXML
+  private TableView<SellItem> sellTableView;
+  @FXML
+  private TableColumn<SellItem, Integer> colSellStt;
+  @FXML
+  private TableColumn<SellItem, String> colSellName;
+  @FXML
+  private TableColumn<SellItem, String> colSellStartPrice;
+  @FXML
+  private TableColumn<SellItem, String> colSellHighestBid;
+  @FXML
+  private TableColumn<SellItem, Integer> colSellInterested;
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
@@ -116,15 +128,32 @@ public class MyManagementController implements Initializable {
     private String status;
 
     public BidItem(int stt, String name, String currentPrice, String myPrice, String status) {
-      this.stt = stt; this.name = name; this.currentPrice = currentPrice;
-      this.myPrice = myPrice; this.status = status;
+      this.stt = stt;
+      this.name = name;
+      this.currentPrice = currentPrice;
+      this.myPrice = myPrice;
+      this.status = status;
     }
 
-    public int getStt() { return stt; }
-    public String getName() { return name; }
-    public String getCurrentPrice() { return currentPrice; }
-    public String getMyPrice() { return myPrice; }
-    public String getStatus() { return status; }
+    public int getStt() {
+      return stt;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getCurrentPrice() {
+      return currentPrice;
+    }
+
+    public String getMyPrice() {
+      return myPrice;
+    }
+
+    public String getStatus() {
+      return status;
+    }
   }
 
   public static class SellItem {
@@ -135,14 +164,31 @@ public class MyManagementController implements Initializable {
     private int interested;
 
     public SellItem(int stt, String name, String startPrice, String highestBid, int interested) {
-      this.stt = stt; this.name = name; this.startPrice = startPrice;
-      this.highestBid = highestBid; this.interested = interested;
+      this.stt = stt;
+      this.name = name;
+      this.startPrice = startPrice;
+      this.highestBid = highestBid;
+      this.interested = interested;
     }
 
-    public int getStt() { return stt; }
-    public String getName() { return name; }
-    public String getStartPrice() { return startPrice; }
-    public String getHighestBid() { return highestBid; }
-    public int getInterested() { return interested; }
+    public int getStt() {
+      return stt;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getStartPrice() {
+      return startPrice;
+    }
+
+    public String getHighestBid() {
+      return highestBid;
+    }
+
+    public int getInterested() {
+      return interested;
+    }
   }
 }

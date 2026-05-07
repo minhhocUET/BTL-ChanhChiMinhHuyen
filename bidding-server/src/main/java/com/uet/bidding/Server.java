@@ -3,9 +3,8 @@ package com.uet.bidding;
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemFileDAO; // Đã đổi
 import com.uet.bidding.dao.UserSqlDAO; // Đã đổi
-import com.uet.bidding.model.Auction;
-import com.uet.bidding.model.AuctionManager;
 import com.uet.bidding.model.NetworkMessage;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -66,6 +65,16 @@ public class Server { // Đây là file chạy chính của SERVER
     }
   }
 
+  public static void removeClient(ClientHandler handler) {
+    activeClients.remove(handler);
+    System.out.println("Một Client đã thoát. Hiện còn: " + activeClients.size() + " kết nối.");
+
+    // Nếu không còn ai, bắt đầu đếm ngược tắt Server
+    if (activeClients.isEmpty()) {
+      startShutdownTimer();
+    }
+  }
+
   public static void main(String[] args) {
     int port = 8888;
 
@@ -99,7 +108,7 @@ public class Server { // Đây là file chạy chính của SERVER
         System.out.println("Có kết nối mới từ: " + clientSocket.getInetAddress());
 
         // 3. FIX LỖI XUNG ĐỘT: Truyền thêm userDAO vào để khớp với Constructor
-        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO);
+        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO, itemFileDAO, auctionSqlDAO);
         // LƯU NGƯỜI CHƠI VÀO DANH SÁCH QUẢN LÝ
         activeClients.add(handler);
 

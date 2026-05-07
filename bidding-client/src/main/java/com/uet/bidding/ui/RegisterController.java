@@ -48,7 +48,7 @@ public class RegisterController {
     // 3. THỰC HIỆN LƯU VÀO DATABASE BẰNG TRY-CATCH
     try {
       // Chỉ truyền đúng username và password
-      userService.registerBidder(username, password);
+      userService.register(username, password);
 
       messageLabel.setTextFill(Color.GREEN);
       messageLabel.setText("Đăng ký thành công! Vui lòng Đăng nhập.");

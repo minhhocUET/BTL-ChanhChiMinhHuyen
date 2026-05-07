@@ -2,8 +2,11 @@ package com.uet.bidding.dao;
 
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.*;
 import com.uet.bidding.model.Admin;
+import com.uet.bidding.model.Bidder;
+import com.uet.bidding.model.Seller;
+import com.uet.bidding.model.User;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
@@ -246,7 +249,8 @@ public class UserSqlDAO implements IUserDAO {
         stmtUser.setBoolean(6, updatedUser.isProfileComplete());
         stmtUser.setString(7, updatedUser.getUsername());
         int rows = stmtUser.executeUpdate();
-        if (rows == 0) throw new UserException("Cập nhật thất bại! Người dùng " + updatedUser.getUsername() + " không tồn tại.");
+        if (rows == 0)
+          throw new UserException("Cập nhật thất bại! Người dùng " + updatedUser.getUsername() + " không tồn tại.");
         if (updatedUser instanceof Admin) {
           Admin admin = (Admin) updatedUser;
           String sqlAdmin = "UPDATE admins SET adminLevel = ?, department = ? WHERE user_id = ?";

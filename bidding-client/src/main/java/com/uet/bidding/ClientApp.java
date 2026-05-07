@@ -128,6 +128,11 @@ public class ClientApp {
         case "BROADCAST":
           System.out.println("📣 [THÔNG BÁO]: " + displayString);
           break;
+        case "LOGIN_SUCCESS":
+          System.out.println("🎊 [Hệ thống]: Đăng nhập thành công!");
+          // responseData lúc này là Object User, bạn có thể in ra số dư:
+          // System.out.println("Số dư hiện tại: " + prettyGson.toJson(responseData));
+          break;
         default:
           System.out.println("ℹ️ [" + serverMsg.getType() + "]: " + displayString);
           break;

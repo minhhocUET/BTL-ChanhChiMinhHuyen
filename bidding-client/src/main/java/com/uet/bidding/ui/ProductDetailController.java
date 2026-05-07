@@ -14,7 +14,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
@@ -29,15 +28,24 @@ import java.util.Locale;
 
 public class ProductDetailController {
 
-  @FXML private ImageView imgProduct;
-  @FXML private Label lblProductName;
-  @FXML private Label lblAuctionId;
-  @FXML private Label lblCurrentPrice;
-  @FXML private Label lblHighestBidder;
-  @FXML private Label lblCountdown;
-  @FXML private Label lblDescription;
-  @FXML private TextField txtBidAmount;
-  @FXML private Label lblMinBid;
+  @FXML
+  private ImageView imgProduct;
+  @FXML
+  private Label lblProductName;
+  @FXML
+  private Label lblAuctionId;
+  @FXML
+  private Label lblCurrentPrice;
+  @FXML
+  private Label lblHighestBidder;
+  @FXML
+  private Label lblCountdown;
+  @FXML
+  private Label lblDescription;
+  @FXML
+  private TextField txtBidAmount;
+  @FXML
+  private Label lblMinBid;
 
   private Auction currentAuction;
   private Timeline timeline;

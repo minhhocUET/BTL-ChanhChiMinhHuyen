@@ -1,22 +1,30 @@
 package com.uet.bidding.model;
 
+import java.math.BigDecimal;
+
 public class Admin extends User {
-  private Integer adminLevel;
-  private String department;
-
-  // Getters và Setters
-
-  public Integer getAdminLevel() {
-    return adminLevel;
+  public Admin(String username, String password, BigDecimal balance) {
+    super(username, password, BigDecimal.ZERO);
   }
 
-  public void setAdminLevel(Integer adminLevel) {
-    this.adminLevel = adminLevel;
+  public Admin(int id, String username, String password, BigDecimal balance) {
+    super(id, username, password, BigDecimal.ZERO);
   }
 
-  public String getDepartment() { return department; }
+  @Override
+  public String getRole() {
+    return "ADMIN";
+  }
 
-  public void setDepartment(String department) {
-    this.department = department;
+  /**
+   * Các phương thức đặc thù của Admin (để trống để xử lý logic sau)
+   * Đây là nơi thể hiện sự khác biệt giữa Admin và Bidder/Seller
+   */
+  public void banUser(int userId) {
+    // Logic khóa tài khoản người dùng
+  }
+
+  public void removeInvalidAuction(int auctionId) {
+    // Logic xóa phiên đấu giá vi phạm
   }
 }

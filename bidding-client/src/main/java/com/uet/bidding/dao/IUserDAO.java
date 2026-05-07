@@ -13,6 +13,7 @@ public interface IUserDAO {
 
   //READ: Lấy thông tin người dùng
   List<User> getAllUsers();
+
   User findById(int id) throws UserException;
 
   //UPDATE: Cập nhật thông tin người dùng (khi nạp tiền, trừ tiền bid, sửa profile)

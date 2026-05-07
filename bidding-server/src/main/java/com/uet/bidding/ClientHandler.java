@@ -1,6 +1,8 @@
 package com.uet.bidding;
 
 import com.google.gson.Gson;
+import com.uet.bidding.dao.AuctionSqlDAO;
+import com.uet.bidding.dao.ItemFileDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.AuthenticationException;
@@ -18,14 +20,18 @@ import java.net.Socket;
 public class ClientHandler implements Runnable, AuctionObserver {
   private final Socket clientSocket;
   private final UserSqlDAO userSqlDAO; // Sử dụng đúng SQL DAO
+  private final ItemFileDAO itemFileDAO; // Thêm cái này
+  private final AuctionSqlDAO auctionSqlDAO; // Thêm cái này
   private final Gson gson = new Gson();
   private PrintWriter out;
   private BufferedReader in;
   private Bidder loggedInUser = null;
 
-  public ClientHandler(Socket socket, UserSqlDAO userSqlDAO) {
+  public ClientHandler(Socket socket, UserSqlDAO userSqlDAO, ItemFileDAO itemFileDAO, AuctionSqlDAO auctionSqlDAO) {
     this.clientSocket = socket;
     this.userSqlDAO = userSqlDAO;
+    this.itemFileDAO = itemFileDAO;
+    this.auctionSqlDAO = auctionSqlDAO;
   }
 
   // Hàm giúp Server gọi để gửi tin nhắn cho Client (Dùng trong Broadcast)
@@ -53,7 +59,8 @@ public class ClientHandler implements Runnable, AuctionObserver {
 
           switch (msg.getType()) {
             case "REGISTER":
-              handleRegister(msg);
+              String regData = String.valueOf(msg.getData());
+              handleRegister(regData); // Sửa hàm handleRegister nhận String
               responseContent = "Đăng ký thành công!";
               break;
 
@@ -67,11 +74,11 @@ public class ClientHandler implements Runnable, AuctionObserver {
               User user = userSqlDAO.checkLogin(loginData[0], loginData[1]);
               if (user != null) {
                 this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance(), user.getEmail());
-                responseContent = "Đăng nhập thành công! Xin chào " + user.getUsername();
+                sendResponse("LOGIN_SUCCESS", user);
+                continue;
               } else {
                 throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu.");
               }
-              break;
 
             case "BID":
               if (loggedInUser == null) {
@@ -98,6 +105,11 @@ public class ClientHandler implements Runnable, AuctionObserver {
               }
               break;
 
+            case "GET_ALL_AUCTIONS":
+              // Lấy danh sách từ DAO và gửi về cho Client
+              responseContent = auctionSqlDAO.getAllAuctions();
+              break;
+
             default:
               responseContent = "Lệnh không hợp lệ!";
               break;
@@ -117,8 +129,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
     }
   }
 
-  private void handleRegister(NetworkMessage msg) throws UserException {
-    String regData = (String) msg.getData();
+  private void handleRegister(String regData) throws UserException {
     String[] regParts = regData.split(" ");
     if (regParts.length < 2) throw new UserException("Sai cú pháp! Mẫu: REGISTER <user> <pass>");
 

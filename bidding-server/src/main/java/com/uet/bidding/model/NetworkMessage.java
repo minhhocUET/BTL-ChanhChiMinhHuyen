@@ -3,7 +3,7 @@ package com.uet.bidding.model;
 import java.io.Serializable;
 
 /**
- *.
+ * .
  */
 public class NetworkMessage implements Serializable {
 

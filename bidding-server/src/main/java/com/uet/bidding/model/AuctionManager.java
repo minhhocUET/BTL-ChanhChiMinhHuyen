@@ -1,6 +1,5 @@
 package com.uet.bidding.model;
 
-import com.uet.bidding.dao.AuctionDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 

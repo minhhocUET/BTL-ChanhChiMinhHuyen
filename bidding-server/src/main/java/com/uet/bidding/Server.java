@@ -1,8 +1,6 @@
 package com.uet.bidding;
 
-import com.uet.bidding.dao.AuctionDAO;
 import com.uet.bidding.dao.ItemDAO;
-import com.uet.bidding.dao.UserDAO;
 import com.uet.bidding.model.AuctionManager;
 
 import java.io.IOException;

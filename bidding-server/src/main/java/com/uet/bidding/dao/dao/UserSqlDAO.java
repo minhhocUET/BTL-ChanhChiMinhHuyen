@@ -1,5 +1,7 @@
-package com.uet.bidding.dao;
+package com.uet.bidding.dao.dao;
 
+import com.uet.bidding.dao.DatabaseConnection;
+import com.uet.bidding.dao.IUserDAO;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.Admin;
@@ -31,7 +33,7 @@ public class UserSqlDAO implements IUserDAO {
   @Override
   public void addUser(User user) throws UserException {
     // 1. Cập nhật câu SQL: Thêm cột `role` vào INSERT
-    String sqlUser = "INSERT INTO users (username, password, fullName, email, phone, address, balance, linkedBank, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    String sqlUser = "INSERT INTO users (username, password, fullName, email, phone, address, balance, linkedBank, role, is_profile_complete) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (Connection conn = DatabaseConnection.getConnection()) {
       conn.setAutoCommit(false);
@@ -51,6 +53,7 @@ public class UserSqlDAO implements IUserDAO {
         // 2. Tự động xác định Role dựa vào Class
         String role = (user instanceof Admin) ? "ADMIN" : "USER";
         stmtUser.setString(9, role);
+        stmtUser.setBoolean(10, false); // ✅ is_profile_complete = false (thêm vào SQL INSERT)
 
         stmtUser.executeUpdate();
 
@@ -71,17 +74,18 @@ public class UserSqlDAO implements IUserDAO {
           String sqlAdmin = "INSERT INTO admins (user_id, adminLevel, department) VALUES (?, ?, ?)";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
             stmtAdmin.setInt(1, generatedUserId);
-            //stmtAdmin.setInt(2, admin.getAdminLevel());
-            //stmtAdmin.setString(3, admin.getDepartment());
             stmtAdmin.executeUpdate();
           }
         } else {
           // NẾU LÀ USER BÌNH THƯỜNG -> TỰ ĐỘNG KẾT NẠP VÀO CẢ 2 BẢNG
 
           // Mở khóa chức năng Bán hàng (Seller)
-          String sqlSeller = "INSERT INTO sellers (user_id, rating, taxId, shopName) VALUES (?, 5.0, NULL, NULL)";
+          // ✅ DÙNG USERNAME LÀM shopName mặc định
+          String shopName = user.getUsername() + "_Shop";
+          String sqlSeller = "INSERT INTO sellers (user_id, rating, taxId, shopName) VALUES (?, 5.0, NULL, ?)";
           try (PreparedStatement stmtSeller = conn.prepareStatement(sqlSeller)) {
             stmtSeller.setInt(1, generatedUserId);
+            stmtSeller.setString(2, shopName); // ✅ KHÔNG NULL
             stmtSeller.executeUpdate();
           }
 
@@ -114,8 +118,6 @@ public class UserSqlDAO implements IUserDAO {
 
     if (rs.getInt("admin_id") > 0) {
       Admin admin = new Admin("Minh", "25052007", BigDecimal.ZERO);
-      //admin.setAdminLevel(rs.getInt("adminLevel"));
-      //admin.setDepartment(rs.getString("department"));
       user = admin;
     } else if (rs.getInt("seller_id") > 0) {
       Seller seller = new Seller();
@@ -140,12 +142,14 @@ public class UserSqlDAO implements IUserDAO {
     user.setBalance(rs.getBigDecimal("balance"));
     user.setLinkedBank(rs.getString("linkedBank"));
 
+    user.setProfileComplete(rs.getBoolean("is_profile_complete"));
+
     return user;
   }
 
   @Override
   public User checkLogin(String username, String password) throws AuthenticationException {
-    String sql = "SELECT u.*, " +
+    String sql = "SELECT u.*, u.is_profile_complete, " +
         "a.user_id AS admin_id, a.adminLevel, a.department, " +
         "s.user_id AS seller_id, s.rating, s.taxId, s.shopName, " +
         "b.user_id AS bidder_id, b.totalBids, b.auctionsWon " +
@@ -228,29 +232,30 @@ public class UserSqlDAO implements IUserDAO {
   @Override
   public void updateUser(User updatedUser) throws UserException {
     // 1. Không nên update password và balance ở đây để tránh ghi đè nhầm thành 0 hoặc null
-    String sqlUser = "UPDATE users SET fullName = ?, email = ?, phone = ?, address = ?, linkedBank = ? WHERE username = ?";
+    // ✅ SỬA SQL: THÊM is_profile_complete
+    String sqlUser = "UPDATE users SET fullName = ?, email = ?, phone = ?, " +
+        "address = ?, linkedBank = ?, is_profile_complete = ? " +
+        "WHERE username = ?";
 
     try (Connection conn = DatabaseConnection.getConnection()) {
       conn.setAutoCommit(false);
 
       try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
-        // Sử dụng hàm helper setStringOrNull bạn đã tạo
         setStringOrNull(stmtUser, 1, updatedUser.getFullName());
         setStringOrNull(stmtUser, 2, updatedUser.getEmail());
         setStringOrNull(stmtUser, 3, updatedUser.getPhone());
         setStringOrNull(stmtUser, 4, updatedUser.getAddress());
         setStringOrNull(stmtUser, 5, updatedUser.getLinkedBank());
 
-        // Dùng Username làm điều kiện để định danh đúng người
-        stmtUser.setString(6, updatedUser.getUsername());
+        // ✅ THÊM UPDATE PROFILE FIELD
+        stmtUser.setBoolean(6, updatedUser.isProfileComplete());
+        stmtUser.setString(7, updatedUser.getUsername());
         int rows = stmtUser.executeUpdate();
         if (rows == 0) throw new UserException("Cập nhật thất bại! Người dùng " + updatedUser.getUsername() + " không tồn tại.");
         if (updatedUser instanceof Admin) {
           Admin admin = (Admin) updatedUser;
           String sqlAdmin = "UPDATE admins SET adminLevel = ?, department = ? WHERE user_id = ?";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
-            //stmtAdmin.setInt(1, admin.getAdminLevel());
-            //stmtAdmin.setString(2, admin.getDepartment());
             stmtAdmin.setInt(3, admin.getId());
             stmtAdmin.executeUpdate();
           }

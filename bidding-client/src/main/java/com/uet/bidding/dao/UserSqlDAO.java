@@ -69,8 +69,6 @@ public class UserSqlDAO implements IUserDAO {
           String sqlAdmin = "INSERT INTO admins (user_id, adminLevel, department) VALUES (?, ?, ?)";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
             stmtAdmin.setInt(1, generatedUserId);
-            stmtAdmin.setInt(2, admin.getAdminLevel());
-            stmtAdmin.setString(3, admin.getDepartment());
             stmtAdmin.executeUpdate();
           }
         } else {
@@ -114,9 +112,7 @@ public class UserSqlDAO implements IUserDAO {
     User user;
 
     if (rs.getInt("admin_id") > 0) {
-      Admin admin = new Admin();
-      admin.setAdminLevel(rs.getInt("adminLevel"));
-      admin.setDepartment(rs.getString("department"));
+      Admin admin = new Admin("Minh", "25052007", BigDecimal.ZERO);
       user = admin;
     } else if (rs.getInt("seller_id") > 0) {
       Seller seller = new Seller();
@@ -255,8 +251,6 @@ public class UserSqlDAO implements IUserDAO {
           Admin admin = (Admin) updatedUser;
           String sqlAdmin = "UPDATE admins SET adminLevel = ?, department = ? WHERE user_id = ?";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
-            stmtAdmin.setInt(1, admin.getAdminLevel());
-            stmtAdmin.setString(2, admin.getDepartment());
             stmtAdmin.setInt(3, admin.getId());
             stmtAdmin.executeUpdate();
           }

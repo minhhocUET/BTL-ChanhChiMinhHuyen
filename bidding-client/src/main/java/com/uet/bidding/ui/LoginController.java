@@ -50,7 +50,13 @@ public class LoginController {
       // ĐĂNG NHẬP THÀNH CÔNG: CHUYỂN THẲNG SANG AUCTION LIST
       // ==========================================
       System.out.println("Đăng nhập thành công, vào thẳng Dashboard...");
-      loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU - Dashboard", loggedInUser);
+      if ("ADMIN".equals(loggedInUser.getRole())) {
+        // Nếu là Admin -> Qua Dashboard quản trị
+        loadNextScene(event, "/AdminDashboard.fxml", "Admin Control Panel", loggedInUser);
+      } else {
+        // Nếu là người dùng thường -> Vào danh sách đấu giá
+        loadNextScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU", loggedInUser);
+      }
 
     } catch (AuthenticationException e) {
       // Bắt lỗi từ Database và in ra màn hình

@@ -13,7 +13,7 @@ public class AuctionLogicTest {
   @BeforeEach
   void setUp() {
     // [ĐÃ SỬA] Khởi tạo handler với 2 tham số (Socket, UserDAO) đều là null để test logic thuần túy
-    handler = new ClientHandler(null, null);
+    handler = new ClientHandler(null, null, null, null);
   }
 
   @Test

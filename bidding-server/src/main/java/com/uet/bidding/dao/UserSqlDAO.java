@@ -2,7 +2,10 @@ package com.uet.bidding.dao;
 
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.*;
+import com.uet.bidding.model.Admin;
+import com.uet.bidding.model.Bidder;
+import com.uet.bidding.model.Seller;
+import com.uet.bidding.model.User;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -16,7 +19,7 @@ public class UserSqlDAO implements IUserDAO {
    */
   private void setStringOrNull(PreparedStatement pstmt, int index, String value) throws SQLException {
     if (value == null || value.trim().isEmpty()) {
-      pstmt.setNull(index, java.sql.Types.VARCHAR);
+      pstmt.setNull(index, Types.VARCHAR);
     } else {
       pstmt.setString(index, value.trim());
     }

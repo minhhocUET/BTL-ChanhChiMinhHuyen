@@ -2,6 +2,7 @@ package com.uet.bidding.model;
 
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
+import com.uet.bidding.dao.AuctionSqlDAO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public class AuctionManager {
   private AtomicInteger auctionIdCounter = new AtomicInteger(1);
 
   // 1. THÊM DAO: Để đọc/ghi file .dat
-  private AuctionDAO auctionDAO;
+  private AuctionSqlDAO auctionSqlDAO;
 
   private AuctionManager() {
     System.out.println("Hệ thống quản lý đấu giá đã được khởi động!");
@@ -39,8 +40,8 @@ public class AuctionManager {
   /**
    * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật.
    */
-  public void initialize(AuctionDAO dao) {
-    this.auctionDAO = dao;
+  public void initialize(AuctionSqlDAO dao) {
+    this.auctionSqlDAO = dao;
     List<Auction> savedAuctions = dao.getAllAuctions();
 
     int maxId = 0;
@@ -82,8 +83,15 @@ public class AuctionManager {
     addAuction(newAuction);
 
     // Lưu ngay xuống file
-    if (auctionDAO != null) {
-      auctionDAO.updateAuction(newAuction);
+    if (auctionSqlDAO != null) {
+      try {
+        auctionSqlDAO.updateAuction(newAuction);
+      } catch (Exception e) {
+        // Log lỗi ra console để debug
+        System.err.println("❌ Lỗi: Không thể lưu phiên đấu giá mới vào Database: " + e.getMessage());
+        // Bạn có thể quăng một RuntimeException nếu muốn Server dừng lại khi lỗi DB
+        // throw new RuntimeException("Lỗi nghiêm trọng khi lưu dữ liệu đấu giá", e);
+      }
     }
     return newAuction;
   }
@@ -97,7 +105,13 @@ public class AuctionManager {
       Auction auction = auctions.get(auctionId);
       if (auction != null) {
         auction.setStatus("RUNNING");
-        if (auctionDAO != null) auctionDAO.updateAuction(auction); // Update file
+        if (auctionSqlDAO != null) {
+          try {
+            auctionSqlDAO.updateAuction(auction);
+          } catch (Exception e) {
+            System.err.println("Lỗi cập nhật trạng thái RUNNING: " + e.getMessage());
+          }
+        }
         System.out.println("Phiên đấu giá #" + auctionId + " chính thức bắt đầu!");
       }
     } finally {
@@ -114,7 +128,13 @@ public class AuctionManager {
       Auction auction = auctions.get(auctionId);
       if (auction != null) {
         auction.setStatus("FINISHED");
-        if (auctionDAO != null) auctionDAO.updateAuction(auction); // Update file
+        if (auctionSqlDAO != null) {
+          try {
+            auctionSqlDAO.updateAuction(auction);
+          } catch (Exception e) {
+            System.err.println("Lỗi cập nhật trạng thái RUNNING: " + e.getMessage());
+          }
+        }
         System.out.println("--- KẾT THÚC PHIÊN #" + auctionId + " ---");
       }
     } finally {
@@ -142,8 +162,14 @@ public class AuctionManager {
 
       if (success) {
         // 3. QUAN TRỌNG: Lưu ngay lập tức xuống file auctions.dat qua DAO
-        if (auctionDAO != null) {
-          auctionDAO.updateAuction(auction);
+        if (auctionSqlDAO != null) {
+          try {
+            // PHẢI dùng try-catch ở đây vì interface định nghĩa throws Exception
+            auctionSqlDAO.updateAuction(auction);
+          } catch (Exception e) {
+            System.err.println("Lỗi lưu DB khi đặt giá: " + e.getMessage());
+            // Có thể ném ngược lại một RuntimeException để báo hiệu lỗi hệ thống
+          }
         }
         System.out.println("[Server] " + bidder.getUsername() + " bid thành công: " + amount + " cho ID: " + auctionId);
       }

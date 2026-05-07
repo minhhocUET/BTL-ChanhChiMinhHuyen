@@ -3,7 +3,7 @@ package com.uet.bidding.dao;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.*;
-
+import com.uet.bidding.model.Admin;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;

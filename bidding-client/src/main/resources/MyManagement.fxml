@@ -4,14 +4,15 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.Font?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="900.0"
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="950.0"
             style="-fx-background-color: #ffe4e8;" xmlns="http://javafx.com/javafx/19"
             fx:controller="com.uet.bidding.ui.MyManagementController">
     <children>
         <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
               AnchorPane.topAnchor="20.0">
             <children>
-
                 <HBox alignment="CENTER_LEFT">
                     <children>
                         <Button mnemonicParsing="false" onAction="#handleBack"
@@ -21,17 +22,13 @@
                                 <Font name="System Bold" size="13.0"/>
                             </font>
                         </Button>
-
                         <Region prefWidth="20.0"/>
-
                         <Label text="QUẢN LÝ CỦA TÔI" textFill="#d8466b">
                             <font>
                                 <Font name="System Bold" size="24.0"/>
                             </font>
                         </Label>
-
                         <Region HBox.hgrow="ALWAYS"/>
-
                         <VBox alignment="CENTER" onMouseClicked="#handleGoToMyProfile" spacing="4.0"
                               style="-fx-cursor: hand;">
                             <children>
@@ -49,6 +46,39 @@
                 <TabPane style="-fx-background-color: white; -fx-background-radius: 8;" tabClosingPolicy="UNAVAILABLE"
                          VBox.vgrow="ALWAYS">
                     <tabs>
+                        <Tab text="Sản phẩm của tôi">
+                            <content>
+                                <VBox spacing="10.0">
+                                    <padding>
+                                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                    </padding>
+                                    <children>
+                                        <HBox spacing="10.0">
+                                            <children>
+                                                <Button mnemonicParsing="false" onAction="#handleAddItem"
+                                                        style="-fx-background-color: #4CAF50;" text="+ Thêm sản phẩm" textFill="WHITE">
+                                                    <font><Font name="System Bold" size="12.0"/></font>
+                                                </Button>
+                                                <Button mnemonicParsing="false" onAction="#handleRemoveItem"
+                                                        style="-fx-background-color: #f44336;" text="- Xóa sản phẩm" textFill="WHITE">
+                                                    <font><Font name="System Bold" size="12.0"/></font>
+                                                </Button>
+                                            </children>
+                                        </HBox>
+
+                                        <TableView fx:id="myItemsTableView" VBox.vgrow="ALWAYS">
+                                            <columns>
+                                                <TableColumn fx:id="colItemStt" prefWidth="40.0" text="STT" />
+                                                <TableColumn fx:id="colItemName" prefWidth="180.0" text="Tên sản phẩm" />
+                                                <TableColumn fx:id="colItemDesc" prefWidth="250.0" text="Mô tả" />
+                                                <TableColumn fx:id="colItemStartPrice" prefWidth="120.0" text="Giá khởi điểm" />
+                                                <TableColumn fx:id="colItemAction" prefWidth="120.0" text="Thao tác" />
+                                            </columns>
+                                        </TableView>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </Tab>
 
                         <Tab text="Đang tham gia đấu giá">
                             <content>
@@ -60,8 +90,7 @@
                                             <columns>
                                                 <TableColumn fx:id="colBidStt" prefWidth="50.0" text="STT"/>
                                                 <TableColumn fx:id="colBidName" prefWidth="250.0" text="Tên sản phẩm"/>
-                                                <TableColumn fx:id="colBidCurrentPrice" prefWidth="150.0"
-                                                             text="Giá hiện tại"/>
+                                                <TableColumn fx:id="colBidCurrentPrice" prefWidth="150.0" text="Giá hiện tại"/>
                                                 <TableColumn fx:id="colBidMyPrice" prefWidth="150.0" text="Giá đã đặt"/>
                                                 <TableColumn fx:id="colBidStatus" prefWidth="150.0" text="Trạng thái"/>
                                             </columns>
@@ -81,22 +110,17 @@
                                             <columns>
                                                 <TableColumn fx:id="colSellStt" prefWidth="50.0" text="STT"/>
                                                 <TableColumn fx:id="colSellName" prefWidth="250.0" text="Tên sản phẩm"/>
-                                                <TableColumn fx:id="colSellStartPrice" prefWidth="150.0"
-                                                             text="Giá khởi điểm"/>
-                                                <TableColumn fx:id="colSellHighestBid" prefWidth="150.0"
-                                                             text="Giá đang trả cao nhất"/>
-                                                <TableColumn fx:id="colSellInterested" prefWidth="150.0"
-                                                             text="Lượt quan tâm"/>
+                                                <TableColumn fx:id="colSellStartPrice" prefWidth="150.0" text="Giá khởi điểm"/>
+                                                <TableColumn fx:id="colSellHighestBid" prefWidth="150.0" text="Giá cao nhất"/>
+                                                <TableColumn fx:id="colSellInterested" prefWidth="150.0" text="Lượt quan tâm"/>
                                             </columns>
                                         </TableView>
                                     </children>
                                 </AnchorPane>
                             </content>
                         </Tab>
-
                     </tabs>
                 </TabPane>
-
             </children>
         </VBox>
     </children>

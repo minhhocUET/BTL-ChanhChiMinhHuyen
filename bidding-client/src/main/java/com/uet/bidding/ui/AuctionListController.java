@@ -50,16 +50,18 @@ public class AuctionListController implements Initializable {
     // 2. Tạo cột chứa nút bấm
     setupActionColumn();
 
-    // 3. TẠO DỮ LIỆU ĐỂ ĐỔ VÀO BẢNG
-    ObservableList<AuctionItem> dataList = FXCollections.observableArrayList(
-        new AuctionItem(1, "Hà Nội", "Laptop Dell XPS 15", 125),
-        new AuctionItem(2, "Đà Nẵng", "Đồng hồ Apple Watch S9", 45),
-        new AuctionItem(3, "TP. HCM", "Xe đạp điện VinFast", 89),
-        new AuctionItem(4, "Cần Thơ", "Máy ảnh Canon EOS R5", 12)
-    );
+    /**
+     *  // 3. TẠO DỮ LIỆU ĐỂ ĐỔ VÀO BẢNG
+     *     ObservableList<AuctionItem> dataList = FXCollections.observableArrayList(
+     *         new AuctionItem(1, "Hà Nội", "Laptop Dell XPS 15", 125),
+     *         new AuctionItem(2, "Đà Nẵng", "Đồng hồ Apple Watch S9", 45),
+     *         new AuctionItem(3, "TP. HCM", "Xe đạp điện VinFast", 89),
+     *         new AuctionItem(4, "Cần Thơ", "Máy ảnh Canon EOS R5", 12)
+     *     );
+     *  // 4. Đổ dữ liệu vào bảng
+     *     tableView.setItems(dataList);
+     */
 
-    // 4. Đổ dữ liệu vào bảng
-    tableView.setItems(dataList);
 
     // 5. KHỞI TẠO DANH SÁCH 63 TỈNH THÀNH CHO COMBOBOX
     ObservableList<String> cities = FXCollections.observableArrayList(

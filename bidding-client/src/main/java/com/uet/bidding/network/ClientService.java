@@ -145,6 +145,16 @@ public class ClientService {
         }
         break;
 
+      case "UPDATE_PROFILE_SUCCESS":
+        Platform.runLater(() -> {
+          javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+          alert.setTitle("Thành công");
+          alert.setHeaderText(null);
+          alert.setContentText("Hồ sơ của bạn đã được cập nhật đầy đủ lên cơ sở dữ liệu hệ thống!");
+          alert.showAndWait();
+        });
+        break;
+
       case "ERROR":
         String errorMsg = String.valueOf(msg.getData());
         System.err.println("❌ Lỗi từ Server: " + errorMsg);

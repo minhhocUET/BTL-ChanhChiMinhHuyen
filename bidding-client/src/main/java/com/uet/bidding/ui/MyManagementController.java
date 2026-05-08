@@ -1,194 +1,194 @@
 package com.uet.bidding.ui;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import com.uet.bidding.network.ClientService;
+import com.uet.bidding.util.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
-import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class MyManagementController implements Initializable {
 
-  // --- BẢNG ĐANG THAM GIA ĐẤU GIÁ ---
-  @FXML
-  private TableView<BidItem> bidTableView;
-  @FXML
-  private TableColumn<BidItem, Integer> colBidStt;
-  @FXML
-  private TableColumn<BidItem, String> colBidName;
-  @FXML
-  private TableColumn<BidItem, String> colBidCurrentPrice;
-  @FXML
-  private TableColumn<BidItem, String> colBidMyPrice;
-  @FXML
-  private TableColumn<BidItem, String> colBidStatus;
+  // --- BẢNG 1: SẢN PHẨM CỦA TÔI (Đã đổi tên khớp với FXML: myItemsTableView) ---
+  @FXML private TableView<MyProductItem> myItemsTableView;
+  @FXML private TableColumn<MyProductItem, Integer> colItemStt;
+  @FXML private TableColumn<MyProductItem, String> colItemName, colItemDesc;
+  @FXML private TableColumn<MyProductItem, Double> colItemStartPrice;
+  @FXML private TableColumn<MyProductItem, Void> colItemAction;
 
-  // --- BẢNG ĐANG GIAO BÁN ---
-  @FXML
-  private TableView<SellItem> sellTableView;
-  @FXML
-  private TableColumn<SellItem, Integer> colSellStt;
-  @FXML
-  private TableColumn<SellItem, String> colSellName;
-  @FXML
-  private TableColumn<SellItem, String> colSellStartPrice;
-  @FXML
-  private TableColumn<SellItem, String> colSellHighestBid;
-  @FXML
-  private TableColumn<SellItem, Integer> colSellInterested;
+  // --- BẢNG 2: ĐANG THAM GIA ĐẤU GIÁ ---
+  @FXML private TableView<BidItem> bidTableView;
+  @FXML private TableColumn<BidItem, Integer> colBidStt;
+  @FXML private TableColumn<BidItem, String> colBidName, colBidStatus;
+  @FXML private TableColumn<BidItem, Double> colBidCurrentPrice, colBidMyPrice;
+
+  // --- BẢNG 3: SẢN PHẨM ĐANG GIAO BÁN ---
+  @FXML private TableView<SellItem> sellTableView;
+  @FXML private TableColumn<SellItem, Integer> colSellStt;
+  @FXML private TableColumn<SellItem, String> colSellName;
+  @FXML private TableColumn<SellItem, Double> colSellStartPrice, colSellHighestBid;
+  @FXML private TableColumn<SellItem, Integer> colSellInterested;
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
+    setupMyProductsTable();
     setupBidTable();
     setupSellTable();
+
+    // Tải dữ liệu từ Server
+    refreshData();
+  }
+
+  // --- THIẾT LẬP CÁC BẢNG ---
+
+  private void setupMyProductsTable() {
+    colItemStt.setCellValueFactory(new PropertyValueFactory<>("stt"));
+    colItemName.setCellValueFactory(new PropertyValueFactory<>("name"));
+    colItemDesc.setCellValueFactory(new PropertyValueFactory<>("description"));
+    formatCurrencyColumn(colItemStartPrice, "startingPrice");
+    setupActionColumn();
   }
 
   private void setupBidTable() {
     colBidStt.setCellValueFactory(new PropertyValueFactory<>("stt"));
     colBidName.setCellValueFactory(new PropertyValueFactory<>("name"));
-    colBidCurrentPrice.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
-    colBidMyPrice.setCellValueFactory(new PropertyValueFactory<>("myPrice"));
     colBidStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-    ObservableList<BidItem> data = FXCollections.observableArrayList(
-        new BidItem(1, "Laptop Dell XPS 15", "15.000.000 VNĐ", "14.500.000 VNĐ", "Đang bị vượt giá"),
-        new BidItem(2, "Đồng hồ Apple Watch S9", "8.500.000 VNĐ", "8.500.000 VNĐ", "Đang dẫn đầu")
-    );
-    bidTableView.setItems(data);
+    formatCurrencyColumn(colBidCurrentPrice, "currentPrice");
+    formatCurrencyColumn(colBidMyPrice, "myPrice");
   }
 
   private void setupSellTable() {
     colSellStt.setCellValueFactory(new PropertyValueFactory<>("stt"));
     colSellName.setCellValueFactory(new PropertyValueFactory<>("name"));
-    colSellStartPrice.setCellValueFactory(new PropertyValueFactory<>("startPrice"));
-    colSellHighestBid.setCellValueFactory(new PropertyValueFactory<>("highestBid"));
     colSellInterested.setCellValueFactory(new PropertyValueFactory<>("interested"));
-
-    ObservableList<SellItem> data = FXCollections.observableArrayList(
-        new SellItem(1, "Bàn phím cơ Logitech", "1.200.000 VNĐ", "1.500.000 VNĐ", 12),
-        new SellItem(2, "Màn hình LG 24 inch", "2.000.000 VNĐ", "Chưa có người trả", 5)
-    );
-    sellTableView.setItems(data);
+    formatCurrencyColumn(colSellStartPrice, "startPrice");
+    formatCurrencyColumn(colSellHighestBid, "highestBid");
   }
 
-  // ==========================================
-  // CÁC HÀM CHUYỂN TRANG
-  // ==========================================
+  // --- XỬ LÝ SỰ KIỆN (Bổ sung để khớp với FXML) ---
+
+  @FXML
+  private void handleAddItem(ActionEvent event) {
+    System.out.println("Mở màn hình thêm sản phẩm mới...");
+    // Logics: Main.changeScene("/AddItem.fxml", "Thêm sản phẩm", 600, 400);
+  }
+
+  @FXML
+  private void handleRemoveItem(ActionEvent event) {
+    MyProductItem selected = myItemsTableView.getSelectionModel().getSelectedItem();
+    if (selected != null) {
+      System.out.println("Đang xóa sản phẩm: " + selected.getName());
+      // Logics: Gửi yêu cầu xóa lên Server
+    } else {
+      showWarning("Chú ý", "Vui lòng chọn một sản phẩm trong bảng để xóa!");
+    }
+  }
 
   @FXML
   public void handleBack(ActionEvent event) {
-    switchScene(event, "/AuctionList.fxml", "Danh sách đấu giá");
+    Main.changeScene("/AuctionList.fxml", "Danh sách đấu giá", 1000, 700);
   }
 
   @FXML
   public void handleGoToMyProfile(MouseEvent event) {
-    try {
-      Parent root = FXMLLoader.load(getClass().getResource("/UserProfile.fxml"));
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      stage.setScene(new Scene(root));
-      stage.setTitle("Hồ sơ cá nhân");
-      stage.show();
-    } catch (Exception e) {
-      e.printStackTrace();
+    Main.changeScene("/UserProfile.fxml", "Hồ sơ cá nhân", 800, 600);
+  }
+
+  // --- TIỆN ÍCH ---
+
+  private void formatCurrencyColumn(TableColumn column, String propertyName) {
+    column.setCellValueFactory(new PropertyValueFactory<>(propertyName));
+    column.setCellFactory(tc -> new TableCell<Object, Double>() {
+      @Override
+      protected void updateItem(Double price, boolean empty) {
+        super.updateItem(price, empty);
+        if (empty || price == null) setText(null);
+        else setText(String.format("%,.0f VNĐ", price));
+      }
+    });
+  }
+
+  private void setupActionColumn() {
+    colItemAction.setCellFactory(param -> new TableCell<>() {
+      private final Button btnEdit = new Button("Sửa");
+      {
+        btnEdit.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-cursor: hand;");
+        btnEdit.setOnAction(event -> {
+          MyProductItem data = getTableView().getItems().get(getIndex());
+          System.out.println("Chỉnh sửa: " + data.getName());
+        });
+      }
+      @Override
+      protected void updateItem(Void item, boolean empty) {
+        super.updateItem(item, empty);
+        setGraphic(empty ? null : btnEdit);
+      }
+    });
+  }
+
+  private void refreshData() {
+    if (UserSession.getCurrentUser() != null) {
+      ClientService.getInstance().sendRequest("GET_MY_MANAGEMENT_DATA", UserSession.getCurrentUser().getId());
     }
   }
 
-  private void switchScene(ActionEvent event, String fxmlPath, String title) {
-    try {
-      Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      stage.setScene(new Scene(root));
-      stage.setTitle(title);
-      stage.show();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+  private void showWarning(String title, String content) {
+    Alert alert = new Alert(Alert.AlertType.WARNING);
+    alert.setTitle(title);
+    alert.setHeaderText(null);
+    alert.setContentText(content);
+    alert.showAndWait();
   }
 
-  // ==========================================
-  // CÁC LỚP DỮ LIỆU NỘI BỘ (Chỉ dùng cho UI này)
-  // ==========================================
+  // --- MODEL CLASSES ---
+
+  public static class MyProductItem {
+    private int stt;
+    private String name, description;
+    private double startingPrice;
+
+    public MyProductItem(int stt, String name, String description, double startingPrice) {
+      this.stt = stt; this.name = name; this.description = description; this.startingPrice = startingPrice;
+    }
+    public int getStt() { return stt; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public double getStartingPrice() { return startingPrice; }
+  }
 
   public static class BidItem {
     private int stt;
-    private String name;
-    private String currentPrice;
-    private String myPrice;
-    private String status;
+    private String name, status;
+    private double currentPrice, myPrice;
 
-    public BidItem(int stt, String name, String currentPrice, String myPrice, String status) {
-      this.stt = stt;
-      this.name = name;
-      this.currentPrice = currentPrice;
-      this.myPrice = myPrice;
-      this.status = status;
+    public BidItem(int stt, String name, double currentPrice, double myPrice, String status) {
+      this.stt = stt; this.name = name; this.currentPrice = currentPrice; this.myPrice = myPrice; this.status = status;
     }
-
-    public int getStt() {
-      return stt;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getCurrentPrice() {
-      return currentPrice;
-    }
-
-    public String getMyPrice() {
-      return myPrice;
-    }
-
-    public String getStatus() {
-      return status;
-    }
+    public int getStt() { return stt; }
+    public String getName() { return name; }
+    public double getCurrentPrice() { return currentPrice; }
+    public double getMyPrice() { return myPrice; }
+    public String getStatus() { return status; }
   }
 
   public static class SellItem {
     private int stt;
     private String name;
-    private String startPrice;
-    private String highestBid;
+    private double startPrice, highestBid;
     private int interested;
 
-    public SellItem(int stt, String name, String startPrice, String highestBid, int interested) {
-      this.stt = stt;
-      this.name = name;
-      this.startPrice = startPrice;
-      this.highestBid = highestBid;
-      this.interested = interested;
+    public SellItem(int stt, String name, double startPrice, double highestBid, int interested) {
+      this.stt = stt; this.name = name; this.startPrice = startPrice; this.highestBid = highestBid; this.interested = interested;
     }
-
-    public int getStt() {
-      return stt;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getStartPrice() {
-      return startPrice;
-    }
-
-    public String getHighestBid() {
-      return highestBid;
-    }
-
-    public int getInterested() {
-      return interested;
-    }
+    public int getStt() { return stt; }
+    public String getName() { return name; }
+    public double getStartPrice() { return startPrice; }
+    public double getHighestBid() { return highestBid; }
+    public int getInterested() { return interested; }
   }
 }

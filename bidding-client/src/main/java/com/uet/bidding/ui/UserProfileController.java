@@ -2,6 +2,7 @@ package com.uet.bidding.ui;
 
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.User;
+import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;
 import com.uet.bidding.util.UserSession;
 import javafx.event.ActionEvent;
@@ -115,38 +116,30 @@ public class UserProfileController implements Initializable {
   public void handleSaveInfo(ActionEvent event) {
     if (currentUser == null) return;
 
-    // 1. KIỂM TRA ĐẦY ĐỦ THÔNG TIN (VALIDATION)
     String fullName = txtName.getText().trim();
     String email = txtEmail.getText().trim();
     String phone = txtPhone.getText().trim();
     String address = txtAddress.getText().trim();
     String bank = currentUser.getLinkedBank();
 
-    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()) {
-      showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ các trường thông tin cá nhân!");
+    // 1. Chặn nếu nhập thiếu
+    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty() || bank == null || bank.trim().isEmpty()) {
+      showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ thông tin cá nhân và ngân hàng!");
       return;
     }
 
-    if (bank == null || bank.trim().isEmpty()) {
-      showAlert(Alert.AlertType.ERROR, "Chưa liên kết ngân hàng", "Bạn bắt buộc phải liên kết ngân hàng để đảm bảo giao dịch!");
-      return;
-    }
-
-    // 2. Gán dữ liệu vào đối tượng
+    // 2. Cập nhật dữ liệu vào Object hiện tại
     currentUser.setFullName(fullName);
     currentUser.setEmail(email);
     currentUser.setPhone(phone);
     currentUser.setAddress(address);
+    currentUser.setProfileComplete(true); // Đánh dấu hoàn thiện
 
-    try {
-      currentUser.setProfileComplete(currentUser.hasCompleteProfile());
+    // 3. Gửi toàn bộ User qua mạng yêu cầu Server update vào TiDB
+    ClientService.getInstance().sendRequest("UPDATE_PROFILE", currentUser);
 
-      // 3. Lưu xuống Database
-      userService.updateUser(currentUser);
-      showAlert(Alert.AlertType.INFORMATION, "Thành công", "Hồ sơ của bạn đã được cập nhật đầy đủ.");
-    } catch (UserException e) {
-      showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", e.getMessage());
-    }
+    // 4. Lưu trực tiếp vào Session hiện hành trên Client để các màn hình khác nhận diện ngay
+    UserSession.setCurrentUser(currentUser);
   }
 
   @FXML

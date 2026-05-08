@@ -58,6 +58,11 @@ public class AuctionManager {
     return auctions.get(id);
   }
 
+  public void reset() {
+    auctions.clear();
+    locks.clear();
+  }
+
   // ================== CORE LOGIC (SỬA ĐỂ LƯU FILE) ==================
 
   /**

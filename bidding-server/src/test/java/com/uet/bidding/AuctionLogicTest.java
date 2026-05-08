@@ -1,33 +1,61 @@
 package com.uet.bidding;
 
-import com.uet.bidding.exception.AuthenticationException;
-import com.uet.bidding.exception.InvalidBidException;
+import com.uet.bidding.dao.AuctionSqlDAO;
+import com.uet.bidding.exception.AuctionClosedException;
+import com.uet.bidding.model.Auction;
+import com.uet.bidding.model.AuctionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class AuctionLogicTest {
-  private ClientHandler handler;
+  private AuctionManager manager;
+  private AuctionSqlDAO mockDao;
 
   @BeforeEach
   void setUp() {
-    // [ĐÃ SỬA] Khởi tạo handler với 2 tham số (Socket, UserDAO) đều là null để test logic thuần túy
-    handler = new ClientHandler(null, null, null, null);
+    mockDao = mock(AuctionSqlDAO.class);
+    when(mockDao.getAllAuctions()).thenReturn(new ArrayList<>());
+
+    manager = AuctionManager.getInstance();
+    manager.reset();
+    manager.initialize(mockDao);
   }
 
   @Test
-  void testInvalidBidAmount() {
-    // [ĐÃ SỬA] Test với giá trị âm hoặc bằng 0 để đảm bảo ném ra InvalidBidException
-    assertThrows(InvalidBidException.class, () -> {
-      handler.handleAuctionLogic("-500");
+  void testBidOnClosedAuction() {
+    int auctionId = 5;
+    Auction auction = new Auction(105, new BigDecimal("1000"),
+        LocalDateTime.now().minusHours(5), LocalDateTime.now().minusHours(1));
+    auction.setId(auctionId);
+    auction.setStatus("FINISHED"); // Giả lập trạng thái đã kết thúc
+    manager.addAuction(auction);
+
+    // Theo code của bạn: status != "RUNNING" thì văng AuctionClosedException
+    assertThrows(AuctionClosedException.class, () -> {
+      manager.placeBid(auctionId, "UserLate", new BigDecimal("2000"));
     });
   }
 
   @Test
-  void testLoginWithEmptyName() {
-    assertThrows(AuthenticationException.class, () -> {
-      handler.handleLoginLogic("");
-    });
+  void testAuctionDataIntegrity() {
+    int auctionId = 8;
+    Auction auction = new Auction(108, new BigDecimal("5000"),
+        LocalDateTime.now().minusHours(1), LocalDateTime.now().plusHours(1));
+    auction.setId(auctionId);
+    auction.setStatus("RUNNING");
+    manager.addAuction(auction);
+
+    Auction savedAuction = manager.getAuction(auctionId);
+    assertNotNull(savedAuction);
+    assertEquals(auctionId, savedAuction.getId());
+    assertEquals(0, new BigDecimal("5000").compareTo(savedAuction.getCurrentPrice()));
+    assertTrue(savedAuction.isActive()); // isActive trả về true nếu là OPEN hoặc RUNNING
   }
 }

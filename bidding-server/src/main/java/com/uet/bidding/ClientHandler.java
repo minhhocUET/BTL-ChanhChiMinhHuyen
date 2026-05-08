@@ -16,6 +16,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ClientHandler implements Runnable, AuctionObserver {
   private final Socket clientSocket;
@@ -44,6 +46,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
   private void sendResponse(String type, Object data) {
     sendMessage(new NetworkMessage(type, data));
   }
+
 
   @Override
   public void run() {
@@ -140,7 +143,25 @@ public class ClientHandler implements Runnable, AuctionObserver {
               this.loggedInUser = updatedUser;
               responseContent = "Cập nhật hồ sơ thành công!";
               break;
+            // ... các case khác (LOGIN, REGISTER, BID...)
 
+            case "GET_SYSTEM_STATS":
+              // 1. Lấy số lượng người online thực tế
+              int activeSessions = Server.activeClients.size();
+
+              // 2. Lấy tổng số user từ DB (Cần hàm này trong UserSqlDAO)
+              int totalUsers = userSqlDAO.getTotalUserCount();
+
+              // 3. Số sản phẩm chờ duyệt
+              int pendingItems = 8;
+
+              Map<String, Integer> statsMap = new HashMap<>();
+              statsMap.put("totalUsers", totalUsers);
+              statsMap.put("activeSessions", activeSessions);
+              statsMap.put("pendingItems", pendingItems);
+
+              // Gửi về cho Admin Dashboard
+              sendResponse("SYSTEM_STATS_RESPONSE", statsMap);
             case "ADD_BALANCE":
               if (loggedInUser == null) {
                 throw new AuthenticationException("Bạn phải đăng nhập trước khi nạp tiền!");

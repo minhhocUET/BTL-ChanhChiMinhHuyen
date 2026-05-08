@@ -330,4 +330,18 @@ public class UserSqlDAO implements IUserDAO {
       throw new UserException("Lỗi xóa dữ liệu: " + e.getMessage());
     }
   }
+
+  public int getTotalUserCount() {
+    String sql = "SELECT COUNT(*) FROM users";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql);
+         ResultSet rs = pstmt.executeQuery()) {
+      if (rs.next()) {
+        return rs.getInt(1);
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return 0;
+  }
 }

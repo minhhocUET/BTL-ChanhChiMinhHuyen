@@ -11,32 +11,58 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Scanner;
+import java.util.function.Consumer; // Thêm import này
 
 public class ClientApp {
   private static final Gson networkGson = new Gson();
   private static final Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
-
   private static volatile boolean isRunning = true;
 
-  public static void main(String[] args) {
-    String hostname = "localhost";
-    int port = 8888;
+  // Các thông số Server để dùng chung
+  private static final String HOSTNAME = "localhost";
+  private static final int PORT = 8888;
 
+  // ==============================================================
+  // HÀM MỚI: Dùng cho JavaFX UI gửi yêu cầu và nhận phản hồi
+  // ==============================================================
+  public static void sendRequest(NetworkMessage request, Consumer<NetworkMessage> callback) {
+    new Thread(() -> {
+      try (Socket socket = new Socket(HOSTNAME, PORT);
+           PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+           BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+        // 1. Gửi tin nhắn đi
+        out.println(networkGson.toJson(request));
+
+        // 2. Đợi phản hồi từ Server
+        String rawResponse = in.readLine();
+        if (rawResponse != null) {
+          NetworkMessage response = networkGson.fromJson(rawResponse, NetworkMessage.class);
+          // 3. Trả dữ liệu về cho Controller thông qua callback
+          callback.accept(response);
+        }
+      } catch (IOException e) {
+        System.err.println("❌ [Lỗi UI Request]: " + e.getMessage());
+      }
+    }).start();
+  }
+
+  // ==============================================================
+  // CODE CŨ CỦA BẠN (GIỮ NGUYÊN ĐỂ CHẠY CONSOLE NẾU CẦN)
+  // ==============================================================
+  public static void main(String[] args) {
     System.out.println("=================================================");
     System.out.println("||    HỆ THỐNG ĐẤU GIÁ UET - CLIENT VERSION    ||");
     System.out.println("=================================================");
 
-    try (Socket socket = new Socket(hostname, port);
+    try (Socket socket = new Socket(HOSTNAME, PORT);
          PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
          BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
          Scanner scanner = new Scanner(System.in)) {
 
       System.out.println("[Hệ thống] Đã kết nối thành công tới Server.\n");
-
-      // Hiển thị menu hướng dẫn ngay khi kết nối thành công
       showMenu();
 
-      // Luồng nhận dữ liệu
       Thread listenerThread = new Thread(() -> {
         try {
           String rawResponse;
@@ -44,36 +70,26 @@ public class ClientApp {
             handleServerResponse(rawResponse);
           }
         } catch (SocketException e) {
-          if (isRunning) {
-            System.err.println("\n❌ [Lỗi] Mất kết nối tới Server!");
-          }
+          if (isRunning) System.err.println("\n❌ [Lỗi] Mất kết nối tới Server!");
         } catch (IOException e) {
           if (isRunning) System.err.println("\n❌ [Lỗi Đọc Dữ Liệu]: " + e.getMessage());
         }
       });
       listenerThread.start();
 
-      // Luồng chính: Đọc lệnh từ người dùng
       while (isRunning) {
         String input = scanner.nextLine().trim();
-
-        // 1. Xử lý các lệnh đặc biệt (Local commands - không cần gửi lên server)
         if (input.equalsIgnoreCase("EXIT")) {
-          System.out.println("Đang ngắt kết nối và thoát hệ thống...");
           isRunning = false;
           System.exit(0);
           break;
         }
-
         if (input.equalsIgnoreCase("HELP")) {
           showMenu();
-          System.out.print("Nhập lệnh: ");
           continue;
         }
-
         if (input.isEmpty()) continue;
 
-        // 2. Tách lệnh và gửi đi cho Server
         String[] parts = input.split(" ", 2);
         String type = parts[0].toUpperCase();
         String content = (parts.length > 1) ? parts[1] : "";
@@ -81,25 +97,16 @@ public class ClientApp {
         NetworkMessage msg = new NetworkMessage(type, content);
         out.println(networkGson.toJson(msg));
       }
-
     } catch (IOException e) {
       System.err.println("❌ [Lỗi Hệ Thống] Kết nối thất bại: " + e.getMessage());
-      System.out.println("Vui lòng kiểm tra xem Server đã được bật chưa.");
     }
   }
 
-  // ==============================================================
-  // BẢNG HƯỚNG DẪN TRỰC QUAN
-  // ==============================================================
   private static void showMenu() {
     System.out.println("\n------------------- CÚ PHÁP LỆNH -------------------");
     System.out.println(" 1. Đăng ký      : REGISTER <tài_khoản> <mật_khẩu>");
-    System.out.println("                   (VD: REGISTER huyen123 123456)");
     System.out.println(" 2. Đăng nhập    : LOGIN <tài_khoản> <mật_khẩu>");
-    System.out.println("                   (VD: LOGIN huyen123 123456)");
     System.out.println(" 3. Đặt giá      : BID <mã_phiên> <số_tiền>");
-    System.out.println("                   (VD: BID 1 5000000)");
-    System.out.println(" 4. Xem trợ giúp : HELP");
     System.out.println(" 5. Thoát app    : EXIT");
     System.out.println("----------------------------------------------------");
   }
@@ -108,41 +115,9 @@ public class ClientApp {
     try {
       NetworkMessage serverMsg = networkGson.fromJson(rawResponse, NetworkMessage.class);
       Object responseData = serverMsg.getData();
-
-      String displayString;
-      if (responseData instanceof String) {
-        displayString = (String) responseData;
-      } else {
-        displayString = "\n" + prettyGson.toJson(responseData);
-      }
-
-      System.out.print("\r");
-
-      switch (serverMsg.getType()) {
-        case "SUCCESS":
-          System.out.println("✅ [Thành công]: " + displayString);
-          break;
-        case "ERROR":
-          System.err.println("❌ [Lỗi]: " + displayString);
-          break;
-        case "BROADCAST":
-          System.out.println("📣 [THÔNG BÁO]: " + displayString);
-          break;
-        case "LOGIN_SUCCESS":
-          System.out.println("🎊 [Hệ thống]: Đăng nhập thành công!");
-          // responseData lúc này là Object User, bạn có thể in ra số dư:
-          // System.out.println("Số dư hiện tại: " + prettyGson.toJson(responseData));
-          break;
-        default:
-          System.out.println("ℹ️ [" + serverMsg.getType() + "]: " + displayString);
-          break;
-      }
-
-      System.out.print("Nhập lệnh: ");
-
+      System.out.println("ℹ️ [" + serverMsg.getType() + "]: " + responseData);
     } catch (Exception e) {
-      System.err.println("\n❌ [Lỗi xử lý JSON]: Máy chủ gửi chuỗi không hợp lệ.");
-      System.out.print("Nhập lệnh: ");
+      System.err.println("❌ [Lỗi xử lý JSON]");
     }
   }
 }

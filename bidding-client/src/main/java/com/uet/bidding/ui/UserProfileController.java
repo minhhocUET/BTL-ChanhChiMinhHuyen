@@ -168,12 +168,12 @@ public class UserProfileController implements Initializable {
 
   @FXML
   public void handleAddFunds(ActionEvent event) {
-    if (currentUser.getLinkedBank() == null) {
+    if (currentUser.getLinkedBank() == null || currentUser.getLinkedBank().trim().isEmpty()) {
       showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng liên kết ngân hàng trước khi nạp tiền!");
       return;
     }
 
-    TextInputDialog dialog = new TextInputDialog("1000000");
+    TextInputDialog dialog = new TextInputDialog("100000"); // Mặc định 100k
     dialog.setTitle("Nạp tiền");
     dialog.setHeaderText("Nạp tiền vào tài khoản");
     dialog.setContentText("Nhập số tiền (VNĐ):");
@@ -181,11 +181,23 @@ public class UserProfileController implements Initializable {
     dialog.showAndWait().ifPresent(amountStr -> {
       try {
         BigDecimal amount = new BigDecimal(amountStr);
-        userService.addBalance(BigDecimal.ZERO);
+
+        // 1. Gửi lệnh nạp tiền lên Server (Truyền biến amount, không truyền ZERO)
+        // Lưu ý: Đảm bảo userService.addBalance của bạn có gọi sang ClientService.sendRequest
+        userService.addBalance(amount);
+
+        // 2. Cập nhật số dư tạm thời trong bộ nhớ để hiển thị ngay
+        BigDecimal newBalance = currentUser.getBalance().add(amount);
+        currentUser.setBalance(newBalance);
+
+        // 3. Cập nhật lại nhãn trên giao diện
         updateBalanceLabel();
-        showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã nạp thành công: " + String.format("%,.0f VNĐ", amount));
+
+        showAlert(Alert.AlertType.INFORMATION, "Thành công",
+            "Đã nạp thành công: " + String.format("%,.0f VNĐ", amount));
+
       } catch (NumberFormatException e) {
-        showAlert(Alert.AlertType.ERROR, "Lỗi", "Số tiền nhập vào không phải là số hợp lệ!");
+        showAlert(Alert.AlertType.ERROR, "Lỗi", "Số tiền không hợp lệ!");
       } catch (UserException e) {
         showAlert(Alert.AlertType.ERROR, "Lỗi nạp tiền", e.getMessage());
       }

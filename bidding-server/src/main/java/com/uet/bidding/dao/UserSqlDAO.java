@@ -71,8 +71,8 @@ public class UserSqlDAO implements IUserDAO {
           String sqlAdmin = "INSERT INTO admins (user_id, adminLevel, department) VALUES (?, ?, ?)";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
             stmtAdmin.setInt(1, generatedUserId);
-            // stmtAdmin.setInt(2, admin.getAdminLevel());
-            // stmtAdmin.setString(3, admin.getDepartment());
+            stmtAdmin.setInt(2, admin.getAdminLevel());
+            stmtAdmin.setString(3, admin.getDepartment());
             stmtAdmin.executeUpdate();
           }
         } else {
@@ -228,8 +228,7 @@ public class UserSqlDAO implements IUserDAO {
   @Override
   public void updateUser(User updatedUser) throws UserException {
     // 1. Không nên update password và balance ở đây để tránh ghi đè nhầm thành 0 hoặc null
-    String sqlUser = "UPDATE users SET fullName = ?, email = ?, phone = ?, address = ?, linkedBank = ? WHERE username = ?";
-
+    String sqlUser = "UPDATE users SET fullName = ?, email = ?, phone = ?, address = ?, linkedBank = ?, is_profile_complete = ? WHERE username = ?";
     try (Connection conn = DatabaseConnection.getConnection()) {
       conn.setAutoCommit(false);
 
@@ -241,8 +240,14 @@ public class UserSqlDAO implements IUserDAO {
         setStringOrNull(stmtUser, 4, updatedUser.getAddress());
         setStringOrNull(stmtUser, 5, updatedUser.getLinkedBank());
 
+        // 2. BỔ SUNG: Dấu hỏi số 6 là isProfileComplete
+        // Ta gán là 'true' vì khi người dùng nhấn "Lưu" ở màn hình UpdateProfile nghĩa là họ đã hoàn thiện
+        stmtUser.setBoolean(6, true);
+
+        // 3. THAY ĐỔI: Dấu hỏi số 7 bây giờ mới là Username (điều kiện WHERE)
+        stmtUser.setString(7, updatedUser.getUsername());
+
         // Dùng Username làm điều kiện để định danh đúng người
-        stmtUser.setString(6, updatedUser.getUsername());
         int rows = stmtUser.executeUpdate();
         if (rows == 0)
           throw new UserException("Cập nhật thất bại! Người dùng " + updatedUser.getUsername() + " không tồn tại.");
@@ -250,8 +255,8 @@ public class UserSqlDAO implements IUserDAO {
           Admin admin = (Admin) updatedUser;
           String sqlAdmin = "UPDATE admins SET adminLevel = ?, department = ? WHERE user_id = ?";
           try (PreparedStatement stmtAdmin = conn.prepareStatement(sqlAdmin)) {
-            // stmtAdmin.setInt(1, admin.getAdminLevel());
-            // stmtAdmin.setString(2, admin.getDepartment());
+            stmtAdmin.setInt(1, admin.getAdminLevel());
+            stmtAdmin.setString(2, admin.getDepartment());
             stmtAdmin.setInt(3, admin.getId());
             stmtAdmin.executeUpdate();
           }
@@ -289,6 +294,24 @@ public class UserSqlDAO implements IUserDAO {
       throw new UserException("Email hoặc Số điện thoại này đã được tài khoản khác sử dụng!");
     } catch (SQLException e) {
       throw new UserException("Lỗi cập nhật SQL: " + e.getMessage());
+    }
+  }
+
+  public void updateBalance(String username, BigDecimal amountToAdd) throws UserException {
+    String sql = "UPDATE users SET balance = balance + ? WHERE username = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+      stmt.setBigDecimal(1, amountToAdd);
+      stmt.setString(2, username);
+
+      int rows = stmt.executeUpdate();
+      if (rows == 0) {
+        throw new UserException("Lỗi! Không tìm thấy tài khoản để nạp tiền.");
+      }
+    } catch (SQLException e) {
+      throw new UserException("Lỗi hệ thống khi nạp tiền: " + e.getMessage());
     }
   }
 

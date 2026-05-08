@@ -109,6 +109,42 @@ public class ClientService {
         });
         break;
 
+      case "UPDATE_BALANCE_SUCCESS":
+        String newUserData = gson.toJson(msg.getData());
+        com.google.gson.JsonObject balanceJson = gson.fromJson(newUserData, com.google.gson.JsonObject.class);
+
+        User tempUser = null; // Tạo biến tạm
+        if (balanceJson.has("role")) {
+          String role = balanceJson.get("role").getAsString();
+          if ("ADMIN".equals(role)) {
+            tempUser = gson.fromJson(newUserData, com.uet.bidding.model.Admin.class);
+          } else if ("SELLER".equals(role)) {
+            tempUser = gson.fromJson(newUserData, com.uet.bidding.model.Seller.class);
+          } else {
+            tempUser = gson.fromJson(newUserData, com.uet.bidding.model.Bidder.class);
+          }
+        } else {
+          tempUser = gson.fromJson(newUserData, com.uet.bidding.model.Bidder.class);
+        }
+
+        if (tempUser != null) {
+          // Cập nhật Session ngay lập tức
+          com.uet.bidding.util.UserSession.setCurrentUser(tempUser);
+
+          // Tạo một biến final để dùng trong Lambda
+          final User finalUser = tempUser;
+
+          Platform.runLater(() -> {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            alert.setTitle("Nạp tiền thành công");
+            alert.setHeaderText(null);
+            // Sử dụng biến finalUser ở đây
+            alert.setContentText("Số dư mới: " + String.format("%,.0f", finalUser.getBalance()) + " VNĐ");
+            alert.showAndWait();
+          });
+        }
+        break;
+
       case "ERROR":
         String errorMsg = String.valueOf(msg.getData());
         System.err.println("❌ Lỗi từ Server: " + errorMsg);

@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 
 public class Admin extends User {
 
+  private int adminLevel;
+  private String department;
+
   public Admin() {
     super();
   }
@@ -19,6 +22,22 @@ public class Admin extends User {
   @Override
   public String getRole() {
     return "ADMIN";
+  }
+
+  public int getAdminLevel() {
+    return adminLevel;
+  }
+
+  public void setAdminLevel(int adminLevel) {
+    this.adminLevel = adminLevel;
+  }
+
+  public String getDepartment() {
+    return department;
+  }
+
+  public void setDepartment(String department) {
+    this.department = department;
   }
 
   /**

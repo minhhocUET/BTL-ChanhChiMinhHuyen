@@ -110,6 +110,65 @@ public class ClientHandler implements Runnable, AuctionObserver {
               responseContent = auctionSqlDAO.getAllAuctions();
               break;
 
+            case "UPDATE_PROFILE":
+              // 1. Lấy dữ liệu JSON Client gửi lên
+              String userJson = gson.toJson(msg.getData());
+
+              // 2. Chuyển JSON thành Đối tượng User (Xử lý đa hình để tránh lỗi Abstract)
+              com.google.gson.JsonObject jsonObject = gson.fromJson(userJson, com.google.gson.JsonObject.class);
+              User updatedUser;
+
+              if (jsonObject.has("role")) {
+                String role = jsonObject.get("role").getAsString();
+                if ("ADMIN".equals(role)) {
+                  updatedUser = gson.fromJson(userJson, Admin.class);
+                } else if ("SELLER".equals(role)) {
+                  updatedUser = gson.fromJson(userJson, Seller.class);
+                } else {
+                  updatedUser = gson.fromJson(userJson, Bidder.class);
+                }
+              } else {
+                updatedUser = gson.fromJson(userJson, Bidder.class); // Mặc định
+              }
+
+              // 3. Gọi UserService của SERVER để kiểm tra và lưu xuống Database (TiDB)
+              // (Giả sử bạn đã import com.uet.bidding.service.UserService của server)
+              com.uet.bidding.service.UserService serverUserService = new com.uet.bidding.service.UserService();
+              serverUserService.updateUser(updatedUser);
+
+              // 4. Nếu lưu thành công (không bị throw Exception), cập nhật lại user đang đăng nhập trên server
+              this.loggedInUser = updatedUser;
+              responseContent = "Cập nhật hồ sơ thành công!";
+              break;
+
+            case "ADD_BALANCE":
+              if (loggedInUser == null) {
+                throw new AuthenticationException("Bạn phải đăng nhập trước khi nạp tiền!");
+              }
+
+              // 1. Ép kiểu dữ liệu Client gửi lên thành BigDecimal
+              // Chú ý: Gson có thể parse số thành dạng chuỗi "10000.0", nên ta cần đọc an toàn
+              String amountStr = String.valueOf(msg.getData());
+              BigDecimal amountToAdd = new BigDecimal(amountStr);
+
+              if (amountToAdd.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new InvalidBidException("Số tiền nạp phải lớn hơn 0!");
+              }
+
+              // 2. Cập nhật số tiền vào trong Database (Gọi qua UserSqlDAO)
+              userSqlDAO.updateBalance(loggedInUser.getUsername(), amountToAdd);
+
+              // 3. Cập nhật số dư cho user đang lưu trên RAM của Server
+              BigDecimal newBalance = loggedInUser.getBalance().add(amountToAdd);
+              loggedInUser.setBalance(newBalance);
+
+              // 4. Trả kết quả về cho Client để cập nhật UI
+              // Gửi nguyên object User về để Client tự động cập nhật Session
+              sendResponse("UPDATE_BALANCE_SUCCESS", loggedInUser);
+
+              // Thoát khỏi case, không đi xuống default
+              continue;
+
             default:
               responseContent = "Lệnh không hợp lệ!";
               break;

@@ -52,7 +52,7 @@ public class Main extends Application {
     // --- PHẦN THÊM VÀO: KẾT NỐI MẠNG ---
     try {
       // Thử kết nối đến Server (localhost, cổng 8888)
-      ClientService.getInstance().connect("127.0.0.1", 8888);
+      ClientService.getInstance().connect("26.95.102.74", 8888);
       System.out.println("✅ Network initialized successfully.");
     } catch (IOException e) {
       // Nếu không thấy Server, hiện thông báo lỗi cho người dùng

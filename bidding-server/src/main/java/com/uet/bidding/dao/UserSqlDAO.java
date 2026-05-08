@@ -113,9 +113,9 @@ public class UserSqlDAO implements IUserDAO {
     User user;
 
     if (rs.getInt("admin_id") > 0) {
-      Admin admin = new Admin("chi", "ababbaba", BigDecimal.ZERO);
-      // admin.setAdminLevel(rs.getInt("adminLevel"));
-      // admin.setDepartment(rs.getString("department"));
+      Admin admin = new Admin();
+      admin.setAdminLevel(rs.getInt("adminLevel"));
+      admin.setDepartment(rs.getString("department"));
       user = admin;
     } else if (rs.getInt("seller_id") > 0) {
       Seller seller = new Seller();

@@ -3,6 +3,11 @@ package com.uet.bidding.model;
 import java.math.BigDecimal;
 
 public class Admin extends User {
+
+  public Admin() {
+    super();
+  }
+
   public Admin(String username, String password, BigDecimal balance) {
     super(username, password, BigDecimal.ZERO);
   }

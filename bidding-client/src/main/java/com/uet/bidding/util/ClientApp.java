@@ -1,4 +1,4 @@
-package com.uet.bidding;
+package com.uet.bidding.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

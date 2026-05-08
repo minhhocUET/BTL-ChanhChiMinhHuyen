@@ -25,7 +25,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
   private final Gson gson = new Gson();
   private PrintWriter out;
   private BufferedReader in;
-  private Bidder loggedInUser = null;
+  private User loggedInUser = null;
 
   public ClientHandler(Socket socket, UserSqlDAO userSqlDAO, ItemFileDAO itemFileDAO, AuctionSqlDAO auctionSqlDAO) {
     this.clientSocket = socket;
@@ -73,7 +73,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
 
               User user = userSqlDAO.checkLogin(loginData[0], loginData[1]);
               if (user != null) {
-                this.loggedInUser = new Bidder(user.getId(), user.getUsername(), user.getPassword(), user.getBalance(), user.getEmail());
+                this.loggedInUser = user; // Giữ nguyên hình hài nguyên bản của Admin, Seller hay Bidder
                 sendResponse("LOGIN_SUCCESS", user);
                 continue;
               } else {

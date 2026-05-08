@@ -64,28 +64,41 @@ public class ClientService {
       case "LOGIN_SUCCESS":
         // Ép kiểu data (đang là LinkedTreeMap) về đối tượng User
         String jsonData = gson.toJson(msg.getData());
-        User loggedInUser;
+        com.google.gson.JsonObject jsonObject = gson.fromJson(jsonData, com.google.gson.JsonObject.class);
 
-        // 1. Phân loại User dựa trên dữ liệu thực tế nhận được
-        if (jsonData.contains("adminLevel")) {
-          loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Admin.class);
-        } else if (jsonData.contains("shopName")) {
-          loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Seller.class);
+        User loggedInUser = null;
+
+        // 2. Kiểm tra xem Server có gửi trường "role" về không
+        if (jsonObject.has("role")) {
+          String role = jsonObject.get("role").getAsString();
+
+          if ("ADMIN".equals(role)) {
+            loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Admin.class);
+          } else if ("SELLER".equals(role)) {
+            loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Seller.class);
+          } else {
+            loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Bidder.class);
+          }
         } else {
-          loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Bidder.class);
+          // Nếu không có role, dùng cách cũ là check field đặc trưng
+          if (jsonData.contains("adminLevel")) {
+            loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Admin.class);
+          } else {
+            loggedInUser = gson.fromJson(jsonData, com.uet.bidding.model.Bidder.class);
+          }
         }
 
-        // 2. Lưu vào Session
-        com.uet.bidding.util.UserSession.setCurrentUser(loggedInUser);
-
-        // 3. Chuyển màn hình dựa trên vai trò (Role)
-        javafx.application.Platform.runLater(() -> {
-          if ("ADMIN".equals(loggedInUser.getRole())) {
-            Main.changeScene("/AdminDashboard.fxml", "Admin Control Panel", 1100, 800);
-          } else {
-            Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU", 1000, 700);
-          }
-        });
+        // 3. Lưu Session và chuyển màn hình
+        if (loggedInUser != null) {
+          com.uet.bidding.util.UserSession.setCurrentUser(loggedInUser);
+          Platform.runLater(() -> {
+            if ("ADMIN".equals(com.uet.bidding.util.UserSession.getCurrentUser().getRole())) {
+              Main.changeScene("/AdminDashboard.fxml", "Admin Control Panel", 1100, 800);
+            } else {
+              Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU", 1000, 700);
+            }
+          });
+        }
         break;
 
       case "REGISTER_SUCCESS":
@@ -97,10 +110,23 @@ public class ClientService {
         break;
 
       case "ERROR":
-        System.err.println("❌ Lỗi từ Server: " + msg.getData());
-        // Có thể lưu thông báo lỗi vào một biến tĩnh để UI hiển thị
+        String errorMsg = String.valueOf(msg.getData());
+        System.err.println("❌ Lỗi từ Server: " + errorMsg);
+
+        // Đẩy lỗi lên giao diện nếu đang ở màn hình Login
+        Platform.runLater(() -> {
+          // Mẹo: Bạn có thể tạo một biến static trong LoginController hoặc 1 Alert
+          alertError("Đăng nhập thất bại", errorMsg);
+        });
         break;
     }
+  }
+
+  private void alertError(String title, String content) {
+    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+    alert.setTitle(title);
+    alert.setContentText(content);
+    alert.showAndWait();
   }
 
   // Hàm gửi tin nhắn đi cực tiện lợi

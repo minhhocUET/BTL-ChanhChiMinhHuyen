@@ -1,45 +1,61 @@
 package com.uet.bidding.model;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 
-/**
- * Abstract class Item.
- * - Đại diện cho sản phẩm đấu giá
- * - Không tạo trực tiếp, chỉ dùng qua Art / Electronics
- */
-public abstract class Item implements Serializable {
-
+public abstract class Item {
   private static final long serialVersionUID = 1L;
 
-  protected int id;
-  protected String name;
-  protected String description;
-  protected BigDecimal startingPrice;
-  protected int sellerId;
 
-  /**
-   * Constructor dùng khi đọc từ DB (có id).
-   */
-  public Item(int id, String name, String description, BigDecimal startingPrice, int sellerId) {
+  private int id;
+
+  private String name;
+
+  private String description; // Mô tả chi tiết sản phẩm
+
+  private BigDecimal startingPrice; // Giá khởi điểm
+
+  private String imagePath; // Link hoặc đường dẫn tới ảnh
+
+  private int sellerId;
+
+
+// Constructor dùng khi đọc từ dữ liệu
+
+  public Item(int id, String name, String description, BigDecimal startingPrice, String imagePath, int sellerId) {
+
     this.id = id;
+
     this.name = name;
+
     this.description = description;
+
     this.startingPrice = startingPrice;
+
+    this.imagePath = imagePath;
+
     this.sellerId = sellerId;
+
   }
 
-  /**
-   * Constructor dùng khi tạo mới (chưa có id).
-   */
-  public Item(String name, String description, BigDecimal startingPrice, int sellerId) {
+
+// Constructor dùng khi tạo mới (chưa có id)
+
+  public Item(String name, String description, BigDecimal startingPrice, String imagePath, int sellerId) {
+
     this.name = name;
+
     this.description = description;
+
     this.startingPrice = startingPrice;
+
+    this.imagePath = imagePath;
+
     this.sellerId = sellerId;
+
   }
 
-  // ================== GETTER ==================
+
+// Các hàm Getters và Setters
 
   public int getId() {
     return id;
@@ -49,6 +65,7 @@ public abstract class Item implements Serializable {
     this.id = id;
   }
 
+
   public String getName() {
     return name;
   }
@@ -56,6 +73,7 @@ public abstract class Item implements Serializable {
   public void setName(String name) {
     this.name = name;
   }
+
 
   public String getDescription() {
     return description;
@@ -65,7 +83,6 @@ public abstract class Item implements Serializable {
     this.description = description;
   }
 
-  // ================== SETTER ==================
 
   public BigDecimal getStartingPrice() {
     return startingPrice;
@@ -75,27 +92,49 @@ public abstract class Item implements Serializable {
     this.startingPrice = startingPrice;
   }
 
+
+  public String getImagePath() {
+    return imagePath;
+  }
+
+  public void setImagePath(String imagePath) {
+    this.imagePath = imagePath;
+  }
+
+
   public int getSellerId() {
     return sellerId;
   }
 
-  // ================== ABSTRACT ==================
+  public void setSellerId(int sellerId) {
+    this.sellerId = sellerId;
+  }
+
+
+// ================= ABSTRACT =================
 
   /**
-   * Trả về loại item (ART / ELECTRONICS).
-   * → dùng cho Factory + DB
+   * Trả về loại item (ART / ELECTRONICS.
+   * <p>
+   * -> dùng cho Factory
    */
+
   public abstract String getType();
 
-  // ================== DEBUG ==================
 
-  @Override
   public String toString() {
-    return "Item{" +
-        "id=" + id +
-        ", name='" + name + '\'' +
-        ", price=" + startingPrice +
-        ", sellerId=" + sellerId +
+
+    return "Item {" +
+
+        "id = " + id +
+
+        ", name = '" + name + '\'' +
+
+        ", price = " + startingPrice +
+
+        ", sellerId = " + sellerId +
+
         '}';
+
   }
 }

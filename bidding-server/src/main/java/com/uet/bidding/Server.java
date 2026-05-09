@@ -1,33 +1,29 @@
 package com.uet.bidding;
 
 import com.uet.bidding.dao.AuctionSqlDAO;
-import com.uet.bidding.dao.ItemFileDAO; // Đã đổi
-import com.uet.bidding.dao.UserSqlDAO; // Đã đổi
+import com.uet.bidding.dao.ItemFileDAO;
+import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.NetworkMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server { // Đây là file chạy chính của SERVER
 
-  private static final int SHUTDOWN_DELAY_MS = 60000; // 60.000 mili-giây = 60 giây
-
   private static final int MAX_THREADS = 50; // Giới hạn tối đa 50 client xử lý cùng lúc
   // KHAI BÁO THREAD POOL: Thay vì tạo Thread thủ công, ta dùng Pool để quản lý
   private static final ExecutorService threadPool = Executors.newFixedThreadPool(MAX_THREADS);
+
   // ==============================================================
-  // 1. CÁC BIẾN QUẢN LÝ MẠNG VÀ AUTO-SHUTDOWN
+  // 1. CÁC BIẾN QUẢN LÝ MẠNG
   // ==============================================================
   // Danh sách lưu trữ các Client đang kết nối (Dùng CopyOnWriteArraySet để chống lỗi đa luồng)
   public static Set<ClientHandler> activeClients = new CopyOnWriteArraySet<>();
-  private static Timer autoShutdownTimer;
 
   // Hàm gửi tin nhắn Broadcast cho tất cả Client đang online
   public static void broadcast(NetworkMessage message) {
@@ -36,43 +32,10 @@ public class Server { // Đây là file chạy chính của SERVER
     }
   }
 
-  // --- HÀM BẮT ĐẦU ĐẾM NGƯỢC ---
-  public static synchronized void startShutdownTimer() {
-    if (autoShutdownTimer != null) {
-      autoShutdownTimer.cancel(); // Hủy bộ đếm cũ (nếu có) để đếm lại từ đầu
-    }
-    autoShutdownTimer = new Timer();
-    System.out.println("⚠️ [Cảnh báo] Không còn Client nào kết nối. Server sẽ tự tắt sau 60 giây...");
-
-    autoShutdownTimer.schedule(new TimerTask() {
-      @Override
-      public void run() {
-        // Hết 30s, kiểm tra lại lần cuối cho chắc chắn là vẫn không có ai
-        if (activeClients.isEmpty()) {
-          System.out.println("🛑 [Hệ thống] Đã hết 60 giây. Đang tự động tắt Server để giải phóng RAM!");
-          System.exit(0); // Tắt cứng Server ngay lập tức
-        }
-      }
-    }, SHUTDOWN_DELAY_MS);
-  }
-
-  // --- HÀM HỦY ĐẾM NGƯỢC (KHI CÓ NGƯỜI VÀO) ---
-  public static synchronized void cancelShutdownTimer() {
-    if (autoShutdownTimer != null) {
-      autoShutdownTimer.cancel();
-      autoShutdownTimer = null;
-      System.out.println("✅ [Hệ thống] Đã hủy lệnh tắt Server do có Client đang hoạt động.");
-    }
-  }
-
+  // Xóa client khỏi danh sách khi họ ngắt kết nối
   public static void removeClient(ClientHandler handler) {
     activeClients.remove(handler);
     System.out.println("Một Client đã thoát. Hiện còn: " + activeClients.size() + " kết nối.");
-
-    // Nếu không còn ai, bắt đầu đếm ngược tắt Server
-    if (activeClients.isEmpty()) {
-      startShutdownTimer();
-    }
   }
 
   public static void main(String[] args) {
@@ -88,11 +51,9 @@ public class Server { // Đây là file chạy chính của SERVER
 
     // Sử dụng try-with-resources để tự động đóng ServerSocket
     try (ServerSocket serverSocket = new ServerSocket(port)) {
-      System.out.println("Server đang chạy và lắng nghe tại cổng " + port + "...");
+      System.out.println("Server đang chạy 24/24 và lắng nghe tại cổng " + port + "...");
 
-      // Bật đếm ngược ngay khi Server vừa khởi động
-      startShutdownTimer();
-
+      // Hook để tự động dọn dẹp ThreadPool nếu có ai đó tắt server bằng tay (Ctrl+C)
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         System.out.println("\n🛑 Đang giải phóng tài nguyên Thread Pool...");
         threadPool.shutdown();
@@ -102,16 +63,15 @@ public class Server { // Đây là file chạy chính của SERVER
         // Đợi và chấp nhận kết nối từ Client
         Socket clientSocket = serverSocket.accept();
 
-        // NGAY KHI CÓ NGƯỜI KẾT NỐI -> HỦY BỘ ĐẾM NGƯỢC NGAY LẬP TỨC
-        cancelShutdownTimer();
-
         System.out.println("Có kết nối mới từ: " + clientSocket.getInetAddress());
 
-        // 3. FIX LỖI XUNG ĐỘT: Truyền thêm userDAO vào để khớp với Constructor
+        // 3. Khởi tạo handler cho client mới
         ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO, itemFileDAO, auctionSqlDAO);
+
         // LƯU NGƯỜI CHƠI VÀO DANH SÁCH QUẢN LÝ
         activeClients.add(handler);
 
+        // Giao việc cho ThreadPool xử lý
         threadPool.execute(handler);
       }
     } catch (IOException e) {

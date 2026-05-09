@@ -249,16 +249,15 @@ public class ClientHandler implements Runnable, AuctionObserver {
   }
 
   private void closeSocket() {
-    Server.activeClients.remove(this);
+    // ĐÃ FIX: Gọi thẳng hàm removeClient mà ta đã định nghĩa ở Server
+    Server.removeClient(this);
+
     try {
       if (clientSocket != null && !clientSocket.isClosed()) {
         clientSocket.close();
       }
     } catch (IOException e) {
       e.printStackTrace();
-    }
-    if (Server.activeClients.isEmpty()) {
-      Server.startShutdownTimer();
     }
   }
 }

@@ -140,6 +140,9 @@ public class UserSqlDAO implements IUserDAO {
     user.setBalance(rs.getBigDecimal("balance"));
     user.setLinkedBank(rs.getString("linkedBank"));
 
+    // QUAN TRỌNG NHẤT: Thêm dòng này để nạp trạng thái từ DB vào Object Java
+    user.setProfileComplete(rs.getBoolean("is_profile_complete"));
+
     return user;
   }
 

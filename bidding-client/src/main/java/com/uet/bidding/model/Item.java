@@ -2,11 +2,7 @@ package com.uet.bidding.model;
 
 import java.math.BigDecimal;
 
-public abstract class Item {
-  private static final long serialVersionUID = 1L;
-
-
-  private int id;
+public abstract class Item extends Entity {
 
   private String name;
 
@@ -23,7 +19,8 @@ public abstract class Item {
 
   public Item(int id, String name, String description, BigDecimal startingPrice, String imagePath, int sellerId) {
 
-    this.id = id;
+    super(); // Gọi constructor của Entity
+    this.setId(id);
 
     this.name = name;
 
@@ -57,13 +54,6 @@ public abstract class Item {
 
 // Các hàm Getters và Setters
 
-  public int getId() {
-    return id;
-  }
-
-  public void setId(int id) {
-    this.id = id;
-  }
 
 
   public String getName() {
@@ -126,7 +116,7 @@ public abstract class Item {
 
     return "Item {" +
 
-        "id = " + id +
+        "id = " + this.getId() +
 
         ", name = '" + name + '\'' +
 

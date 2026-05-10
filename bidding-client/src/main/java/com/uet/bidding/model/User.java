@@ -27,7 +27,7 @@ public abstract class User extends Entity implements Serializable {
     this.balance = balance;
   }
 
-  //cóntructor có id
+  //constructor có id
   public User(int id, String username, String password, BigDecimal balance) {
     super(); // Gọi constructor của Entity
     this.setId(id);

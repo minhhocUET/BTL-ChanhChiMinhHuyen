@@ -1,97 +1,68 @@
 package com.uet.bidding.model;
 
+import javafx.util.Duration;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Seller extends User {
+public class Seller {
+  private String storeName;
+  private String description;
+  private double sellerRating;
 
-  private static final long serialVersionUID = 1L;
+  // 1. Danh sách chứa Item (Kho hàng của người bán)
+  private List<Item> inventory;
+  // 2. Danh sách các phiên đấu giá đang diễn ra
+  private List<Auction> activeAuctions;
+  // 3. Danh sách các phiên đấu giá đã kết thúc
+  private List<Auction> finishedAuctions;
+  // 4. Danh sách review từ khách hàng
+  private List<Review> reviews;
 
-  // Các thuộc tính riêng biệt của người bán
-  private Double rating;    // Điểm đánh giá uy tín (ví dụ: 4.8)
-  private String taxId;     // Mã số thuế hoặc CCCD để xác minh
-  private String shopName;  // Tên gian hàng của người bán
-
-  // ================= CONSTRUCTORS =================
-
-  // Constructor rỗng (Bắt buộc phải có để đọc dữ liệu từ DB/File)
   public Seller() {
-    super(); // Tự động gọi constructor rỗng của User
+    this.sellerRating = 0.0;
+    this.inventory = new ArrayList<>();
+    this.activeAuctions = new ArrayList<>();
+    this.finishedAuctions = new ArrayList<>();
   }
 
-  /**
-   * Constructor dùng khi tạo mới người bán (chưa có ID từ DB).
-   */
-  public Seller(String username, String password, BigDecimal balance,
-                Double rating, String taxId, String shopName) {
-    // Truyền các thuộc tính cơ bản lên cho class cha (User)
-    super(username, password, balance);
-
-    // Gán các thuộc tính riêng của Seller
-    this.rating = rating;
-    this.taxId = taxId;
-    this.shopName = shopName;
+  // --- Chức năng quản lý Item ---
+  // Khả năng thêm Item vào kho
+  public void addItem(Item item) {
+    this.inventory.add(item);
+  }
+  public List<Item> getInventory() {
+    return inventory;
   }
 
-  /**
-   * Constructor dùng khi đọc dữ liệu người bán từ Database lên (đã có ID).
-   */
-  public Seller(int id, String username, String password, BigDecimal balance,
-                Double rating, String taxId, String shopName) {
-    // Truyền các thuộc tính lên constructor có ID của class cha
-    super(id, username, password, balance);
-
-    this.rating = rating;
-    this.taxId = taxId;
-    this.shopName = shopName;
+  // Getter/Setter cho storeName và rating
+  public String getDescription() {
+    return storeName;
+  }
+  public void setDescription(String storeName) {
+    this.storeName = storeName;
+  }
+  public String getStoreName() {
+    return storeName;
+  }
+  public void setStoreName(String storeName) {
+    this.storeName = storeName;
+  }
+  public double getSellerRating() {
+    return sellerRating;
+  }
+  public void setSellerRating(double sellerRating) {
+    this.sellerRating = sellerRating;
+  }
+  public List<Auction> getActiveAuctions() {
+    return activeAuctions;
   }
 
-  // ================= OVERRIDE =================
-
-  /**
-   * Ghi đè hàm getRole() của User để trả về quyền cụ thể.
-   * Cực kỳ quan trọng để phân quyền trong LoginController
-   */
-  @Override
-  public String getRole() {
-    return "SELLER";
+  public List<Auction> getFinishedAuctions() {
+    return finishedAuctions;
   }
-
-  // ================= GETTERS AND SETTERS =================
-
-  public Double getRating() {
-    return rating;
-  }
-
-  public void setRating(Double rating) {
-    this.rating = rating;
-  }
-
-  public String getTaxId() {
-    return taxId;
-  }
-
-  public void setTaxId(String taxId) {
-    this.taxId = taxId;
-  }
-
-  public String getShopName() {
-    return shopName;
-  }
-
-  public void setShopName(String shopName) {
-    this.shopName = shopName;
-  }
-
-  // ================= TO STRING =================
-
-  @Override
-  public String toString() {
-    return "Seller {" +
-        "id = " + getId() + // Mặc dù User không có hàm getId() trong code bạn gửi, nhưng nó kế thừa từ Entity nên chắc chắn sẽ có hàm này
-        ", username = '" + getUsername() + '\'' +
-        ", shopName = '" + shopName + '\'' +
-        ", rating = " + rating +
-        ", balance = " + getBalance() +
-        '}';
+  public List<Review> getReviews() {
+    return reviews;
   }
 }

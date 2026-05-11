@@ -6,7 +6,7 @@
 <?import javafx.scene.text.Font?>
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="900.0"
             style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17"
-            fx:controller="com.uet.bidding.ui.UserProfileController">
+            fx:controller="com.uet.bidding.controller.UserProfileController">
     <children>
         <Button mnemonicParsing="false" onAction="#handleGoToMyManagement"
                 prefHeight="35.0" prefWidth="150.0"

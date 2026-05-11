@@ -1,4 +1,4 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.layout.StackPane;

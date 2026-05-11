@@ -1,4 +1,4 @@
-package com.uet.bidding.ui; // Thêm package cho khớp với thư mục của bạn
+package com.uet.bidding.controller; // Thêm package cho khớp với thư mục của bạn
 
 import com.uet.bidding.network.ClientService; // Import cái "hệ thần kinh" bạn vừa tạo
 import javafx.application.Application;

@@ -1,4 +1,4 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.service.UserService;

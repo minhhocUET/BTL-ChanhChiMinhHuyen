@@ -1,29 +1,31 @@
 package com.uet.bidding.model;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class Bid implements Serializable {
+public class Bid {
 
-  private static final long serialVersionUID = 1L;
-
-  private String bidderName;
-  private BigDecimal amount;
+  private Bidder bidder; // Thay vì chỉ lưu String tên, ta lưu cả Object Bidder
+  private BigDecimal amount; // Đổi từ double sang BigDecimal
   private LocalDateTime time;
 
-  public Bid(String bidderName, BigDecimal amount) {
-    this.bidderName = bidderName;
+  // Cập nhật Constructor khớp với lời gọi bên Auction.java
+  public Bid(Bidder bidder, BigDecimal amount, LocalDateTime time) {
+    this.bidder = bidder;
     this.amount = amount;
-    this.time = LocalDateTime.now();
+    this.time = time;
   }
 
-  // Getter/Setter...
+  // Các hàm Getters
   public BigDecimal getAmount() {
     return amount;
   }
 
-  public String getBidderName() {
-    return bidderName;
+  public Bidder getBidder() {
+    return bidder;
+  }
+
+  public LocalDateTime getTime() {
+    return time;
   }
 }

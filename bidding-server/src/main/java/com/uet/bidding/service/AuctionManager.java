@@ -1,8 +1,9 @@
-package com.uet.bidding.model;
+package com.uet.bidding.service;
 
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
+import com.uet.bidding.model.Auction;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

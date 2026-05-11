@@ -1,9 +1,7 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
-import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.model.User;
 import com.uet.bidding.service.UserService;
-import com.uet.bidding.util.UserSession;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;

@@ -1,83 +1,54 @@
 package com.uet.bidding.model;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Bidder extends User {
+public class Bidder  {
 
-  private static final long serialVersionUID = 1L;
+  // 1. Danh sách các phiên đang đăng ký tham gia (Đang diễn ra)
+  private List<Integer> registeredAuctionIds;
 
-  // Các thuộc tính riêng của người đi đấu giá (nếu cần)
-  private int totalBids;    // Tổng số lần đã tham gia đặt giá
-  private int auctionsWon;  // Số phiên đấu giá đã thắng
+  // 2. Danh sách các phiên đã từng tham gia (Đã kết thúc)
+  private List<Integer> auctionHistoryIds;
 
-  // ================= CONSTRUCTORS =================
-
-  // Constructor trống
   public Bidder() {
-    super();
+    this.registeredAuctionIds = new ArrayList<>();
+    this.auctionHistoryIds = new ArrayList<>();
   }
 
-  /**
-   * Constructor dùng khi tạo mới Bidder (chưa có ID).
-   * Thêm tham số email theo yêu cầu của bạn
-   */
-  public Bidder(String username, String password, BigDecimal balance, String email) {
-    // Gọi constructor của User (chỉ nhận 3 tham số theo code bạn gửi)
-    super(username, password, balance);
-
-    // Vì User có hàm setEmail, ta gọi luôn để gán giá trị
-    this.setEmail(email);
-
-    // Mặc định ban đầu mới tạo thì số lần đấu giá là 0
-    this.totalBids = 0;
-    this.auctionsWon = 0;
+  // --- Getter và Setter ---
+  public List<Integer> getRegisteredAuctionIds() {
+    return registeredAuctionIds;
   }
 
-  /**
-   * Constructor dùng khi đọc từ DB (đã có ID).
-   */
-  public Bidder(int id, String username, String password, BigDecimal balance, String email) {
-    super(id, username, password, balance);
-    this.setEmail(email);
+  public void setRegisteredAuctionIds(List<Integer> registeredAuctionIds) {
+    this.registeredAuctionIds = registeredAuctionIds;
   }
 
-  // ================= OVERRIDE =================
-
-  /**
-   * Ghi đè hàm getRole() để phân biệt với Admin và Seller.
-   */
-  @Override
-  public String getRole() {
-    return "BIDDER";
+  public List<Integer> getAuctionHistoryIds() {
+    return auctionHistoryIds;
   }
 
-  // ================= GETTERS AND SETTERS =================
-
-  public int getTotalBids() {
-    return totalBids;
+  public void setAuctionHistoryIds(List<Integer> auctionHistoryIds) {
+    this.auctionHistoryIds = auctionHistoryIds;
   }
 
-  public void setTotalBids(int totalBids) {
-    this.totalBids = totalBids;
+  // --- Các hàm hỗ trợ logic (Helper methods) ---
+
+  // Khi người dùng nhấn nút "Đăng ký tham gia" một phiên mới
+  public void registerForAuction(int auctionId) {
+    if (!registeredAuctionIds.contains(auctionId)) {
+      this.registeredAuctionIds.add(auctionId);
+    }
   }
 
-  public int getAuctionsWon() {
-    return auctionsWon;
-  }
-
-  public void setAuctionsWon(int auctionsWon) {
-    this.auctionsWon = auctionsWon;
-  }
-
-  // ================= TO STRING =================
-
-  @Override
-  public String toString() {
-    return "Bidder {" +
-        "username = '" + getUsername() + '\'' +
-        ", email = '" + getEmail() + '\'' +
-        ", balance = " + getBalance() +
-        ", totalBids = " + totalBids +
-        '}';
+  // Khi một phiên đấu giá kết thúc, chuyển nó từ "Đang tham gia" sang "Lịch sử"
+  public void completeAuction(int auctionId) {
+    if (this.registeredAuctionIds.contains(auctionId)) {
+      this.registeredAuctionIds.remove(Integer.valueOf(auctionId));
+      if (!this.auctionHistoryIds.contains(auctionId)) {
+        this.auctionHistoryIds.add(auctionId);
+      }
+    }
   }
 }

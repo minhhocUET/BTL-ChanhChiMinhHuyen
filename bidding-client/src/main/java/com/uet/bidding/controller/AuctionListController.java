@@ -1,6 +1,5 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
-import com.uet.bidding.model.AuctionItem;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;

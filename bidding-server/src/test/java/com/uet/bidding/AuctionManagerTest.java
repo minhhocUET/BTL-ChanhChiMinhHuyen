@@ -4,7 +4,7 @@ import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.model.Auction;
-import com.uet.bidding.model.AuctionManager;
+import com.uet.bidding.service.AuctionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

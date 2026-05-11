@@ -2,56 +2,73 @@ package com.uet.bidding.model;
 
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
+import javafx.beans.property.SimpleIntegerProperty;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Auction implements Serializable {
-
-  //Thêm serialVersionUID để bảo vệ dữ liệu file
-  private static final long serialVersionUID = 1L;
+public class Auction  {
 
   // Các biến phục vụ dữ liệu
   private int id;
-  private int itemId;
+  private Item item; // Đổi int itemId thành Object Item để lấy được toàn bộ thông tin sản phẩm
   private BigDecimal currentPrice;
   private LocalDateTime startTime;
   private LocalDateTime endTime;
   private String status;
+  private SimpleIntegerProperty interestedCount;
 
-  // Các biến phục vụ Logic & Observer Pattern (Đã được khôi phục)
-  private String leadBidder;
+  // Các biến phục vụ Logic & Observer Pattern
+  private Customer highestBidder; // Thay String leadBidder bằng Object Bidder
   private List<Bid> bidHistory = new ArrayList<>();
   private transient List<AuctionObserver> observers = new ArrayList<>();
 
-  // Constructor dùng khi đọc dữ liệu
-  public Auction(int id, int itemId, BigDecimal currentPrice,
+  /**
+   * CONSTRUCTOR 1: Dùng khi nạp dữ liệu từ Database hoặc File (Cần ID)
+   */
+  public Auction(int id, Item item, BigDecimal currentPrice,
                  LocalDateTime startTime, LocalDateTime endTime, String status) {
     this.id = id;
-    this.itemId = itemId;
+    this.item = item;
     this.currentPrice = currentPrice;
     this.startTime = startTime;
     this.endTime = endTime;
     this.status = status;
-    this.observers = new ArrayList<>(); //khởi tạo lại để tránh null
+    this.bidHistory = new ArrayList<>();
+    this.observers = new ArrayList<>();
   }
 
-  // Constructor khi tạo mới
-  public Auction(int itemId, BigDecimal startPrice,
-                 LocalDateTime startTime, LocalDateTime endTime) {
-    this.itemId = itemId;
+  /**
+   * CONSTRUCTOR 2: Dùng cho chức năng "Tạo phiên đấu giá" (Từ phía Seller)
+   * Thường dùng thời gian bắt đầu là ngay bây giờ.
+   */
+  public Auction(Item item, BigDecimal startPrice, int durationMinutes) {
+    this.item = item;
+    this.currentPrice = startPrice;
+    this.startTime = LocalDateTime.now(); // Bắt đầu ngay lập tức
+    this.endTime = this.startTime.plusMinutes(durationMinutes); // Tự tính thời gian kết thúc
+    this.status = "OPEN";
+    this.bidHistory = new ArrayList<>();
+    this.observers = new ArrayList<>();
+  }
+
+  /**
+   * CONSTRUCTOR 3: Đầy đủ tham số (Dành cho các trường hợp đặc biệt)
+   */
+  public Auction(Item item, BigDecimal startPrice, LocalDateTime startTime, LocalDateTime endTime) {
+    this.item = item;
     this.currentPrice = startPrice;
     this.startTime = startTime;
     this.endTime = endTime;
     this.status = "OPEN";
-    this.observers = new ArrayList<>(); // Khởi tạo lại để tránh null
+    this.bidHistory = new ArrayList<>();
+    this.observers = new ArrayList<>();
   }
 
   /**
-   * HÀM MỚI: Cần thiết cho Serialization vì transient sẽ làm observers bị null
+   * Cần thiết cho Serialization vì transient sẽ làm observers bị null
    * khi bạn nạp dữ liệu từ file .ser/.dat lên.
    */
   private Object readResolve() {
@@ -59,33 +76,52 @@ public class Auction implements Serializable {
     return this;
   }
 
+  public void refreshStatus() {
+    LocalDateTime now = LocalDateTime.now();
+
+    // Nếu đang OPEN nhưng đã quá giờ kết thúc
+    if (("OPEN".equals(this.status) || "RUNNING".equals(this.status)) && now.isAfter(endTime)) {
+      this.status = "FINISHED";
+    }
+  }
+
   // ================== GETTER & SETTER ==================
   public int getId() {
     return id;
   }
-
   public void setId(int id) {
     this.id = id;
   }
-
+  public Item getItem() {
+    return item;
+  }
+  public void setItem(Item item) {
+    this.item = item;
+  }
   public BigDecimal getCurrentPrice() {
     return currentPrice;
   }
-
   public void setCurrentPrice(BigDecimal currentPrice) {
     this.currentPrice = currentPrice;
   }
-
   public String getStatus() {
     return status;
   }
-
   public void setStatus(String status) {
     this.status = status;
   }
+  public int getInterestedCount() {
+    return interestedCount.get();
+  }
 
-  public String getLeadBidder() {
-    return leadBidder;
+  public Customer getHighestBidder() {
+    return highestBidder;
+  }
+  public LocalDateTime getStartTime() {
+    return startTime;
+  }
+  public LocalDateTime getEndTime() {
+    return endTime;
   }
 
   // ================== LOGIC ==================
@@ -94,43 +130,46 @@ public class Auction implements Serializable {
   }
 
   // --- XỬ LÝ ĐA LUỒNG & NGOẠI LỆ ---
-  public synchronized boolean placeBid(String bidderName, BigDecimal bidAmount)
-      throws AuctionClosedException, InvalidBidException {
 
-    // 1. Kiểm tra trạng thái (Dùng String status)
-    if (!this.status.equals("RUNNING")) {
+  public synchronized boolean placeNewBid(Customer customer, BigDecimal bidAmount)
+          throws AuctionClosedException, InvalidBidException {
+
+    // 1. Kiểm tra trạng thái phiên đấu giá
+    if (!"RUNNING".equals(this.status)) {
       throw new AuctionClosedException("Phiên đấu giá chưa bắt đầu hoặc đã kết thúc!");
     }
 
-    // 2. Kiểm tra giá (Dùng compareTo: trả về <= 0 nghĩa là nhỏ hơn hoặc bằng)
+    // 2. Kiểm tra số tiền đặt giá
     if (bidAmount.compareTo(this.currentPrice) <= 0) {
       throw new InvalidBidException("Giá đặt (" + bidAmount + ") phải cao hơn giá hiện tại (" + currentPrice + ")!");
     }
 
-    // 3. Nếu qua được 2 ải trên thì cập nhật giá thành công
+    // 3. Cập nhật thông tin người dẫn đầu
     this.currentPrice = bidAmount;
-    this.leadBidder = bidderName;
-    this.bidHistory.add(new Bid(bidderName, bidAmount));
+    this.highestBidder = customer;
 
-    System.out.println("✅ " + bidderName + " đặt giá thành công: " + bidAmount);
+    // 4. Lưu vào lịch sử Bid (Sử dụng hồ sơ Bidder từ Customer)
+    // Giả sử Constructor của Bid nhận (Bidder bidder, BigDecimal amount, LocalDateTime time)
+    this.bidHistory.add(new Bid(customer.getBidderProfile(), bidAmount, LocalDateTime.now()));
+
+    System.out.println("✅ " + customer.getUsername() + " đặt giá thành công: " + bidAmount);
 
     notifyObservers();
     return true;
   }
 
-  // --- CÁC HÀM CỦA OBSERVER PATTERN ---
-  public void addObserver(AuctionObserver observer) {
-    if (!observers.contains(observer)) observers.add(observer);
-  }
-
-  public void removeObserver(AuctionObserver observer) {
-    observers.remove(observer);
-  }
-
   private void notifyObservers() {
+    if (observers == null) return;
+
     for (AuctionObserver observer : observers) {
-      // Ép ngược BigDecimal về double để tương thích với Interface Observer cũ
-      observer.updatePrice("Sản phẩm ID: " + this.itemId, this.currentPrice.doubleValue(), this.leadBidder);
+      // Lấy username từ đối tượng Customer đang dẫn đầu
+      String bidderName = (this.highestBidder != null) ? this.highestBidder.getUsername() : "Chưa có";
+
+      // Gửi thông báo đến Observer
+      observer.updatePrice(
+              "Sản phẩm: " + this.item.getName(),
+              this.currentPrice.doubleValue(),
+              bidderName
+      );
     }
-  }
-}
+  }}

@@ -1,4 +1,4 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
 public class Launcher {
   public static void main(String[] args) {

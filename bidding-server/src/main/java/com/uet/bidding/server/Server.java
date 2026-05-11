@@ -1,9 +1,10 @@
-package com.uet.bidding;
+package com.uet.bidding.server;
 
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemFileDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.service.AuctionManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -45,6 +46,7 @@ public class Server { // Đây là file chạy chính của SERVER
     UserSqlDAO userSqlDAO = new UserSqlDAO(); // Dùng SQL cho User
     ItemFileDAO itemFileDAO = new ItemFileDAO(); // Dùng File cho Item
     AuctionSqlDAO auctionSqlDAO = new AuctionSqlDAO();
+    AuctionManager.getInstance().initialize(auctionSqlDAO);
 
     // 2. NẠP DỮ LIỆU TỪ FILE LÊN RAM
     System.out.println("Đang khởi động hệ thống và nạp dữ liệu...");

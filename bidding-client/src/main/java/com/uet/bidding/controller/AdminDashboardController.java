@@ -1,4 +1,4 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;

@@ -1,8 +1,8 @@
-package com.uet.bidding.ui;
+package com.uet.bidding.controller;
 
 import com.uet.bidding.model.Auction;
+import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Item;
-import com.uet.bidding.model.User;
 import com.uet.bidding.util.UserSession;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -97,17 +97,25 @@ public class ProductDetailController {
   @FXML
   public void handlePlaceBid(ActionEvent event) {
     // ✅ CHECK PROFILE TRƯỚC KHI ĐẶT GIÁ
-    User currentUser = UserSession.getCurrentUser();
-    if (currentUser == null || !currentUser.isProfileComplete()) {
+    // 1. Lấy trực tiếp Customer từ Session (Hàm này đã tự ép kiểu an toàn bên trong)
+    Customer customer = UserSession.getLoggedInCustomer();
+
+    // 2. Kiểm tra: Nếu không phải Customer (null/Admin) HOẶC Profile chưa xong
+    if (customer == null || !customer.isProfileComplete()) {
       Alert alert = new Alert(Alert.AlertType.WARNING);
-      alert.setTitle("⚠️ Profile chưa hoàn thành");
-      alert.setHeaderText("Cần cập nhật thông tin cá nhân!");
-      alert.setContentText("Vui lòng:\n" +
-          "1. Click 'Avatar/My Profile' ở góc trên\n" +
-          "2. Điền đầy đủ: Họ tên, SĐT, Địa chỉ, Ngân hàng\n" +
-          "3. Lưu → Quay lại đấu giá");
+      alert.setTitle("⚠️ Thông báo hệ thống");
+      alert.setHeaderText(customer == null ? "Yêu cầu đăng nhập" : "Hồ sơ chưa hoàn thiện");
+
+      String content = (customer == null)
+              ? "Vui lòng đăng nhập với tài khoản khách hàng để đặt giá."
+              : "Bạn cần cập nhật đầy đủ thông tin cá nhân để tham gia đấu giá:\n\n" +
+              "1. Nhấn vào 'Avatar/Hồ sơ' ở góc trên\n" +
+              "2. Điền: Họ tên, SĐT, Địa chỉ, Ngân hàng\n" +
+              "3. Lưu thông tin và quay lại.";
+
+      alert.setContentText(content);
       alert.showAndWait();
-      return; // DỪNG BID
+      return; // Dừng xử lý đặt giá
     }
 
     try {
@@ -142,17 +150,14 @@ public class ProductDetailController {
   @FXML
   public void handleBuyNow(ActionEvent event) {
     // ✅ CHECK PROFILE TRƯỚC KHI MUA NGAY
-    User currentUser = UserSession.getCurrentUser();
-    if (currentUser == null || !currentUser.isProfileComplete()) {
+    // 1. Lấy trực tiếp Customer từ Session (Hàm này đã tự ép kiểu an toàn bên trong)
+    Customer customer = UserSession.getLoggedInCustomer();
+
+    // 2. Kiểm tra: Nếu không phải Customer (null/Admin) HOẶC Profile chưa xong
+    if (customer == null || !customer.isProfileComplete()) {
       Alert alert = new Alert(Alert.AlertType.WARNING);
-      alert.setTitle("⚠️ Profile chưa hoàn thành");
-      alert.setHeaderText("Cần cập nhật thông tin cá nhân!");
-      alert.setContentText("Vui lòng:\n" +
-          "1. Click 'Avatar/My Profile' ở góc trên\n" +
-          "2. Điền đầy đủ thông tin cá nhân\n" +
-          "3. Lưu → Quay lại mua hàng");
-      alert.showAndWait();
-      return; // DỪNG MUA
+      alert.setTitle("⚠️ Thông báo hệ thống");
+      alert.setHeaderText(customer == null ? "Yêu cầu đăng nhập" : "Hồ sơ chưa hoàn thiện");
     }
 
     showAlert("Mua ngay", "Tính năng thanh toán trực tiếp đang được phát triển!", Alert.AlertType.INFORMATION);

@@ -4,9 +4,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class Bid implements Serializable {
-
-  private static final long serialVersionUID = 1L;
+public class Bid {
 
   private Bidder bidder; // Thay vì chỉ lưu String tên, ta lưu cả Object Bidder
   private BigDecimal amount; // Đổi từ double sang BigDecimal

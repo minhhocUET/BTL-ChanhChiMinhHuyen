@@ -1,44 +1,44 @@
 package com.uet.bidding.model;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
+import com.uet.bidding.model.Entity;
 
+/**
+ * Lớp User trừu tượng - Lớp cơ sở (Base Class)
+ * Loại bỏ Serialization, sẵn sàng cho GSON/JSON
+ */
 public abstract class User extends Entity {
 
   private String username;
   private String password;
+  private boolean isBanned = false; // Thuộc tính bắt buộc để Admin thực hiện quản lý (Mục 3.1.1)
 
   public User() {
-  } // Constructor trống bắt buộc
+  }
 
-  //constructor không có id
-  public User(String username, String password, BigDecimal balance) {
+  public User(String username, String password) {
     this.username = username;
     this.password = password;
   }
 
-  //constructor có id
-  public User(int id, String username, String password, BigDecimal balance) {
-    super(); // Gọi constructor của Entity
+  public User(int id, String username, String password) {
     this.setId(id);
     this.username = username;
     this.password = password;
   }
 
-  public String getUsername() {
-    return username;
-  }
+  // --- Getters & Setters ---
+  public String getUsername() { return username; }
+  public void setUsername(String username) { this.username = username; }
 
-  public void setUsername(String username) {
-    this.username = username;
-  }
+  public String getPassword() { return password; }
+  public void setPassword(String password) { this.password = password; }
 
-  public String getPassword() {
-    return password;
-  }
+  public boolean isBanned() { return isBanned; }
+  public void setBanned(boolean banned) { isBanned = banned; }
 
-  public void setPassword(String password) {
-    this.password = password;
-  }
+  /**
+   * Phương thức trừu tượng để phân định vai trò.
+   * Admin sẽ trả về "ADMIN", Customer sẽ trả về "CUSTOMER".
+   */
+  public abstract String getRole();
 }
-

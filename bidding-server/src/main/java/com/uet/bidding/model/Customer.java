@@ -11,6 +11,7 @@ public class Customer extends User {
     private BigDecimal balance = BigDecimal.ZERO;
     private boolean isProfileComplete = false;
 
+
     // --- THÊM HAI THUỘC TÍNH VAI TRÒ ---
     private Bidder bidderProfile;
     private Seller sellerProfile;

@@ -1,5 +1,9 @@
 package com.uet.bidding.controller;
 
+import com.uet.bidding.model.Auction;
+import com.uet.bidding.model.Electronics;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -10,7 +14,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import javafx.util.Callback;
@@ -18,50 +21,74 @@ import javafx.util.Callback;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.Random;
 import java.util.ResourceBundle;
 
 public class AuctionListController implements Initializable {
 
+  // ĐÃ SỬA: Đổi toàn bộ AuctionItem thành Auction
   @FXML
-  private TableView<AuctionItem> tableView;
+  private TableView<Auction> tableView;
   @FXML
-  private TableColumn<AuctionItem, Integer> colStt;
+  private TableColumn<Auction, Integer> colStt;
   @FXML
-  private TableColumn<AuctionItem, String> colCity;
+  private TableColumn<Auction, String> colCity;
   @FXML
-  private TableColumn<AuctionItem, String> colProduct;
+  private TableColumn<Auction, String> colProduct;
   @FXML
-  private TableColumn<AuctionItem, Integer> colInterested;
+  private TableColumn<Auction, Integer> colInterested;
   @FXML
-  private TableColumn<AuctionItem, Void> colAction;
+  private TableColumn<Auction, Void> colAction;
 
   @FXML
   private ComboBox<String> cityComboBox;
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    // 1. Cấu hình các cột lấy dữ liệu từ Model
-    colStt.setCellValueFactory(new PropertyValueFactory<>("stt"));
-    colCity.setCellValueFactory(new PropertyValueFactory<>("city"));
-    colProduct.setCellValueFactory(new PropertyValueFactory<>("productType"));
-    colInterested.setCellValueFactory(new PropertyValueFactory<>("interestedCount"));
+    // 1. Cấu hình các cột lấy dữ liệu trực tiếp từ Model Auction
+    colStt.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getId()));
+
+    // Trích xuất tên sản phẩm từ Object Item nằm trong Auction
+    colProduct.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getItem().getName()));
+
+    // Tạm thời set cứng dữ liệu Thành phố và Random lượt quan tâm vì Model chưa có
+    colCity.setCellValueFactory(cellData -> new SimpleStringProperty("Hà Nội"));
+    colInterested.setCellValueFactory(cellData -> new SimpleObjectProperty<>(new Random().nextInt(100) + 10));
 
     // 2. Tạo cột chứa nút bấm
     setupActionColumn();
 
+    // 3. TẠO DỮ LIỆU ĐỔ VÀO BẢNG (Sử dụng Model thật: Auction và Electronics)
+    ObservableList<Auction> dataList = FXCollections.observableArrayList();
 
-       // 3. TẠO DỮ LIỆU ĐỂ ĐỔ VÀO BẢNG //
-          ObservableList<AuctionItem> dataList = FXCollections.observableArrayList(
-              new AuctionItem(1, "Hà Nội", "Laptop Dell XPS 15", 125),
-              new AuctionItem(2, "Đà Nẵng", "Đồng hồ Apple Watch S9", 45),
-              new AuctionItem(3, "TP. HCM", "Xe đạp điện VinFast", 89),
-              new AuctionItem(4, "Cần Thơ", "Máy ảnh Canon EOS R5", 12)
-          );
-       // 4. Đổ dữ liệu vào bảng
-          tableView.setItems(dataList);
+    String[] products = {"Laptop Dell XPS 15", "Đồng hồ Apple Watch S9", "Xe đạp điện VinFast", "Máy ảnh Canon EOS R5"};
+    for (int i = 0; i < products.length; i++) {
+      Electronics fakeProduct = new Electronics(
+          i + 1,
+          products[i],
+          "Mô tả chi tiết: " + products[i] + " chính hãng, bảo hành đầy đủ.",
+          new BigDecimal("1500000"),
+          "/images/default.jpg",
+          1,
+          "Thương hiệu VNU",
+          12
+      );
 
+      Auction fakeAuction = new Auction(
+          fakeProduct,
+          fakeProduct.getStartingPrice(),
+          LocalDateTime.now(),
+          LocalDateTime.now().plusDays(3)
+      );
+      fakeAuction.setId(i + 1); // Đặt ID làm STT luôn
 
-    // 5. KHỞI TẠO DANH SÁCH 63 TỈNH THÀNH CHO COMBOBOX
+      dataList.add(fakeAuction);
+    }
+
+    // 4. Đổ dữ liệu vào bảng
+    tableView.setItems(dataList);
+
+    // 5. KHỞI TẠO DANH SÁCH TỈNH THÀNH
     ObservableList<String> cities = FXCollections.observableArrayList(
         "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu", "Bắc Ninh", "Bến Tre",
         "Bình Định", "Bình Dương", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng",
@@ -77,9 +104,10 @@ public class AuctionListController implements Initializable {
   }
 
   private void setupActionColumn() {
-    Callback<TableColumn<AuctionItem, Void>, TableCell<AuctionItem, Void>> cellFactory = new Callback<>() {
+    // ĐÃ SỬA: Đổi ActionItem thành Auction
+    Callback<TableColumn<Auction, Void>, TableCell<Auction, Void>> cellFactory = new Callback<>() {
       @Override
-      public TableCell<AuctionItem, Void> call(final TableColumn<AuctionItem, Void> param) {
+      public TableCell<Auction, Void> call(final TableColumn<Auction, Void> param) {
         return new TableCell<>() {
           private final Button btn = new Button("Đăng kí đấu giá");
 
@@ -89,37 +117,20 @@ public class AuctionListController implements Initializable {
                 "-fx-text-fill: #e84393; -fx-font-weight: bold; -fx-cursor: hand;");
 
             btn.setOnAction(event -> {
-              AuctionItem selectedItem = getTableView().getItems().get(getIndex());
+              // Lấy thẳng đối tượng Auction thật từ hàng được click
+              Auction selectedAuction = getTableView().getItems().get(getIndex());
 
               try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/ProductDetail.fxml"));
                 Parent root = loader.load();
                 ProductDetailController detailController = loader.getController();
 
-                com.uet.bidding.model.Electronics fakeProduct = new com.uet.bidding.model.Electronics(
-                    selectedItem.getStt(),
-                    selectedItem.getProductType(),
-                    "Mô tả chi tiết: " + selectedItem.getProductType() + " chính hãng, bảo hành đầy đủ.",
-                    new BigDecimal("1500000"),
-                    "/images/default.jpg",
-                    1,
-                    "Thương hiệu VNU",
-                    12
-                );
-
-                com.uet.bidding.model.Auction fakeAuction = new com.uet.bidding.model.Auction(
-                    fakeProduct,
-                    fakeProduct.getStartingPrice(),
-                    LocalDateTime.now(),
-                    LocalDateTime.now().plusDays(3)
-                );
-                fakeAuction.setId(selectedItem.getStt() + 1000);
-
-                detailController.setAuctionData(fakeAuction);
+                // Truyền trực tiếp Auction thật vào Detail, không cần tạo fake nữa
+                detailController.setAuctionData(selectedAuction);
 
                 Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
                 stage.setScene(new Scene(root));
-                stage.setTitle("Chi tiết sản phẩm - " + selectedItem.getProductType());
+                stage.setTitle("Chi tiết sản phẩm - " + selectedAuction.getItem().getName());
                 stage.show();
 
               } catch (Exception e) {
@@ -164,15 +175,11 @@ public class AuctionListController implements Initializable {
     switchScene(event, "/Login.fxml", "Hệ thống Đấu giá VNU - Đăng nhập");
   }
 
-  // ĐÃ SỬA LẠI ĐƯỜNG DẪN Ở ĐÂY
   @FXML
   public void handleGoToMyManagement(ActionEvent event) {
     switchScene(event, "/MyManagement.fxml", "Quản lý của tôi");
   }
 
-  /**
-   * Xử lý sự kiện khi click vào cụm Avatar / "My Profile"
-   */
   @FXML
   public void handleGoToMyProfile(MouseEvent event) {
     try {
@@ -187,7 +194,6 @@ public class AuctionListController implements Initializable {
     }
   }
 
-  // Hàm tiện ích để chuyển trang (dùng cho các nút bấm)
   private void switchScene(ActionEvent event, String fxmlPath, String title) {
     try {
       Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));

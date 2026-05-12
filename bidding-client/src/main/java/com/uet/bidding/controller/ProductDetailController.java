@@ -58,7 +58,8 @@ public class ProductDetailController {
     lblDescription.setText(item.getDescription());
     lblAuctionId.setText("Mã phiên: #" + auction.getId());
 
-    NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+    // Đã fix lỗi deprecated của Locale
+    NumberFormat currencyFormat = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
     lblCurrentPrice.setText(currencyFormat.format(auction.getCurrentPrice()) + " VNĐ");
     lblMinBid.setText("(Tối thiểu: > " + currencyFormat.format(auction.getCurrentPrice()) + "đ)");
 
@@ -97,25 +98,23 @@ public class ProductDetailController {
   @FXML
   public void handlePlaceBid(ActionEvent event) {
     // ✅ CHECK PROFILE TRƯỚC KHI ĐẶT GIÁ
-    // 1. Lấy trực tiếp Customer từ Session (Hàm này đã tự ép kiểu an toàn bên trong)
     Customer customer = UserSession.getLoggedInCustomer();
 
-    // 2. Kiểm tra: Nếu không phải Customer (null/Admin) HOẶC Profile chưa xong
     if (customer == null || !customer.isProfileComplete()) {
       Alert alert = new Alert(Alert.AlertType.WARNING);
       alert.setTitle("⚠️ Thông báo hệ thống");
       alert.setHeaderText(customer == null ? "Yêu cầu đăng nhập" : "Hồ sơ chưa hoàn thiện");
 
       String content = (customer == null)
-              ? "Vui lòng đăng nhập với tài khoản khách hàng để đặt giá."
-              : "Bạn cần cập nhật đầy đủ thông tin cá nhân để tham gia đấu giá:\n\n" +
-              "1. Nhấn vào 'Avatar/Hồ sơ' ở góc trên\n" +
-              "2. Điền: Họ tên, SĐT, Địa chỉ, Ngân hàng\n" +
-              "3. Lưu thông tin và quay lại.";
+          ? "Vui lòng đăng nhập với tài khoản khách hàng để đặt giá."
+          : "Bạn cần cập nhật đầy đủ thông tin cá nhân để tham gia đấu giá:\n\n" +
+            "1. Nhấn vào 'Avatar/Hồ sơ' ở góc trên\n" +
+            "2. Điền: Họ tên, SĐT, Địa chỉ, Ngân hàng\n" +
+            "3. Lưu thông tin và quay lại.";
 
       alert.setContentText(content);
       alert.showAndWait();
-      return; // Dừng xử lý đặt giá
+      return;
     }
 
     try {
@@ -132,7 +131,8 @@ public class ProductDetailController {
       }
 
       currentAuction.setCurrentPrice(bidAmount);
-      NumberFormat format = NumberFormat.getInstance(new Locale("vi", "VN"));
+      // Đã fix lỗi deprecated của Locale
+      NumberFormat format = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
       lblCurrentPrice.setText(format.format(bidAmount) + " VNĐ");
       lblHighestBidder.setText("bởi: Bạn (Vừa đặt)");
       txtBidAmount.clear();
@@ -150,14 +150,20 @@ public class ProductDetailController {
   @FXML
   public void handleBuyNow(ActionEvent event) {
     // ✅ CHECK PROFILE TRƯỚC KHI MUA NGAY
-    // 1. Lấy trực tiếp Customer từ Session (Hàm này đã tự ép kiểu an toàn bên trong)
     Customer customer = UserSession.getLoggedInCustomer();
 
-    // 2. Kiểm tra: Nếu không phải Customer (null/Admin) HOẶC Profile chưa xong
     if (customer == null || !customer.isProfileComplete()) {
       Alert alert = new Alert(Alert.AlertType.WARNING);
       alert.setTitle("⚠️ Thông báo hệ thống");
       alert.setHeaderText(customer == null ? "Yêu cầu đăng nhập" : "Hồ sơ chưa hoàn thiện");
+
+      // Đã bổ sung hiển thị và return để chặn flow
+      String content = (customer == null)
+          ? "Vui lòng đăng nhập với tài khoản khách hàng để mua ngay."
+          : "Bạn cần cập nhật đầy đủ thông tin cá nhân để mua ngay sản phẩm.";
+      alert.setContentText(content);
+      alert.showAndWait();
+      return;
     }
 
     showAlert("Mua ngay", "Tính năng thanh toán trực tiếp đang được phát triển!", Alert.AlertType.INFORMATION);

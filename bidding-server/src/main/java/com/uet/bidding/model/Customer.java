@@ -9,7 +9,6 @@ public class Customer extends User {
     private String phone;
     private String address;
     private BigDecimal balance = BigDecimal.ZERO;
-    private String linkedBank;
     private boolean isProfileComplete = false;
 
     // --- THÊM HAI THUỘC TÍNH VAI TRÒ ---
@@ -64,8 +63,6 @@ public class Customer extends User {
     public void setAddress(String address) { this.address = address; }
     public BigDecimal getBalance() { return balance; }
     public void setBalance(BigDecimal balance) { this.balance = balance; }
-    public String getLinkedBank() { return linkedBank; }
-    public void setLinkedBank(String linkedBank) { this.linkedBank = linkedBank; }
 
     public boolean isProfileComplete() { return isProfileComplete; }
     public void setProfileComplete(boolean profileComplete) { isProfileComplete = profileComplete; }
@@ -73,8 +70,7 @@ public class Customer extends User {
     public boolean hasCompleteProfile() {
         return fullName != null && !fullName.trim().isEmpty() &&
                 phone != null && !phone.trim().isEmpty() &&
-                address != null && !address.trim().isEmpty() &&
-                linkedBank != null && !linkedBank.trim().isEmpty();
+                address != null && !address.trim().isEmpty();
     }
 
     public void addFunds(BigDecimal amount) {

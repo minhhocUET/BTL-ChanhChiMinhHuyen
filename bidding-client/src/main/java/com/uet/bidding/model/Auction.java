@@ -19,6 +19,7 @@ public class Auction  {
   private LocalDateTime startTime;
   private LocalDateTime endTime;
   private String status;
+  private BigDecimal bidIncrement;
   private SimpleIntegerProperty interestedCount;
 
   // Các biến phục vụ Logic & Observer Pattern
@@ -50,19 +51,6 @@ public class Auction  {
     this.currentPrice = startPrice;
     this.startTime = LocalDateTime.now(); // Bắt đầu ngay lập tức
     this.endTime = this.startTime.plusMinutes(durationMinutes); // Tự tính thời gian kết thúc
-    this.status = "OPEN";
-    this.bidHistory = new ArrayList<>();
-    this.observers = new ArrayList<>();
-  }
-
-  /**
-   * CONSTRUCTOR 3: Đầy đủ tham số (Dành cho các trường hợp đặc biệt)
-   */
-  public Auction(Item item, BigDecimal startPrice, LocalDateTime startTime, LocalDateTime endTime) {
-    this.item = item;
-    this.currentPrice = startPrice;
-    this.startTime = startTime;
-    this.endTime = endTime;
     this.status = "OPEN";
     this.bidHistory = new ArrayList<>();
     this.observers = new ArrayList<>();
@@ -173,4 +161,5 @@ public class Auction  {
               bidderName
       );
     }
-  }}
+  }
+  }

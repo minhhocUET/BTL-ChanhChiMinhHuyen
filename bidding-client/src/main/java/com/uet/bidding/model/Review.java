@@ -4,13 +4,13 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 public class Review {
-    private String bidderName; // Tên người đánh giá
+    private Customer customer; // Tên người đánh giá
     private int stars;         // 1-5 sao
     private String comment;    // Nội dung bình luận
     private LocalDateTime createdAt;
 
-    public Review(String bidderName, int stars, String comment) {
-        this.bidderName = bidderName;
+    public Review(Customer customer, int stars, String comment) {
+        this.customer = customer;
         this.stars = stars;
         this.comment = comment;
         this.createdAt = LocalDateTime.now();
@@ -19,5 +19,5 @@ public class Review {
     // Getters
     public int getStars() { return stars; }
     public String getComment() { return comment; }
-    public String getBidderName() { return bidderName; }
+    public String getBidderName() { return this.customer.getFullName(); }
 }

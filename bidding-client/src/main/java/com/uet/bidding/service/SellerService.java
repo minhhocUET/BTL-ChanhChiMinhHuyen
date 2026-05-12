@@ -63,7 +63,7 @@ public class SellerService {
      */
     public void addReviewToSeller(Customer rater, Seller seller, int stars, String comment) {
         // 1. Tạo đối tượng Review mới
-        Review newReview = new Review(rater.getUsername(), stars, comment);
+        Review newReview = new Review(rater, stars, comment);
         // 2. Thêm vào danh sách của Seller
         List<Review> allReviews = seller.getReviews();
         allReviews.add(newReview);

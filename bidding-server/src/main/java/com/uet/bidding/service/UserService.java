@@ -1,6 +1,5 @@
 package com.uet.bidding.service;
 
-import com.uet.bidding.dao.IUserDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
@@ -10,7 +9,7 @@ import java.math.BigDecimal;
 
 public class UserService {
   // Khởi tạo DAO (Dùng interface để linh hoạt)
-  private IUserDAO userDAO = new UserSqlDAO();
+  private UserSqlDAO userDAO = new UserSqlDAO();
 
   /**
    * Đăng ký Customer mới (Mặc định là vai trò khách hàng)

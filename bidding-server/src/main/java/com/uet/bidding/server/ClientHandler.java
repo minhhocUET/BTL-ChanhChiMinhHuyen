@@ -2,7 +2,7 @@ package com.uet.bidding.server;
 
 import com.google.gson.Gson;
 import com.uet.bidding.dao.AuctionSqlDAO;
-import com.uet.bidding.dao.ItemFileDAO;
+import com.uet.bidding.dao.ItemSqlDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.AuctionObserver;
 import com.uet.bidding.model.NetworkMessage;
@@ -21,7 +21,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
   private PrintWriter out;
   private User loggedInUser = null;
 
-  public ClientHandler(Socket socket, UserSqlDAO userSqlDAO, ItemFileDAO itemFileDAO, AuctionSqlDAO auctionSqlDAO) {
+  public ClientHandler(Socket socket, UserSqlDAO userSqlDAO, ItemSqlDAO itemFileDAO, AuctionSqlDAO auctionSqlDAO) {
     this.clientSocket = socket;
     // Khởi tạo processor với các DAO tương ứng
     this.processor = new RequestProcessor(userSqlDAO, auctionSqlDAO);

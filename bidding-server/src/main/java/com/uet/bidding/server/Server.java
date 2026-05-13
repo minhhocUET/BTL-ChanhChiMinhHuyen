@@ -1,7 +1,7 @@
 package com.uet.bidding.server;
 
 import com.uet.bidding.dao.AuctionSqlDAO;
-import com.uet.bidding.dao.ItemFileDAO;
+import com.uet.bidding.dao.ItemSqlDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.NetworkMessage;
 import com.uet.bidding.service.AuctionManager;
@@ -44,7 +44,7 @@ public class Server { // Đây là file chạy chính của SERVER
 
     // 1. KHỞI TẠO CÁC DAO
     UserSqlDAO userSqlDAO = new UserSqlDAO(); // Dùng SQL cho User
-    ItemFileDAO itemFileDAO = new ItemFileDAO(); // Dùng File cho Item
+    ItemSqlDAO itemSqlDAO = new ItemSqlDAO(); // Dùng File cho Item
     AuctionSqlDAO auctionSqlDAO = new AuctionSqlDAO();
     AuctionManager.getInstance().initialize(auctionSqlDAO);
 
@@ -68,7 +68,7 @@ public class Server { // Đây là file chạy chính của SERVER
         System.out.println("Có kết nối mới từ: " + clientSocket.getInetAddress());
 
         // 3. Khởi tạo handler cho client mới
-        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO, itemFileDAO, auctionSqlDAO);
+        ClientHandler handler = new ClientHandler(clientSocket, userSqlDAO, itemSqlDAO, auctionSqlDAO);
 
         // LƯU NGƯỜI CHƠI VÀO DANH SÁCH QUẢN LÝ
         activeClients.add(handler);

@@ -2,8 +2,11 @@ package com.uet.bidding.network;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.uet.bidding.model.*;
 import com.uet.bidding.controller.Main;
+import com.uet.bidding.model.Admin;
+import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.User;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -23,7 +26,8 @@ public class ClientService {
   private BufferedReader in;
   private boolean isRunning = false;
 
-  private ClientService() {}
+  private ClientService() {
+  }
 
   public static ClientService getInstance() {
     if (instance == null) {
@@ -56,6 +60,10 @@ public class ClientService {
     } catch (IOException e) {
       System.err.println("❌ Kết nối bị ngắt đột ngột!");
       isRunning = false;
+      Platform.runLater(() -> {
+        showAlert("Lỗi kết nối", "Mất kết nối tới máy chủ. Vui lòng kiểm tra lại mạng!", Alert.AlertType.ERROR);
+        Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500); // Đá về màn hình đăng nhập
+      });
     }
   }
 
@@ -80,6 +88,15 @@ public class ClientService {
       case "ERROR":
         String errorMsg = String.valueOf(msg.getData());
         Platform.runLater(() -> showAlert("Thất bại", errorMsg, Alert.AlertType.ERROR));
+        break;
+
+      case "BROADCAST":
+        String info = String.valueOf(msg.getData());
+        // Thông báo cho người dùng hoặc cập nhật bảng đấu giá realtime
+        Platform.runLater(() -> {
+          // Bạn có thể hiển thị một thông báo nhỏ (Toast) hoặc cập nhật ListView
+          System.out.println("📢 Thông báo hệ thống: " + info);
+        });
         break;
     }
   }
@@ -106,7 +123,7 @@ public class ClientService {
     if (updatedUser != null) UserSession.setCurrentUser(updatedUser);
 
     Platform.runLater(() -> showAlert("Thành công",
-            "Hồ sơ của bạn đã được cập nhật đầy đủ lên hệ thống!", Alert.AlertType.INFORMATION));
+        "Hồ sơ của bạn đã được cập nhật đầy đủ lên hệ thống!", Alert.AlertType.INFORMATION));
   }
 
   private void processUpdateBalance(NetworkMessage msg) {
@@ -120,8 +137,8 @@ public class ClientService {
 
       Platform.runLater(() -> {
         showAlert("Nạp tiền thành công",
-                "Số dư mới: " + String.format("%,.0f", currentBalance) + " VNĐ",
-                Alert.AlertType.INFORMATION);
+            "Số dư mới: " + String.format("%,.0f", currentBalance) + " VNĐ",
+            Alert.AlertType.INFORMATION);
       });
     }
   }
@@ -164,6 +181,18 @@ public class ClientService {
   public void sendRequest(String type, Object data) {
     if (out != null) {
       out.println(gson.toJson(new NetworkMessage(type, data)));
+    }
+  }
+
+  public void disconnect() {
+    try {
+      isRunning = false;
+      if (in != null) in.close();
+      if (out != null) out.close();
+      if (socket != null) socket.close();
+      System.out.println("🔌 Đã ngắt kết nối an toàn.");
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 }

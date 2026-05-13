@@ -24,15 +24,16 @@ import java.util.Map;
 
 public class AdminDashboardController {
 
+  private final Gson gson = new Gson();
   // 1. Thêm các @FXML Label để điều khiển con số trên giao diện
-  @FXML private Label lblTotalUsers;      // Ô màu xanh (125)
-  @FXML private Label lblActiveSessions;  // Ô màu xanh dương (12)
-  @FXML private Label lblPendingItems;    // Ô màu đỏ (8)
-
+  @FXML
+  private Label lblTotalUsers;      // Ô màu xanh (125)
+  @FXML
+  private Label lblActiveSessions;  // Ô màu xanh dương (12)
+  @FXML
+  private Label lblPendingItems;    // Ô màu đỏ (8)
   @FXML
   private StackPane contentArea;
-
-  private final Gson gson = new Gson();
 
   /**
    * 2. Hàm initialize() sẽ tự động chạy khi giao diện Admin hiện lên
@@ -66,8 +67,9 @@ public class AdminDashboardController {
           if ("SYSTEM_STATS_RESPONSE".equals(response.getType())) {
             // Chuyển dữ liệu JSON nhận được thành Map
             Map<String, Double> stats = gson.fromJson(
-                    gson.toJson(response.getData()),
-                    new TypeToken<Map<String, Double>>(){}.getType()
+                gson.toJson(response.getData()),
+                new TypeToken<Map<String, Double>>() {
+                }.getType()
             );
 
             // CẬP NHẬT GIAO DIỆN (Bắt buộc dùng Platform.runLater)

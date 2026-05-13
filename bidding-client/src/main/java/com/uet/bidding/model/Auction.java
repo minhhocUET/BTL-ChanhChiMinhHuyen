@@ -4,13 +4,12 @@ import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 import javafx.beans.property.SimpleIntegerProperty;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Auction  {
+public class Auction {
 
   // Các biến phục vụ dữ liệu
   private int id;
@@ -19,6 +18,7 @@ public class Auction  {
   private LocalDateTime startTime;
   private LocalDateTime endTime;
   private String status;
+  private BigDecimal bidIncrement;
   private SimpleIntegerProperty interestedCount;
 
   // Các biến phục vụ Logic & Observer Pattern
@@ -133,7 +133,7 @@ public class Auction  {
   // --- XỬ LÝ ĐA LUỒNG & NGOẠI LỆ ---
 
   public synchronized boolean placeNewBid(Customer customer, BigDecimal bidAmount)
-          throws AuctionClosedException, InvalidBidException {
+      throws AuctionClosedException, InvalidBidException {
 
     // 1. Kiểm tra trạng thái phiên đấu giá
     if (!"RUNNING".equals(this.status)) {
@@ -168,9 +168,10 @@ public class Auction  {
 
       // Gửi thông báo đến Observer
       observer.updatePrice(
-              "Sản phẩm: " + this.item.getName(),
-              this.currentPrice.doubleValue(),
-              bidderName
+          "Sản phẩm: " + this.item.getName(),
+          this.currentPrice.doubleValue(),
+          bidderName
       );
     }
-  }}
+  }
+}

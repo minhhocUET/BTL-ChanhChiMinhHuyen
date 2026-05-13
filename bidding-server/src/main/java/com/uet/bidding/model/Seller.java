@@ -29,29 +29,36 @@ public class Seller {
   public void addItem(Item item) {
     this.inventory.add(item);
   }
+
   public List<Item> getInventory() {
     return inventory;
   }
 
   // Getter/Setter cho storeName và rating
   public String getDescription() {
-    return storeName;
+    return description;
+
   }
-  public void setDescription(String storeName) {
-    this.storeName = storeName;
+  public void setDescription(String description) {
+    this.description = description;
   }
+
   public String getStoreName() {
     return storeName;
   }
+
   public void setStoreName(String storeName) {
     this.storeName = storeName;
   }
+
   public double getSellerRating() {
     return sellerRating;
   }
+
   public void setSellerRating(double sellerRating) {
     this.sellerRating = sellerRating;
   }
+
   public List<Auction> getActiveAuctions() {
     return activeAuctions;
   }
@@ -59,6 +66,7 @@ public class Seller {
   public List<Auction> getFinishedAuctions() {
     return finishedAuctions;
   }
+
   public List<Review> getReviews() {
     return reviews;
   }

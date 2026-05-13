@@ -1,66 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
-
-<VBox prefHeight="600.0" prefWidth="660.0" spacing="20.0" style="-fx-background-color: #f1f2f6;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="660.0" spacing="20.0"
+      style="-fx-background-color: #f1f2f6;" xmlns="http://javafx.com/javafx/21">
     <padding>
-        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
     </padding>
     <children>
         <Label text="THỐNG KÊ HỆ THỐNG" textFill="#1e3799">
             <font>
-                <Font name="System Bold" size="22.0" />
+                <Font name="System Bold" size="22.0"/>
             </font>
         </Label>
         <HBox spacing="20.0">
             <children>
                 <!-- Thẻ 1: Tổng Người Dùng -->
-                <VBox alignment="CENTER" prefHeight="120.0" prefWidth="180.0" style="-fx-background-color: #1e3799; -fx-background-radius: 10;">
+                <VBox alignment="CENTER" prefHeight="120.0" prefWidth="180.0"
+                      style="-fx-background-color: #1e3799; -fx-background-radius: 10;">
                     <children>
                         <Label text="TỔNG NGƯỜI DÙNG" textFill="WHITE">
                             <font>
-                                <Font name="System Bold" size="14.0" />
+                                <Font name="System Bold" size="14.0"/>
                             </font>
                         </Label>
                         <Label text="125" textFill="#00d2d3">
                             <font>
-                                <Font name="System Bold" size="36.0" />
+                                <Font name="System Bold" size="36.0"/>
                             </font>
                         </Label>
                     </children>
                 </VBox>
 
                 <!-- Thẻ 2: Phiên Đang Mở -->
-                <VBox alignment="CENTER" prefHeight="120.0" prefWidth="180.0" style="-fx-background-color: #1e3799; -fx-background-radius: 10;">
+                <VBox alignment="CENTER" prefHeight="120.0" prefWidth="180.0"
+                      style="-fx-background-color: #1e3799; -fx-background-radius: 10;">
                     <children>
                         <Label text="PHIÊN ĐANG MỞ" textFill="WHITE">
                             <font>
-                                <Font name="System Bold" size="14.0" />
+                                <Font name="System Bold" size="14.0"/>
                             </font>
                         </Label>
                         <Label text="12" textFill="#ff9f43">
                             <font>
-                                <Font name="System Bold" size="36.0" />
+                                <Font name="System Bold" size="36.0"/>
                             </font>
                         </Label>
                     </children>
                 </VBox>
 
                 <!-- Thẻ 3: Chờ Phê Duyệt -->
-                <VBox alignment="CENTER" prefHeight="120.0" prefWidth="180.0" style="-fx-background-color: #1e3799; -fx-background-radius: 10;">
+                <VBox alignment="CENTER" prefHeight="120.0" prefWidth="180.0"
+                      style="-fx-background-color: #1e3799; -fx-background-radius: 10;">
                     <children>
                         <Label text="SP CHỜ DUYỆT" textFill="WHITE">
                             <font>
-                                <Font name="System Bold" size="14.0" />
+                                <Font name="System Bold" size="14.0"/>
                             </font>
                         </Label>
                         <Label text="8" textFill="#ee5253">
                             <font>
-                                <Font name="System Bold" size="36.0" />
+                                <Font name="System Bold" size="36.0"/>
                             </font>
                         </Label>
                     </children>

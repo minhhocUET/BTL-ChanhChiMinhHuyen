@@ -1,7 +1,5 @@
 package com.uet.bidding.model;
 
-import com.uet.bidding.model.Entity;
-
 /**
  * Lớp User trừu tượng - Lớp cơ sở (Base Class)
  * Loại bỏ Serialization, sẵn sàng cho GSON/JSON
@@ -27,14 +25,29 @@ public abstract class User extends Entity {
   }
 
   // --- Getters & Setters ---
-  public String getUsername() { return username; }
-  public void setUsername(String username) { this.username = username; }
+  public String getUsername() {
+    return username;
+  }
 
-  public String getPassword() { return password; }
-  public void setPassword(String password) { this.password = password; }
+  public void setUsername(String username) {
+    this.username = username;
+  }
 
-  public boolean isBanned() { return isBanned; }
-  public void setBanned(boolean banned) { isBanned = banned; }
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public boolean isBanned() {
+    return isBanned;
+  }
+
+  public void setBanned(boolean banned) {
+    isBanned = banned;
+  }
 
   /**
    * Phương thức trừu tượng để phân định vai trò.

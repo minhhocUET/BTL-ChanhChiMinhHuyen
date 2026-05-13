@@ -42,34 +42,46 @@ public abstract class Item extends Entity {
   public String getName() {
     return name;
   }
+
   public void setName(String name) {
     this.name = name;
   }
+
   public String getDescription() {
     return description;
   }
+
   public void setDescription(String description) {
     this.description = description;
   }
+
   public BigDecimal getStartingPrice() {
     return startingPrice;
   }
+
   public void setStartingPrice(BigDecimal startingPrice) {
     this.startingPrice = startingPrice;
   }
+
   public String getImagePath() {
     return imagePath;
   }
+
   public void setImagePath(String imagePath) {
     this.imagePath = imagePath;
   }
+
   public int getSellerId() {
     return sellerId;
   }
+
   public void setSellerId(int sellerId) {
     this.sellerId = sellerId;
   }
-  public String getCity() { return city; }
+
+  public String getCity() {
+    return city;
+  }
 
   public boolean isInAuction() {
     return inAuction;
@@ -77,6 +89,7 @@ public abstract class Item extends Entity {
 
   /**
    * Cập nhật trạng thái đấu giá của món hàng
+   *
    * @param inAuction true nếu bắt đầu đấu giá, false nếu phiên đấu giá kết thúc hoặc bị hủy
    */
   public void setInAuction(boolean inAuction) {
@@ -90,11 +103,13 @@ public abstract class Item extends Entity {
     return "Khác";
   }
 // ================= ABSTRACT =================
+
   /**
    * Trả về loại item (ART / ELECTRONICS / Vehicle)
    * -> dùng cho Factory
    */
   public abstract String getType();
+
   public String toString() {
     return "Item {" +
         "id = " + this.getId() +

@@ -4,13 +4,12 @@ import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 import javafx.beans.property.SimpleIntegerProperty;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Auction  {
+public class Auction {
 
   // Các biến phục vụ dữ liệu
   private int id;
@@ -51,6 +50,19 @@ public class Auction  {
     this.currentPrice = startPrice;
     this.startTime = LocalDateTime.now(); // Bắt đầu ngay lập tức
     this.endTime = this.startTime.plusMinutes(durationMinutes); // Tự tính thời gian kết thúc
+    this.status = "OPEN";
+    this.bidHistory = new ArrayList<>();
+    this.observers = new ArrayList<>();
+  }
+
+  /**
+   * CONSTRUCTOR 3: Đầy đủ tham số (Dành cho các trường hợp đặc biệt)
+   */
+  public Auction(Item item, BigDecimal startPrice, LocalDateTime startTime, LocalDateTime endTime) {
+    this.item = item;
+    this.currentPrice = startPrice;
+    this.startTime = startTime;
+    this.endTime = endTime;
     this.status = "OPEN";
     this.bidHistory = new ArrayList<>();
     this.observers = new ArrayList<>();
@@ -121,7 +133,7 @@ public class Auction  {
   // --- XỬ LÝ ĐA LUỒNG & NGOẠI LỆ ---
 
   public synchronized boolean placeNewBid(Customer customer, BigDecimal bidAmount)
-          throws AuctionClosedException, InvalidBidException {
+      throws AuctionClosedException, InvalidBidException {
 
     // 1. Kiểm tra trạng thái phiên đấu giá
     if (!"RUNNING".equals(this.status)) {
@@ -156,10 +168,10 @@ public class Auction  {
 
       // Gửi thông báo đến Observer
       observer.updatePrice(
-              "Sản phẩm: " + this.item.getName(),
-              this.currentPrice.doubleValue(),
-              bidderName
+          "Sản phẩm: " + this.item.getName(),
+          this.currentPrice.doubleValue(),
+          bidderName
       );
     }
   }
-  }
+}

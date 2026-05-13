@@ -8,13 +8,13 @@ public class UserSession {
   // Biến static lưu trữ người dùng đang đăng nhập (có thể là Admin hoặc Customer)
   private static User currentUser;
 
+  public static User getCurrentUser() {
+    return currentUser;
+  }
+
   // --- CÁC HÀM CƠ BẢN ---
   public static void setCurrentUser(User user) {
     currentUser = user;
-  }
-
-  public static User getCurrentUser() {
-    return currentUser;
   }
 
   public static boolean isLoggedIn() {

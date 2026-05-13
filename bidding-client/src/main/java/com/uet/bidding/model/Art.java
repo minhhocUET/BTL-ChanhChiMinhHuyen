@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 
 public class Art extends Item {
 
-  private static final long serialVersionUID = 1L;
-
   private String author;
   private int creationYear;
   private String material;

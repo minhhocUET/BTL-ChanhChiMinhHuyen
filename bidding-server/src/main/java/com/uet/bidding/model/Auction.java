@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Auction  {
+public class Auction {
 
   // Các biến phục vụ dữ liệu
   private int id;
@@ -89,27 +89,35 @@ public class Auction  {
   public int getId() {
     return id;
   }
+
   public void setId(int id) {
     this.id = id;
   }
+
   public Item getItem() {
     return item;
   }
+
   public void setItem(Item item) {
     this.item = item;
   }
+
   public BigDecimal getCurrentPrice() {
     return currentPrice;
   }
+
   public void setCurrentPrice(BigDecimal currentPrice) {
     this.currentPrice = currentPrice;
   }
+
   public String getStatus() {
     return status;
   }
+
   public void setStatus(String status) {
     this.status = status;
   }
+
   public int getInterestedCount() {
     return interestedCount.get();
   }
@@ -117,9 +125,11 @@ public class Auction  {
   public Customer getHighestBidder() {
     return highestBidder;
   }
+
   public LocalDateTime getStartTime() {
     return startTime;
   }
+
   public LocalDateTime getEndTime() {
     return endTime;
   }
@@ -132,7 +142,7 @@ public class Auction  {
   // --- XỬ LÝ ĐA LUỒNG & NGOẠI LỆ ---
 
   public synchronized boolean placeNewBid(Customer customer, BigDecimal bidAmount)
-          throws AuctionClosedException, InvalidBidException {
+      throws AuctionClosedException, InvalidBidException {
 
     // 1. Kiểm tra trạng thái phiên đấu giá
     if (!"RUNNING".equals(this.status)) {
@@ -167,9 +177,10 @@ public class Auction  {
 
       // Gửi thông báo đến Observer
       observer.updatePrice(
-              "Sản phẩm: " + this.item.getName(),
-              this.currentPrice.doubleValue(),
-              bidderName
+          "Sản phẩm: " + this.item.getName(),
+          this.currentPrice.doubleValue(),
+          bidderName
       );
     }
-  }}
+  }
+}

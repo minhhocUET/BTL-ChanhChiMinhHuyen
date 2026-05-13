@@ -15,24 +15,38 @@ import java.util.ResourceBundle;
 public class MyManagementController implements Initializable {
 
   // --- BẢNG 1: SẢN PHẨM CỦA TÔI (Đã đổi tên khớp với FXML: myItemsTableView) ---
-  @FXML private TableView<MyProductItem> myItemsTableView;
-  @FXML private TableColumn<MyProductItem, Integer> colItemStt;
-  @FXML private TableColumn<MyProductItem, String> colItemName, colItemDesc;
-  @FXML private TableColumn<MyProductItem, Double> colItemStartPrice;
-  @FXML private TableColumn<MyProductItem, Void> colItemAction;
+  @FXML
+  private TableView<MyProductItem> myItemsTableView;
+  @FXML
+  private TableColumn<MyProductItem, Integer> colItemStt;
+  @FXML
+  private TableColumn<MyProductItem, String> colItemName, colItemDesc;
+  @FXML
+  private TableColumn<MyProductItem, Double> colItemStartPrice;
+  @FXML
+  private TableColumn<MyProductItem, Void> colItemAction;
 
   // --- BẢNG 2: ĐANG THAM GIA ĐẤU GIÁ ---
-  @FXML private TableView<BidItem> bidTableView;
-  @FXML private TableColumn<BidItem, Integer> colBidStt;
-  @FXML private TableColumn<BidItem, String> colBidName, colBidStatus;
-  @FXML private TableColumn<BidItem, Double> colBidCurrentPrice, colBidMyPrice;
+  @FXML
+  private TableView<BidItem> bidTableView;
+  @FXML
+  private TableColumn<BidItem, Integer> colBidStt;
+  @FXML
+  private TableColumn<BidItem, String> colBidName, colBidStatus;
+  @FXML
+  private TableColumn<BidItem, Double> colBidCurrentPrice, colBidMyPrice;
 
   // --- BẢNG 3: SẢN PHẨM ĐANG GIAO BÁN ---
-  @FXML private TableView<SellItem> sellTableView;
-  @FXML private TableColumn<SellItem, Integer> colSellStt;
-  @FXML private TableColumn<SellItem, String> colSellName;
-  @FXML private TableColumn<SellItem, Double> colSellStartPrice, colSellHighestBid;
-  @FXML private TableColumn<SellItem, Integer> colSellInterested;
+  @FXML
+  private TableView<SellItem> sellTableView;
+  @FXML
+  private TableColumn<SellItem, Integer> colSellStt;
+  @FXML
+  private TableColumn<SellItem, String> colSellName;
+  @FXML
+  private TableColumn<SellItem, Double> colSellStartPrice, colSellHighestBid;
+  @FXML
+  private TableColumn<SellItem, Integer> colSellInterested;
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
@@ -116,6 +130,7 @@ public class MyManagementController implements Initializable {
   private void setupActionColumn() {
     colItemAction.setCellFactory(param -> new TableCell<>() {
       private final Button btnEdit = new Button("Sửa");
+
       {
         btnEdit.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-cursor: hand;");
         btnEdit.setOnAction(event -> {
@@ -123,6 +138,7 @@ public class MyManagementController implements Initializable {
           System.out.println("Chỉnh sửa: " + data.getName());
         });
       }
+
       @Override
       protected void updateItem(Void item, boolean empty) {
         super.updateItem(item, empty);
@@ -153,12 +169,27 @@ public class MyManagementController implements Initializable {
     private double startingPrice;
 
     public MyProductItem(int stt, String name, String description, double startingPrice) {
-      this.stt = stt; this.name = name; this.description = description; this.startingPrice = startingPrice;
+      this.stt = stt;
+      this.name = name;
+      this.description = description;
+      this.startingPrice = startingPrice;
     }
-    public int getStt() { return stt; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public double getStartingPrice() { return startingPrice; }
+
+    public int getStt() {
+      return stt;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public double getStartingPrice() {
+      return startingPrice;
+    }
   }
 
   public static class BidItem {
@@ -167,13 +198,32 @@ public class MyManagementController implements Initializable {
     private double currentPrice, myPrice;
 
     public BidItem(int stt, String name, double currentPrice, double myPrice, String status) {
-      this.stt = stt; this.name = name; this.currentPrice = currentPrice; this.myPrice = myPrice; this.status = status;
+      this.stt = stt;
+      this.name = name;
+      this.currentPrice = currentPrice;
+      this.myPrice = myPrice;
+      this.status = status;
     }
-    public int getStt() { return stt; }
-    public String getName() { return name; }
-    public double getCurrentPrice() { return currentPrice; }
-    public double getMyPrice() { return myPrice; }
-    public String getStatus() { return status; }
+
+    public int getStt() {
+      return stt;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public double getCurrentPrice() {
+      return currentPrice;
+    }
+
+    public double getMyPrice() {
+      return myPrice;
+    }
+
+    public String getStatus() {
+      return status;
+    }
   }
 
   public static class SellItem {
@@ -183,12 +233,31 @@ public class MyManagementController implements Initializable {
     private int interested;
 
     public SellItem(int stt, String name, double startPrice, double highestBid, int interested) {
-      this.stt = stt; this.name = name; this.startPrice = startPrice; this.highestBid = highestBid; this.interested = interested;
+      this.stt = stt;
+      this.name = name;
+      this.startPrice = startPrice;
+      this.highestBid = highestBid;
+      this.interested = interested;
     }
-    public int getStt() { return stt; }
-    public String getName() { return name; }
-    public double getStartPrice() { return startPrice; }
-    public double getHighestBid() { return highestBid; }
-    public int getInterested() { return interested; }
+
+    public int getStt() {
+      return stt;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public double getStartPrice() {
+      return startPrice;
+    }
+
+    public double getHighestBid() {
+      return highestBid;
+    }
+
+    public int getInterested() {
+      return interested;
+    }
   }
 }

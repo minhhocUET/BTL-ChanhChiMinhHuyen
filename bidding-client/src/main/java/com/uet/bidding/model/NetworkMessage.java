@@ -5,10 +5,7 @@ import java.io.Serializable;
 /**
  * .
  */
-public class NetworkMessage implements Serializable {
-
-  //ID phiên bản để đảm bảo Client và Server luôn hiểu nhau
-  private static final long serialVersionUID = 1L;
+public class NetworkMessage {
 
   private String type;
 

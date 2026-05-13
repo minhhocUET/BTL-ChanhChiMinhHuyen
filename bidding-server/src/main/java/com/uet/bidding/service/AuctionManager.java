@@ -4,24 +4,27 @@ import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.model.Auction;
+import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.Item;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class AuctionManager {
 
   private static volatile AuctionManager instance;
-  private ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
-  private ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
-
-  // 1. THÊM DAO: Để đọc/ghi file .dat.
+  private final ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
+  private final AtomicInteger auctionIdCounter = new AtomicInteger(1);
   private AuctionSqlDAO auctionSqlDAO;
 
   private AuctionManager() {
-    System.out.println("Hệ thống quản lý đấu giá đã được khởi động!");
+    System.out.println("Hệ thống quản lý đấu giá UET đã được khởi động!");
   }
 
   public static AuctionManager getInstance() {
@@ -33,72 +36,107 @@ public class AuctionManager {
     return instance;
   }
 
-  /**
-   * 2. HÀM KHỞI TẠO DỮ LIỆU: Nạp từ file auctions.dat lên RAM khi Server bật.
-   */
   public void initialize(AuctionSqlDAO dao) {
     this.auctionSqlDAO = dao;
     List<Auction> savedAuctions = dao.getAllAuctions();
+
+    int maxId = 0;
     for (Auction a : savedAuctions) {
-      addAuction(a);
+      addAuctionInternal(a);
+      if (a.getId() > maxId) maxId = a.getId();
     }
-    System.out.println("Đã nạp " + auctions.size() + " phiên đấu giá từ file.");
+
+    auctionIdCounter.set(maxId + 1);
+    System.out.println("Đã nạp " + auctions.size() + " phiên đấu giá từ dữ liệu.");
   }
 
-  public void addAuction(Auction auction) {
+  // Hàm phụ dùng nội bộ để đăng ký auction và lock
+  private void addAuctionInternal(Auction auction) {
     auctions.put(auction.getId(), auction);
     locks.put(auction.getId(), new ReentrantLock());
   }
 
-  // Tiện ích để ClientHandler lấy danh sách gửi về cho người dùng.
-  public List<Auction> getAllAuctions() {
-    return new ArrayList<>(auctions.values());
+  // ================== QUẢN LÝ PHIÊN ĐẤU GIÁ ==================
+
+  public Auction createAuction(Item item, LocalDateTime endTime) {
+    int newId = auctionIdCounter.getAndIncrement();
+    // Lấy giá khởi điểm từ Item (Giả sử Item dùng BigDecimal)
+    BigDecimal startPrice = item.getStartingPrice();
+    LocalDateTime startTime = LocalDateTime.now();
+
+    Auction newAuction = new Auction(item, startPrice, startTime, endTime);
+    newAuction.setId(newId);
+
+    addAuctionInternal(newAuction);
+    saveToDatabase(newAuction);
+
+    return newAuction;
   }
 
-  public Auction getAuction(int id) {
-    return auctions.get(id);
+  public void updateAuctionStatus(int auctionId, String status) {
+    ReentrantLock lock = locks.get(auctionId);
+    if (lock == null) return;
+
+    lock.lock();
+    try {
+      Auction auction = auctions.get(auctionId);
+      if (auction != null) {
+        auction.setStatus(status);
+        saveToDatabase(auction);
+        System.out.println("Phiên #" + auctionId + " chuyển sang trạng thái: " + status);
+      }
+    } finally {
+      lock.unlock();
+    }
   }
 
-  public void reset() {
-    auctions.clear();
-    locks.clear();
-  }
-
-  // ================== CORE LOGIC (SỬA ĐỂ LƯU FILE) ==================
+  // ================== CORE LOGIC: ĐẶT GIÁ AN TOÀN ==================
 
   /**
-   * Đặt giá an toàn (thread-safe) và cập nhật xuống file ngay lập tức.
+   * Chỉnh sửa tham số nhận vào Customer để khớp với logic mới
    */
-  public boolean placeBid(int auctionId, String bidderName, BigDecimal amount)
+  public boolean placeBid(int auctionId, Customer customer, BigDecimal amount)
       throws AuctionClosedException, InvalidBidException {
 
     Auction auction = auctions.get(auctionId);
     if (auction == null) throw new InvalidBidException("Không tìm thấy phiên đấu giá!");
 
     ReentrantLock lock = locks.get(auctionId);
+    if (lock == null) return false;
+
     lock.lock();
     try {
-      // Gọi logic placeBid trong class Auction (đã có check status và giá)
-      // Chuyển BigDecimal sang double để khớp với phương thức cũ của bạn
-      boolean success = auction.placeBid(bidderName, amount);
+      // Gọi logic placeNewBid đã sửa (nhận Customer, trả về boolean)
+      boolean success = auction.placeNewBid(customer, amount);
 
       if (success) {
-        // 3. QUAN TRỌNG: Lưu ngay lập tức xuống file auctions.dat qua DAO
-        if (auctionSqlDAO != null) {
-          try {
-            // PHẢI dùng try-catch ở đây vì interface định nghĩa throws Exception
-            auctionSqlDAO.updateAuction(auction);
-          } catch (Exception e) {
-            System.err.println("Lỗi lưu DB khi đặt giá: " + e.getMessage());
-            // Có thể ném ngược lại một RuntimeException để báo hiệu lỗi hệ thống
-          }
-        }
-        System.out.println("[Server] " + bidderName + " bid thành công: " + amount + " cho ID: " + auctionId);
+        // Lưu vào Database ngay khi có người trả giá mới thành công
+        saveToDatabase(auction);
+        System.out.println("[Server] " + customer.getUsername() + " đặt giá thành công: " + amount);
       }
       return success;
-
     } finally {
       lock.unlock();
     }
+  }
+
+  // Hàm phụ để tránh lặp code lưu DB
+  private void saveToDatabase(Auction auction) {
+    if (auctionSqlDAO != null) {
+      try {
+        auctionSqlDAO.updateAuction(auction);
+      } catch (Exception e) {
+        System.err.println("❌ Lỗi Database: " + e.getMessage());
+      }
+    }
+  }
+
+  // Getter cơ bản
+  public List<Auction> getAllAuctions() {
+    return new ArrayList<>(auctions.values());
+  }
+
+  public Auction getAuction(int id) {
+    return auctions.get(id);
   }
 }

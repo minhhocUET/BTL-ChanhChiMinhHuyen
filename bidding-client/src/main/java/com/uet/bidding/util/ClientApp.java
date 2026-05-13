@@ -16,11 +16,10 @@ import java.util.function.Consumer; // Thêm import này
 public class ClientApp {
   private static final Gson networkGson = new Gson();
   private static final Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
-  private static volatile boolean isRunning = true;
-
   // Các thông số Server để dùng chung
   private static final String HOSTNAME = "localhost";
   private static final int PORT = 8888;
+  private static volatile boolean isRunning = true;
 
   // ==============================================================
   // HÀM MỚI: Dùng cho JavaFX UI gửi yêu cầu và nhận phản hồi

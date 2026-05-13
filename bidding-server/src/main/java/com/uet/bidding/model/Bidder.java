@@ -3,7 +3,7 @@ package com.uet.bidding.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Bidder  {
+public class Bidder {
 
   // 1. Danh sách các phiên đang đăng ký tham gia (Đang diễn ra)
   private List<Integer> registeredAuctionIds;

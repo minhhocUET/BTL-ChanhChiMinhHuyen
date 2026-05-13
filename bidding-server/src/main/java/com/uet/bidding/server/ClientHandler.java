@@ -4,21 +4,15 @@ import com.google.gson.Gson;
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemFileDAO;
 import com.uet.bidding.dao.UserSqlDAO;
-import com.uet.bidding.exception.AuctionClosedException;
-import com.uet.bidding.exception.AuthenticationException;
-import com.uet.bidding.exception.InvalidBidException;
-import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.*;
-import com.uet.bidding.service.AuctionManager;
+import com.uet.bidding.model.AuctionObserver;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.User;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ClientHandler implements Runnable, AuctionObserver {
   private final Socket clientSocket;
@@ -60,10 +54,17 @@ public class ClientHandler implements Runnable, AuctionObserver {
     if (out != null) out.println(gson.toJson(new NetworkMessage(type, data)));
   }
 
-  public void sendMessage(NetworkMessage msg) { sendResponse(msg.getType(), msg.getData()); }
+  public void sendMessage(NetworkMessage msg) {
+    sendResponse(msg.getType(), msg.getData());
+  }
 
-  public User getLoggedInUser() { return loggedInUser; }
-  public void setLoggedInUser(User user) { this.loggedInUser = user; }
+  public User getLoggedInUser() {
+    return loggedInUser;
+  }
+
+  public void setLoggedInUser(User user) {
+    this.loggedInUser = user;
+  }
 
   @Override
   public void updatePrice(String itemName, double newPrice, String topBidder) {
@@ -72,6 +73,9 @@ public class ClientHandler implements Runnable, AuctionObserver {
 
   private void closeSocket() {
     Server.removeClient(this);
-    try { if (clientSocket != null) clientSocket.close(); } catch (IOException e) {}
+    try {
+      if (clientSocket != null) clientSocket.close();
+    } catch (IOException e) {
+    }
   }
 }

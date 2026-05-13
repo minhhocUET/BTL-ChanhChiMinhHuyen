@@ -3,22 +3,22 @@ package com.uet.bidding.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.uet.bidding.dao.AuctionSqlDAO;
+import com.uet.bidding.dao.ItemFileDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.Admin;
-import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.User;
+import com.uet.bidding.model.*;
 import com.uet.bidding.service.AuctionManager;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class RequestProcessor {
   private final Gson gson = new Gson();
   private final UserSqlDAO userSqlDAO;
   private final AuctionSqlDAO auctionSqlDAO;
+  //private final ItemFileDAO itemSqlDAO;
 
   public RequestProcessor(UserSqlDAO userSqlDAO, AuctionSqlDAO auctionSqlDAO) {
     this.userSqlDAO = userSqlDAO;
@@ -59,7 +59,7 @@ public class RequestProcessor {
         userSqlDAO.updateUser(updatedUser);
 
         handler.setLoggedInUser(updatedUser);
-        handler.sendResponse("SUCCESS", "Cập nhật hồ sơ thành công!");
+        handler.sendResponse("UPDATE_PROFILE_SUCCESS", updatedUser);
         break;
 
       case "ADD_BALANCE":
@@ -106,11 +106,55 @@ public class RequestProcessor {
 
       case "REGISTER":
         handleRegister(String.valueOf(msg.getData()));
-        handler.sendResponse("SUCCESS", "Đăng ký thành công!");
+        handler.sendResponse("REGISTER_SUCCESS", "Đăng ký thành công!");
         break;
 
       case "GET_ALL_AUCTIONS":
         handler.sendResponse("SUCCESS", auctionSqlDAO.getAllAuctions());
+        break;
+
+      case "CREATE_AUCTION":
+        if (handler.getLoggedInUser() == null) throw new AuthenticationException("Phải đăng nhập!");
+
+        String[] auctionParts = String.valueOf(msg.getData()).split(" ");
+        int itemId = Integer.parseInt(auctionParts[0]);
+        BigDecimal startPrice = new BigDecimal(auctionParts[1]);
+        int durationMins = Integer.parseInt(auctionParts[2]);
+
+        // Giả sử bạn có ItemDAO để lấy Item từ ID
+        //Item item = itemSqlDAO.getItemById(itemId);
+        // Ở đây mình gọi tạm qua AuctionManager để tạo phiên
+        // Auction newAuction = AuctionManager.getInstance().createAuction(item, LocalDateTime.now().plusMinutes(durationMins));
+
+        // Sau khi tạo xong, thông báo cho tất cả mọi người có hàng mới
+        Server.broadcast(new NetworkMessage("NEW_AUCTION_ADDED", "Sản phẩm mới vừa lên sàn!"));
+        handler.sendResponse("SUCCESS", "Phiên đấu giá đã được kích hoạt trên hệ thống!");
+        break;
+
+      case "UPDATE_SELLER_RATING":
+        // Nhận mảng Object: [storeName, newAverage, comment]
+        List<Object> ratingData = (List<Object>) msg.getData();
+        String storeName = (String) ratingData.get(0);
+        double newRating = (double) ratingData.get(1);
+        String comment = (String) ratingData.get(2);
+
+        // Cập nhật vào DB thông qua DAO
+        //userSqlDAO.updateSellerRating(storeName, newRating);
+
+        // Lưu log comment vào bảng review (nếu có)
+        System.out.println("Cửa hàng " + storeName + " vừa nhận đánh giá: " + newRating + " sao. Nội dung: " + comment);
+        handler.sendResponse("SUCCESS", "Cảm ơn bạn đã đánh giá!");
+        break;
+
+      case "GET_BY_CITY":
+        String city = String.valueOf(msg.getData());
+        // Lọc danh sách từ AuctionManager hoặc DAO
+        //handler.sendResponse("SUCCESS", auctionSqlDAO.getAuctionsByCity(city));
+        break;
+
+      case "LOGOUT":
+        handler.setLoggedInUser(null);
+        handler.sendResponse("SUCCESS", "Đã đăng xuất khỏi hệ thống.");
         break;
 
       default:

@@ -60,6 +60,10 @@ public class ClientService {
     } catch (IOException e) {
       System.err.println("❌ Kết nối bị ngắt đột ngột!");
       isRunning = false;
+      Platform.runLater(() -> {
+        showAlert("Lỗi kết nối", "Mất kết nối tới máy chủ. Vui lòng kiểm tra lại mạng!", Alert.AlertType.ERROR);
+        Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500); // Đá về màn hình đăng nhập
+      });
     }
   }
 

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
@@ -39,37 +38,6 @@
 
                 <TabPane style="-fx-background-color: white; -fx-background-radius: 8;" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                     <tabs>
-                        <Tab text="Sản phẩm của tôi">
-                            <content>
-                                <VBox spacing="10.0">
-                                    <padding>
-                                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                    </padding>
-                                    <children>
-                                        <HBox spacing="10.0">
-                                            <children>
-                                                <Button mnemonicParsing="false" onAction="#handleAddItem" style="-fx-background-color: #4CAF50;" text="+ Thêm sản phẩm" textFill="WHITE">
-                                                    <font><Font name="System Bold" size="12.0" /></font>
-                                                </Button>
-                                                <Button mnemonicParsing="false" onAction="#handleRemoveItem" style="-fx-background-color: #f44336;" text="- Xóa sản phẩm" textFill="WHITE">
-                                                    <font><Font name="System Bold" size="12.0" /></font>
-                                                </Button>
-                                            </children>
-                                        </HBox>
-
-                                        <TableView fx:id="myItemsTableView" VBox.vgrow="ALWAYS">
-                                            <columns>
-                                                <TableColumn fx:id="colItemStt" prefWidth="40.0" text="STT" />
-                                                <TableColumn fx:id="colItemName" prefWidth="180.0" text="Tên sản phẩm" />
-                                                <TableColumn fx:id="colItemDesc" prefWidth="250.0" text="Mô tả" />
-                                                <TableColumn fx:id="colItemStartPrice" prefWidth="120.0" text="Giá khởi điểm" />
-                                                <TableColumn fx:id="colItemAction" prefWidth="120.0" text="Thao tác" />
-                                            </columns>
-                                        </TableView>
-                                    </children>
-                                </VBox>
-                            </content>
-                        </Tab>
 
                         <Tab text="Đang tham gia đấu giá">
                             <content>

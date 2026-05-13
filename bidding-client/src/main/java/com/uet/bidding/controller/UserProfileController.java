@@ -1,7 +1,8 @@
 package com.uet.bidding.controller;
 
 import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.User;
+// Thay đổi import từ User sang Customer
+import com.uet.bidding.model.Customer;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;
 import com.uet.bidding.util.UserSession;
@@ -34,20 +35,23 @@ public class UserProfileController implements Initializable {
   @FXML
   private Label lblBankStatus;
 
-  private User currentUser;
+  // 1. Đổi kiểu dữ liệu từ User thành Customer
+  private Customer currentUser;
   private UserService userService = new UserService();
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    // Lấy thông tin từ Session ngay khi mở màn hình
-    this.currentUser = UserSession.getCurrentUser();
+    // 2. Ép kiểu dữ liệu từ Session về Customer (Giả sử UserSession trả về User hoặc Customer)
+    Object sessionUser = UserSession.getCurrentUser();
+    if (sessionUser instanceof Customer) {
+      this.currentUser = (Customer) sessionUser;
+    }
 
     if (currentUser != null) {
       fillDataToFields();
       updateBalanceLabel();
       updateBankStatusDisplay();
 
-      // Thông báo nhắc nhở nếu hồ sơ chưa hoàn thiện
       if (currentUser.getFullName() == null || currentUser.getFullName().isEmpty()) {
         showAlert(Alert.AlertType.WARNING, "Yêu cầu cập nhật",
             "Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán sản phẩm.");
@@ -72,10 +76,10 @@ public class UserProfileController implements Initializable {
     }
   }
 
-  public void setUserData(User user) {
+  // 3. Đổi tham số truyền vào từ User thành Customer
+  public void setUserData(Customer user) {
     this.currentUser = user;
 
-    // 1. Kiểm tra xem tài khoản có phải là mới (thiếu thông tin) không
     boolean isMissingInfo = (user.getFullName() == null || user.getEmail() == null);
 
     if (isMissingInfo) {
@@ -86,26 +90,18 @@ public class UserProfileController implements Initializable {
       showAlert(Alert.AlertType.WARNING, "Cập nhật hồ sơ", "Vui lòng điền ĐẦY ĐỦ tất cả thông tin cá nhân và liên kết ngân hàng trước khi tham gia đấu giá!");
     }
 
-    // 2. Đổ dữ liệu cũ lên giao diện (nếu là null thì set thành chuỗi rỗng để tránh lỗi)
     txtName.setText(user.getFullName() != null ? user.getFullName() : "");
     txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
     txtPhone.setText(user.getPhone() != null ? user.getPhone() : "");
     txtAddress.setText(user.getAddress() != null ? user.getAddress() : "");
 
-    // 3. Hiển thị trạng thái ngân hàng
-    if (user.getLinkedBank() != null && !user.getLinkedBank().trim().isEmpty()) {
-      lblBankStatus.setText("Trạng thái: Đã liên kết (" + user.getLinkedBank() + ")");
-      lblBankStatus.setStyle("-fx-text-fill: #059669;"); // Màu xanh lá
-    } else {
-      lblBankStatus.setText("Trạng thái: Chưa liên kết");
-      lblBankStatus.setStyle("-fx-text-fill: red;");
-    }
-
+    updateBankStatusDisplay();
     updateBalanceLabel();
   }
 
   private void updateBalanceLabel() {
     if (currentUser != null && currentUser.getBalance() != null) {
+      // Hiển thị số dư từ Customer
       lblBalance.setText(String.format("%,.0f VNĐ", currentUser.getBalance()));
     } else {
       lblBalance.setText("0 VNĐ");
@@ -122,24 +118,21 @@ public class UserProfileController implements Initializable {
     String address = txtAddress.getText().trim();
     String bank = currentUser.getLinkedBank();
 
-    // 1. Chặn nếu nhập thiếu
     if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty() || bank == null || bank.trim().isEmpty()) {
       showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ thông tin cá nhân và ngân hàng!");
       return;
     }
 
-    // 2. Cập nhật dữ liệu vào Object hiện tại
     currentUser.setFullName(fullName);
     currentUser.setEmail(email);
     currentUser.setPhone(phone);
     currentUser.setAddress(address);
-    currentUser.setProfileComplete(true); // Đánh dấu hoàn thiện
+    currentUser.setProfileComplete(true);
 
-    // 3. Gửi toàn bộ User qua mạng yêu cầu Server update vào TiDB
     ClientService.getInstance().sendRequest("UPDATE_PROFILE", currentUser);
-
-    // 4. Lưu trực tiếp vào Session hiện hành trên Client để các màn hình khác nhận diện ngay
     UserSession.setCurrentUser(currentUser);
+
+    showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật hồ sơ cá nhân!");
   }
 
   @FXML
@@ -151,9 +144,7 @@ public class UserProfileController implements Initializable {
     alert.showAndWait().ifPresent(response -> {
       if (response == ButtonType.OK) {
         currentUser.setLinkedBank("Vietcombank");
-        lblBankStatus.setText("Trạng thái: Đã liên kết (Vietcombank)");
-        lblBankStatus.setStyle("-fx-text-fill: #059669;");
-
+        updateBankStatusDisplay(); // Cập nhật lại UI
         showAlert(Alert.AlertType.INFORMATION, "Ghi nhận", "Đã ghi nhận yêu cầu liên kết. Vui lòng ấn nút 'Lưu thông tin' để hoàn tất!");
       }
     });
@@ -166,7 +157,7 @@ public class UserProfileController implements Initializable {
       return;
     }
 
-    TextInputDialog dialog = new TextInputDialog("100000"); // Mặc định 100k
+    TextInputDialog dialog = new TextInputDialog("100000");
     dialog.setTitle("Nạp tiền");
     dialog.setHeaderText("Nạp tiền vào tài khoản");
     dialog.setContentText("Nhập số tiền (VNĐ):");
@@ -175,15 +166,12 @@ public class UserProfileController implements Initializable {
       try {
         BigDecimal amount = new BigDecimal(amountStr);
 
-        // 1. Gửi lệnh nạp tiền lên Server (Truyền biến amount, không truyền ZERO)
-        // Lưu ý: Đảm bảo userService.addBalance của bạn có gọi sang ClientService.sendRequest
+        // Gọi phương thức addFunds của Customer
+        currentUser.addFunds(amount);
+
+        // Cập nhật lên Server thông qua UserService
         userService.addBalance(amount);
 
-        // 2. Cập nhật số dư tạm thời trong bộ nhớ để hiển thị ngay
-        BigDecimal newBalance = currentUser.getBalance().add(amount);
-        currentUser.setBalance(newBalance);
-
-        // 3. Cập nhật lại nhãn trên giao diện
         updateBalanceLabel();
 
         showAlert(Alert.AlertType.INFORMATION, "Thành công",
@@ -197,10 +185,6 @@ public class UserProfileController implements Initializable {
     });
   }
 
-  // ==========================================
-  // XỬ LÝ CHUYỂN TRANG
-  // ==========================================
-
   @FXML
   public void handleBack(ActionEvent event) {
     switchScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU");
@@ -211,7 +195,6 @@ public class UserProfileController implements Initializable {
     switchScene(event, "/MyManagement.fxml", "Quản lý của tôi");
   }
 
-  // Hàm bổ trợ chuyển trang để tránh lặp code
   private void switchScene(ActionEvent event, String fxmlPath, String title) {
     try {
       Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
@@ -220,6 +203,7 @@ public class UserProfileController implements Initializable {
       stage.setTitle(title);
       stage.show();
     } catch (Exception e) {
+      e.printStackTrace();
       showAlert(Alert.AlertType.ERROR, "Lỗi điều hướng", "Không thể chuyển trang: " + e.getMessage());
     }
   }

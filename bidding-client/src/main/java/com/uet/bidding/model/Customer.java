@@ -39,6 +39,15 @@ public class Customer extends User {
         this.balance = balance;
     }
 
+    /**
+     * SỬA LỖI: Triển khai phương thức abstract từ lớp User
+     * Việc này giúp lớp Customer không còn bị báo lỗi "is not abstract and does not override..."
+     */
+    @Override
+    public String getRole() {
+        return "CUSTOMER";
+    }
+
     // --- GETTER CHO CÁC VAI TRÒ ---
     public Bidder getBidderProfile() {
         return bidderProfile;
@@ -72,17 +81,19 @@ public class Customer extends User {
 
     public boolean hasCompleteProfile() {
         return fullName != null && !fullName.trim().isEmpty() &&
-                phone != null && !phone.trim().isEmpty() &&
-                address != null && !address.trim().isEmpty() &&
-                linkedBank != null && !linkedBank.trim().isEmpty();
+            phone != null && !phone.trim().isEmpty() &&
+            address != null && !address.trim().isEmpty() &&
+            linkedBank != null && !linkedBank.trim().isEmpty();
     }
 
     public void addFunds(BigDecimal amount) {
-        this.balance = this.balance.add(amount);
+        if (amount != null) {
+            this.balance = this.balance.add(amount);
+        }
     }
 
     public boolean withdraw(BigDecimal amount) {
-        if (this.balance != null && this.balance.compareTo(amount) >= 0) {
+        if (this.balance != null && amount != null && this.balance.compareTo(amount) >= 0) {
             this.balance = this.balance.subtract(amount);
             return true;
         }

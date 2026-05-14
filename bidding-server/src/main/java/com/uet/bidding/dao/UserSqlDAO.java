@@ -4,7 +4,7 @@ import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.Admin;
 import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.User;
+import com.uet.bidding.model.User;import org.mindrot.jbcrypt.BCrypt;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -108,97 +108,105 @@ public class UserSqlDAO {
   // =========================================================
   //  CREATE
   // =========================================================
-
-  /**
-   * Thêm mới Admin hoặc Customer vào database.
-   *
-   * - Admin   → INSERT users (role = 'ADMIN').
-   * - Customer → INSERT users + sellers + bidders trong 1 transaction.
-   *
-   * @throws UserException nếu username / email đã tồn tại.
-   */
   public void addUser(User user) throws UserException {
+    // Câu lệnh SQL khớp hoàn toàn 100% với cấu trúc bảng users
     String sqlUser =
         "INSERT INTO users " +
-            "    (username, password, role, full_name, email, phone, address, balance) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "    (username, password, role, full_name, email, phone, address, balance, is_profile_completed, is_banned) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (Connection conn = DatabaseConnection.getConnection()) {
-      conn.setAutoCommit(false);
+      conn.setAutoCommit(false); // Bật Transaction để bảo vệ dữ liệu đa bảng
 
       try {
         int newId;
 
-        // ── Bước 1: INSERT users ──────────────────────────────
-        try (PreparedStatement stmt = conn.prepareStatement(
-            sqlUser, Statement.RETURN_GENERATED_KEYS)) {
+        // ── BƯỚC 1: INSERT VÀO BẢNG USERS ──────────────────────────────
+        try (PreparedStatement stmt = conn.prepareStatement(sqlUser, Statement.RETURN_GENERATED_KEYS)) {
 
           stmt.setString(1, user.getUsername());
           stmt.setString(2, user.getPassword());
-          stmt.setString(3, user.getRole()); // "ADMIN" hoặc "CUSTOMER"
+          stmt.setString(3, user.getRole()); // Sử dụng tính đa hình: Tự động trả về "ADMIN" hoặc "CUSTOMER"
 
           if (user instanceof Customer c) {
-            // Customer có thêm thông tin cá nhân
+            // Đối với Customer: Nạp thông tin cá nhân từ Object Java
             setStringOrNull(stmt, 4, c.getFullName());
             setStringOrNull(stmt, 5, c.getEmail());
             setStringOrNull(stmt, 6, c.getPhone());
             setStringOrNull(stmt, 7, c.getAddress());
-            stmt.setBigDecimal(8, c.getBalance() != null
-                ? c.getBalance() : BigDecimal.ZERO);
+            stmt.setBigDecimal(8, c.getBalance() != null ? c.getBalance() : BigDecimal.ZERO);
+
+            // Sử dụng hàm hasCompleteProfile() có sẵn trong Model Customer để tính cờ trạng thái
+            boolean isComplete = c.hasCompleteProfile();
+            stmt.setBoolean(9, isComplete);
+            c.setProfileComplete(isComplete); // Đồng bộ trạng thái vào Object Java
           } else {
-            // Admin: các trường cá nhân để NULL / 0
+            // Đối với Admin: Các cột cá nhân để NULL, số dư bằng 0
             stmt.setNull(4, Types.VARCHAR);
             stmt.setNull(5, Types.VARCHAR);
             stmt.setNull(6, Types.VARCHAR);
             stmt.setNull(7, Types.VARCHAR);
             stmt.setBigDecimal(8, BigDecimal.ZERO);
+            stmt.setBoolean(9, true); // Admin mặc định coi như đã hoàn thiện hồ sơ
           }
+
+          // Đồng bộ trạng thái khóa tài khoản (Mặc định ban đầu là false)
+          stmt.setBoolean(10, user.isBanned());
 
           stmt.executeUpdate();
 
+          // Lấy ID tự động tăng (Auto Increment) gán ngược lại cho thực thể
           try (ResultSet gk = stmt.getGeneratedKeys()) {
-            if (!gk.next()) throw new SQLException("Không tạo được ID cho User.");
+            if (!gk.next()) throw new SQLException("Không lấy được ID tự sinh từ bảng users.");
             newId = gk.getInt(1);
             user.setId(newId);
           }
         }
 
-        // ── Bước 2: INSERT bảng phụ nếu là Customer ──────────
+        // ── BƯỚC 2: INSERT VÀO CÁC BẢNG PHỤ NẾU LÀ CUSTOMER ──────────
         if (user instanceof Customer c) {
 
-          // sellers: nạp store_name / description nếu đã có sẵn
-          try (PreparedStatement stmtSeller = conn.prepareStatement(
-              "INSERT INTO sellers (user_id, store_name, description, rating) " +
-                  "VALUES (?, ?, ?, 0.00)")) {
+          // 2.1. Chèn vào bảng sellers (Khớp tên cột 'description' theo đúng DB của em)
+          String sqlSeller = "INSERT INTO sellers (user_id, store_name, description, rating) VALUES (?, ?, ?, 0.00)";
+          try (PreparedStatement stmtSeller = conn.prepareStatement(sqlSeller)) {
             stmtSeller.setInt(1, newId);
-            setStringOrNull(stmtSeller, 2, c.getSellerProfile().getStoreName());
-            setStringOrNull(stmtSeller, 3, c.getSellerProfile().getDescription());
+
+            // Kiểm tra an toàn chống NullPointerException nếu profile chưa được khởi tạo
+            if (c.getSellerProfile() != null) {
+              setStringOrNull(stmtSeller, 2, c.getSellerProfile().getStoreName());
+              // Gọi hàm lấy miêu tả tương ứng của đối tượng Seller bên em (Ví dụ: getDescription)
+              setStringOrNull(stmtSeller, 3, c.getSellerProfile().getDescription());
+            } else {
+              stmtSeller.setNull(2, Types.VARCHAR);
+              stmtSeller.setNull(3, Types.VARCHAR);
+            }
             stmtSeller.executeUpdate();
           }
 
-          // bidders: chỉ cần user_id
-          try (PreparedStatement stmtBidder = conn.prepareStatement(
-              "INSERT INTO bidders (user_id) VALUES (?)")) {
+          // 2.2. Chèn vào bảng bidders (Chỉ lưu khóa ngoại user_id tinh gọn)
+          String sqlBidder = "INSERT INTO bidders (user_id) VALUES (?)";
+          try (PreparedStatement stmtBidder = conn.prepareStatement(sqlBidder)) {
             stmtBidder.setInt(1, newId);
             stmtBidder.executeUpdate();
           }
         }
 
-        conn.commit();
+        conn.commit(); // Hoàn tất, ghi nhận dữ liệu xuống TiDB Cloud
 
       } catch (SQLException ex) {
-        conn.rollback();
+        conn.rollback(); // Quay lui dữ liệu nếu phát sinh bất kỳ lỗi xung đột nào
         throw ex;
       } finally {
         conn.setAutoCommit(true);
       }
 
     } catch (SQLIntegrityConstraintViolationException e) {
-      throw new UserException("Tên đăng nhập đã được sử dụng!");
+      throw new UserException("Tên đăng nhập đã tồn tại trên hệ thống!");
     } catch (SQLException e) {
-      throw new UserException("Lỗi SQL khi thêm user: " + e.getMessage());
+      throw new UserException("Lỗi Database khi thêm người dùng: " + e.getMessage());
     }
   }
+
 
   // =========================================================
   //  READ – xác thực
@@ -210,7 +218,7 @@ public class UserSqlDAO {
    * @return Admin hoặc Customer nếu hợp lệ.
    * @throws AuthenticationException nếu sai tài khoản / mật khẩu / bị khóa.
    */
-  public User checkLogin(String username, String password) throws AuthenticationException {
+  public User checkLogin(String username, String plainPassword) throws AuthenticationException {
     String sql = BASE_SELECT + "WHERE u.username = ?";
 
     try (Connection conn = DatabaseConnection.getConnection();
@@ -219,9 +227,16 @@ public class UserSqlDAO {
       stmt.setString(1, username);
 
       try (ResultSet rs = stmt.executeQuery()) {
-        if (!rs.next()) throw new AuthenticationException("Tài khoản không tồn tại!");
-        if (!rs.getString("password").equals(password))
+        if (!rs.next())
+          throw new AuthenticationException("Tài khoản không tồn tại!");
+
+        String storedHash = rs.getString("password");
+
+        // ✅ BCrypt.checkpw: so sánh đúng plain-text với hash có salt
+        // ❌ KHÔNG dùng: storedHash.equals(plainPassword)
+        if (!BCrypt.checkpw(plainPassword, storedHash))
           throw new AuthenticationException("Sai mật khẩu!");
+
         if (rs.getBoolean("is_banned"))
           throw new AuthenticationException("Tài khoản của bạn đã bị khóa!");
 
@@ -403,24 +418,29 @@ public class UserSqlDAO {
    *
    * @throws UserException nếu tài khoản không tồn tại hoặc mật khẩu cũ sai.
    */
-  public void updatePassword(int userId, String oldPassword, String newPassword)
-      throws UserException {
+  public void updatePassword(int userId, String oldPlain, String newPlain) throws UserException {
     String checkSql  = "SELECT password FROM users WHERE id = ?";
     String updateSql = "UPDATE users SET password = ? WHERE id = ?";
 
     try (Connection conn = DatabaseConnection.getConnection()) {
 
+      // Bước 1: Lấy hash từ DB và xác thực bằng BCrypt
+      String storedHash;
       try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
         checkStmt.setInt(1, userId);
         try (ResultSet rs = checkStmt.executeQuery()) {
           if (!rs.next()) throw new UserException("Tài khoản không tồn tại!");
-          if (!rs.getString("password").equals(oldPassword))
-            throw new UserException("Mật khẩu cũ không chính xác!");
+          storedHash = rs.getString("password");
         }
       }
 
+      if (!BCrypt.checkpw(oldPlain, storedHash))
+        throw new UserException("Mật khẩu cũ không chính xác!");
+
+      // Bước 2: Băm mật khẩu mới rồi lưu
+      String newHash = BCrypt.hashpw(newPlain, BCrypt.gensalt(12));
       try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-        updateStmt.setString(1, newPassword);
+        updateStmt.setString(1, newHash);
         updateStmt.setInt(2, userId);
         updateStmt.executeUpdate();
       }

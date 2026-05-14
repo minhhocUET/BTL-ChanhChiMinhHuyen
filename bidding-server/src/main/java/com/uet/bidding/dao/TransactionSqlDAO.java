@@ -1,6 +1,8 @@
 package com.uet.bidding.dao;
 
 import com.uet.bidding.model.Transaction;
+import com.uet.bidding.model.TransactionStatus;
+import com.uet.bidding.model.TransactionType;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -32,8 +34,10 @@ public class TransactionSqlDAO {
         stmt.setNull(2, Types.INTEGER);
       }
       stmt.setBigDecimal(3, transaction.getAmount());
-      stmt.setString(4, transaction.getType());
-      stmt.setString(5, transaction.getStatus());
+
+      // SỬA LỖI 1: Gọi .name() để chuyển Enum thành String lưu vào DB
+      stmt.setString(4, transaction.getType().name());
+      stmt.setString(5, transaction.getStatus().name());
       stmt.setTimestamp(6, Timestamp.valueOf(transaction.getCreatedAt()));
 
       stmt.executeUpdate();
@@ -83,12 +87,14 @@ public class TransactionSqlDAO {
 
   /**
    * Cập nhật status của transaction (ví dụ từ PENDING -> SUCCESS/FAILED)
+   * (Nên đổi tham số newStatus thành Enum TransactionStatus cho đồng bộ)
    */
-  public void updateStatus(int transactionId, String newStatus) throws SQLException {
+  public void updateStatus(int transactionId, TransactionStatus newStatus) throws SQLException {
     String sql = "UPDATE transactions SET status = ? WHERE id = ?";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setString(1, newStatus);
+      // Lưu String vào database
+      stmt.setString(1, newStatus.name());
       stmt.setInt(2, transactionId);
       stmt.executeUpdate();
     }
@@ -105,8 +111,15 @@ public class TransactionSqlDAO {
     int auctionId = rs.getInt("auction_id");
     if (!rs.wasNull()) tx.setAuctionId(auctionId);
     tx.setAmount(rs.getBigDecimal("amount"));
-    tx.setType(rs.getString("type"));
-    tx.setStatus(rs.getString("status"));
+
+    // SỬA LỖI 2: Chuyển đổi String lấy từ DB thành Enum tương ứng
+    if (rs.getString("type") != null) {
+      tx.setType(TransactionType.valueOf(rs.getString("type")));
+    }
+    if (rs.getString("status") != null) {
+      tx.setStatus(TransactionStatus.valueOf(rs.getString("status")));
+    }
+
     Timestamp ts = rs.getTimestamp("created_at");
     if (ts != null) tx.setCreatedAt(ts.toLocalDateTime());
     return tx;

@@ -19,6 +19,10 @@ public class Auction {
   private LocalDateTime endTime;
   private String status;
   private SimpleIntegerProperty interestedCount;
+  // Thêm các biến
+  private BigDecimal bidIncrement;
+  private int antiSnipeWindowMinutes;
+  private int antiSnipeExtensionMinutes;
 
   // Các biến phục vụ Logic & Observer Pattern
   private Customer highestBidder; // Thay String leadBidder bằng Object Bidder
@@ -118,6 +122,14 @@ public class Auction {
     this.status = status;
   }
 
+  public void setHighestBidder(Customer highestBidder) {
+    this.highestBidder = highestBidder;
+  }
+
+  public void setEndTime(LocalDateTime endTime) {
+    this.endTime = endTime;
+  }
+
   public int getInterestedCount() {
     return interestedCount.get();
   }
@@ -133,6 +145,15 @@ public class Auction {
   public LocalDateTime getEndTime() {
     return endTime;
   }
+
+  public BigDecimal getBidIncrement() { return bidIncrement; }
+  public void setBidIncrement(BigDecimal bidIncrement) { this.bidIncrement = bidIncrement; }
+
+  public int getAntiSnipeWindowMinutes() { return antiSnipeWindowMinutes; }
+  public void setAntiSnipeWindowMinutes(int antiSnipeWindowMinutes) { this.antiSnipeWindowMinutes = antiSnipeWindowMinutes; }
+
+  public int getAntiSnipeExtensionMinutes() { return antiSnipeExtensionMinutes; }
+  public void setAntiSnipeExtensionMinutes(int antiSnipeExtensionMinutes) { this.antiSnipeExtensionMinutes = antiSnipeExtensionMinutes; }
 
   // ================== LOGIC ==================
   public boolean isActive() {

@@ -52,14 +52,32 @@ public class ReviewSqlDAO {
   public List<Review> getReviewsBySeller(int sellerId) {
     List<Review> list = new ArrayList<>();
     String sql = "SELECT * FROM reviews WHERE seller_id = ? ORDER BY created_at DESC";
+
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
+
       stmt.setInt(1, sellerId);
+
       try (ResultSet rs = stmt.executeQuery()) {
         while (rs.next()) {
           int reviewerId = rs.getInt("reviewer_id");
           Customer reviewer = (Customer) userDao.findById(reviewerId);
-          Review review = new Review(reviewer, rs.getInt("stars"), rs.getString("comment"));
+
+          // SỬA LỖI Ở ĐÂY: Dùng Constructor rỗng và Map ĐẦY ĐỦ các trường từ DB
+          Review review = new Review();
+          review.setId(rs.getInt("id"));
+          review.setAuctionId(rs.getInt("auction_id"));
+          review.setSellerId(rs.getInt("seller_id"));
+          review.setReviewer(reviewer);
+          review.setStars(rs.getInt("stars"));
+          review.setComment(rs.getString("comment"));
+
+          // Lấy đúng thời gian đánh giá trong Database thay vì lấy giờ hiện tại
+          java.sql.Timestamp ts = rs.getTimestamp("created_at");
+          if (ts != null) {
+            review.setCreatedAt(ts.toLocalDateTime());
+          }
+
           list.add(review);
         }
       }

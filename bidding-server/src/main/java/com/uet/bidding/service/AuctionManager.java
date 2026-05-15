@@ -3,6 +3,7 @@ package com.uet.bidding.service;
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
+import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Item;
@@ -12,7 +13,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class AuctionManager {
@@ -20,7 +20,8 @@ public class AuctionManager {
   private static volatile AuctionManager instance;
   private final ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
-  private final AtomicInteger auctionIdCounter = new AtomicInteger(1);
+
+  // Xóa bỏ AtomicInteger auctionIdCounter vì Database sẽ tự lo việc sinh ID (AUTO_INCREMENT)
   private AuctionSqlDAO auctionSqlDAO;
 
   private AuctionManager() {
@@ -40,17 +41,13 @@ public class AuctionManager {
     this.auctionSqlDAO = dao;
     List<Auction> savedAuctions = dao.getAllAuctions();
 
-    int maxId = 0;
     for (Auction a : savedAuctions) {
       addAuctionInternal(a);
-      if (a.getId() > maxId) maxId = a.getId();
     }
-
-    auctionIdCounter.set(maxId + 1);
     System.out.println("Đã nạp " + auctions.size() + " phiên đấu giá từ dữ liệu.");
   }
 
-  // Hàm phụ dùng nội bộ để đăng ký auction và lock
+  // Hàm phụ dùng nội bộ để đăng ký auction và lock vào RAM
   private void addAuctionInternal(Auction auction) {
     auctions.put(auction.getId(), auction);
     locks.put(auction.getId(), new ReentrantLock());
@@ -58,17 +55,17 @@ public class AuctionManager {
 
   // ================== QUẢN LÝ PHIÊN ĐẤU GIÁ ==================
 
-  public Auction createAuction(Item item, LocalDateTime endTime) {
-    int newId = auctionIdCounter.getAndIncrement();
-    // Lấy giá khởi điểm từ Item (Giả sử Item dùng BigDecimal)
+  public Auction createAuction(Item item, LocalDateTime endTime) throws UserException {
     BigDecimal startPrice = item.getStartingPrice();
     LocalDateTime startTime = LocalDateTime.now();
+    BigDecimal defaultIncrement = BigDecimal.valueOf(5.00); // Bước giá mặc định
 
-    Auction newAuction = new Auction(item, startPrice, startTime, endTime);
-    newAuction.setId(newId);
+    // 1. Giao cho DAO lưu vào DB và lấy ID tự sinh
+    Auction newAuction = auctionSqlDAO.createAuction(item, startPrice, startTime, endTime, defaultIncrement);
 
+    // 2. Lưu vào bộ nhớ RAM (cache)
     addAuctionInternal(newAuction);
-    saveToDatabase(newAuction);
+    System.out.println("Đã tạo phiên đấu giá mới ID: " + newAuction.getId());
 
     return newAuction;
   }
@@ -79,11 +76,25 @@ public class AuctionManager {
 
     lock.lock();
     try {
-      Auction auction = auctions.get(auctionId);
-      if (auction != null) {
-        auction.setStatus(status);
-        saveToDatabase(auction);
-        System.out.println("Phiên #" + auctionId + " chuyển sang trạng thái: " + status);
+      if ("FINISHED".equals(status)) {
+        try {
+          // Dùng hàm chuyên dụng của DAO để kết thúc phiên, chia tiền, lưu kết quả
+          auctionSqlDAO.finishAuction(auctionId);
+
+          // Đồng bộ lại RAM sau khi DB đã xử lý xong
+          Auction updatedAuction = auctionSqlDAO.findById(auctionId);
+          auctions.put(auctionId, updatedAuction);
+          System.out.println("Phiên #" + auctionId + " đã KẾT THÚC và xử lý giao dịch thành công.");
+        } catch (UserException e) {
+          System.err.println("Lỗi khi kết thúc phiên đấu giá: " + e.getMessage());
+        }
+      } else {
+        // Nếu chỉ là đổi trạng thái thông thường (OPEN/CANCELED) trên RAM
+        Auction auction = auctions.get(auctionId);
+        if (auction != null) {
+          auction.setStatus(status);
+          System.out.println("Phiên #" + auctionId + " chuyển sang trạng thái: " + status);
+        }
       }
     } finally {
       lock.unlock();
@@ -92,46 +103,34 @@ public class AuctionManager {
 
   // ================== CORE LOGIC: ĐẶT GIÁ AN TOÀN ==================
 
-  /**
-   * Chỉnh sửa tham số nhận vào Customer để khớp với logic mới
-   */
   public boolean placeBid(int auctionId, Customer customer, BigDecimal amount)
-      throws AuctionClosedException, InvalidBidException {
-
-    Auction auction = auctions.get(auctionId);
-    if (auction == null) throw new InvalidBidException("Không tìm thấy phiên đấu giá!");
+      throws AuctionClosedException, InvalidBidException, UserException {
 
     ReentrantLock lock = locks.get(auctionId);
-    if (lock == null) return false;
+    if (lock == null) throw new InvalidBidException("Không tìm thấy phiên đấu giá trên hệ thống!");
 
+    // Khóa luồng ở cấp độ Java để chống 2 người dùng đặt giá cùng 1 mili-giây
     lock.lock();
     try {
-      // Gọi logic placeNewBid đã sửa (nhận Customer, trả về boolean)
-      boolean success = auction.placeNewBid(customer, amount);
+      // 1. Uỷ quyền cho DAO xử lý toàn bộ logic (DB Transaction, Anti-sniping, Auto-bid)
+      boolean success = auctionSqlDAO.placeBid(auctionId, customer, amount);
 
       if (success) {
-        // Lưu vào Database ngay khi có người trả giá mới thành công
-        saveToDatabase(auction);
+        // 2. Nếu thành công, load lại Auction từ DB lên RAM.
+        // Bắt buộc phải load lại vì DAO có thể đã tự động gia hạn thời gian (Anti-sniping)
+        Auction updatedAuction = auctionSqlDAO.findById(auctionId);
+        auctions.put(auctionId, updatedAuction);
+
         System.out.println("[Server] " + customer.getUsername() + " đặt giá thành công: " + amount);
       }
       return success;
     } finally {
-      lock.unlock();
+      lock.unlock(); // Luôn nhả khóa dù thành công hay xảy ra ngoại lệ
     }
   }
 
-  // Hàm phụ để tránh lặp code lưu DB
-  private void saveToDatabase(Auction auction) {
-    if (auctionSqlDAO != null) {
-      try {
-        auctionSqlDAO.updateAuction(auction);
-      } catch (Exception e) {
-        System.err.println("❌ Lỗi Database: " + e.getMessage());
-      }
-    }
-  }
+  // ================== GETTERS ==================
 
-  // Getter cơ bản
   public List<Auction> getAllAuctions() {
     return new ArrayList<>(auctions.values());
   }

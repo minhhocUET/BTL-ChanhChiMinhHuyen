@@ -156,7 +156,7 @@ public class AuctionSqlDAO {
       int newBidId;
       try {
         // 1. Ghi bid
-        newBidId = bidDao.addBidAndReturnId(conn, auctionId, bidder.getId(), bidAmount);
+        newBidId = bidDao.addBid(conn, auctionId, bidder.getId(), bidAmount, LocalDateTime.now());
 
         // 2. Cập nhật auction
         auction.setCurrentPrice(bidAmount);
@@ -377,7 +377,7 @@ public class AuctionSqlDAO {
               if (!(user instanceof Customer)) continue;
               Customer bidder = (Customer) user;
               // Insert auto bid
-              int newBidId = bidDao.addBidAndReturnId(conn, auction.getId(), bidderId, nextBid);
+              int newBidId = bidDao.addBid(conn, auction.getId(), bidderId, nextBid, LocalDateTime.now());
               // Log auto bid
               String logSql = "INSERT INTO auto_bid_logs (auto_bid_id, triggered_bid_id, bid_amount) VALUES (?, ?, ?)";
               try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {

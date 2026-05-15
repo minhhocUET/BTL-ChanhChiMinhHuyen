@@ -9,14 +9,14 @@ public class Transaction {
   private int userId;
   private Integer auctionId; // có thể null (nạp/rút không liên quan phiên)
   private BigDecimal amount;
-  private String type;       // DEPOSIT, WITHDRAW, PAY_FOR_AUCTION, RECEIVE_FROM_AUCTION
-  private String status;     // PENDING, SUCCESS, FAILED
+  private TransactionType type;
+  private TransactionStatus status;
   private LocalDateTime createdAt;
 
   public Transaction() {}
 
   // Constructor cho tạo mới (chưa có id)
-  public Transaction(int userId, Integer auctionId, BigDecimal amount, String type, String status) {
+  public Transaction(int userId, Integer auctionId, BigDecimal amount, TransactionType type, TransactionStatus status) {
     this.userId = userId;
     this.auctionId = auctionId;
     this.amount = amount;
@@ -38,11 +38,11 @@ public class Transaction {
   public BigDecimal getAmount() { return amount; }
   public void setAmount(BigDecimal amount) { this.amount = amount; }
 
-  public String getType() { return type; }
-  public void setType(String type) { this.type = type; }
+  public TransactionType getType() { return type; }
+  public void setType(TransactionType type) { this.type = type; }
 
-  public String getStatus() { return status; }
-  public void setStatus(String status) { this.status = status; }
+  public TransactionStatus getStatus() { return status; }
+  public void setStatus(TransactionStatus status) { this.status = status; }
 
   public LocalDateTime getCreatedAt() { return createdAt; }
   public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

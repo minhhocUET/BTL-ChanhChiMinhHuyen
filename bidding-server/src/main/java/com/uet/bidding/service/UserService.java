@@ -62,7 +62,7 @@ public class UserService {
     Customer customer = (Customer) user; // Ép kiểu để sử dụng các hàm của Customer
     customer.addFunds(amount);
 
-    userDAO.updateUser(customer);
+    userDAO.updateProfile(customer);
   }
 
   /**
@@ -82,10 +82,8 @@ public class UserService {
     if (isEmpty(customer.getPhone()) || !customer.getPhone().matches("\\d+"))
       throw new UserException("Số điện thoại không hợp lệ!");
     if (isEmpty(customer.getAddress())) throw new UserException("Địa chỉ không được để trống!");
-    if (isEmpty(customer.getLinkedBank())) throw new UserException("Vui lòng nhập thông tin ngân hàng!");
-
     customer.setProfileComplete(true);
-    userDAO.updateUser(customer);
+    userDAO.updateProfile(customer);
   }
 
   /**
@@ -113,7 +111,7 @@ public class UserService {
     sellerProfile.setDescription(description);
 
     // Lưu lại vào Database
-    userDAO.updateUser(customer);
+    userDAO.updateProfile(customer);
   }
 
   /**
@@ -138,7 +136,7 @@ public class UserService {
     bidderProfile.registerForAuction(auctionId);
 
     // Lưu lại vào Database
-    userDAO.updateUser(customer);
+    userDAO.updateProfile(customer);
   }
 
   // Hàm tiện ích kiểm tra chuỗi rỗng

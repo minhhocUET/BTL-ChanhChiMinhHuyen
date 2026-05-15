@@ -3,7 +3,7 @@ package com.uet.bidding.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.uet.bidding.dao.AuctionSqlDAO;
-import com.uet.bidding.dao.ItemFileDAO;
+import com.uet.bidding.dao.ItemSqlDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.InvalidBidException;
@@ -47,33 +47,35 @@ public class RequestProcessor {
         String userJson = gson.toJson(msg.getData());
         JsonObject jsonObject = gson.fromJson(userJson, JsonObject.class);
 
-        User updatedUser;
+        // Nếu là ADMIN → từ chối
         if (jsonObject.has("role") && "ADMIN".equals(jsonObject.get("role").getAsString())) {
-          updatedUser = gson.fromJson(userJson, Admin.class);
-        } else {
-          updatedUser = gson.fromJson(userJson, Customer.class);
+          handler.sendResponse("UPDATE_PROFILE_ERROR", "Không thể cập nhật hồ sơ của Admin.");
+          break;
         }
 
-        // SỬA LỖI TẠI ĐÂY: Gọi trực tiếp DAO để lưu vào CSDL
-        // Giả sử userSqlDAO của bạn có hàm updateUser(User u)
-        userSqlDAO.updateUser(updatedUser);
-
-        handler.setLoggedInUser(updatedUser);
-        handler.sendResponse("UPDATE_PROFILE_SUCCESS", updatedUser);
+        // Chỉ xử lý Customer
+        Customer customer = gson.fromJson(userJson, Customer.class);
+        try {
+          userSqlDAO.updateProfile(customer);
+          handler.setLoggedInUser(customer);
+          handler.sendResponse("UPDATE_PROFILE_SUCCESS", customer);
+        } catch (UserException e) {
+          handler.sendResponse("UPDATE_PROFILE_ERROR", e.getMessage());
+        }
         break;
 
       case "ADD_BALANCE":
         if (handler.getLoggedInUser() == null) throw new AuthenticationException("Phải đăng nhập!");
 
-        if (handler.getLoggedInUser() instanceof Customer customer) {
+        // Đổi tên 'customer' thành 'loggedInCustomer'
+        if (handler.getLoggedInUser() instanceof Customer loggedInCustomer) {
           BigDecimal amountToAdd = new BigDecimal(String.valueOf(msg.getData()));
           if (amountToAdd.compareTo(BigDecimal.ZERO) <= 0) throw new InvalidBidException("Phải > 0!");
 
-          // Cập nhật DB và RAM
-          customer.addFunds(amountToAdd); // Dùng hàm addFunds có sẵn trong Customer
-          userSqlDAO.updateUser(customer); // Lưu toàn bộ đối tượng đã cập nhật tiền
+          userSqlDAO.updateBalance(loggedInCustomer.getId(), amountToAdd);
+          loggedInCustomer.addFunds(amountToAdd);
 
-          handler.sendResponse("UPDATE_BALANCE_SUCCESS", customer);
+          handler.sendResponse("UPDATE_BALANCE_SUCCESS", loggedInCustomer);
         } else {
           throw new Exception("Tài khoản Admin không có chức năng số dư!");
         }
@@ -167,7 +169,12 @@ public class RequestProcessor {
     String[] regParts = regData.split(" ");
     if (regParts.length < 2) throw new UserException("Sai cú pháp!");
 
-    Customer newCustomer = new Customer(regParts[0], regParts[1], BigDecimal.ZERO);
+    // ---> SỬA Ở ĐÂY: Băm mật khẩu bằng BCrypt trước khi tạo User <---
+    String plainPassword = regParts[1];
+    String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(plainPassword, org.mindrot.jbcrypt.BCrypt.gensalt(12));
+
+    // Truyền hashedPassword thay vì password nguyên bản
+    Customer newCustomer = new Customer(regParts[0], hashedPassword, BigDecimal.ZERO);
     userSqlDAO.addUser(newCustomer);
   }
 

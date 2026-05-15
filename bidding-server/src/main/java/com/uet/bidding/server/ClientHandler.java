@@ -5,6 +5,7 @@ import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemSqlDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.AuctionObserver;
+import com.uet.bidding.model.GsonFactory;
 import com.uet.bidding.model.NetworkMessage;
 import com.uet.bidding.model.User;
 
@@ -17,7 +18,7 @@ import java.net.Socket;
 public class ClientHandler implements Runnable, AuctionObserver {
   private final Socket clientSocket;
   private final RequestProcessor processor; // Thêm processor
-  private final Gson gson = new Gson();
+  private final Gson gson = GsonFactory.create();
   private PrintWriter out;
   private User loggedInUser = null;
 

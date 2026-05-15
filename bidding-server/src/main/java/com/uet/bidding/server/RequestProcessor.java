@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class RequestProcessor {
-  private final Gson gson = new Gson();
+  private final Gson gson = GsonFactory.create();
   private final UserSqlDAO userSqlDAO;
   private final AuctionSqlDAO auctionSqlDAO;
   //private final ItemFileDAO itemSqlDAO;
@@ -33,7 +33,7 @@ public class RequestProcessor {
         String[] loginData = credentials.split(" ");
         if (loginData.length < 2) throw new AuthenticationException("Thiếu mật khẩu!");
 
-        User user = userSqlDAO.checkLogin(loginData[0], loginData[1]);
+        User user = userSqlDAO.checkLogin(loginData[0].trim(), loginData[1].trim());
         if (user != null) {
           if (user.isBanned()) throw new AuthenticationException("Tài khoản đã bị khóa!");
           handler.setLoggedInUser(user);
@@ -170,7 +170,7 @@ public class RequestProcessor {
     if (regParts.length < 2) throw new UserException("Sai cú pháp!");
 
     // ---> SỬA Ở ĐÂY: Băm mật khẩu bằng BCrypt trước khi tạo User <---
-    String plainPassword = regParts[1];
+    String plainPassword = regParts[1].trim();
     String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(plainPassword, org.mindrot.jbcrypt.BCrypt.gensalt(12));
 
     // Truyền hashedPassword thay vì password nguyên bản

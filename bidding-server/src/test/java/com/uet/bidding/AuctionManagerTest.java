@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,12 +31,31 @@ public class AuctionManagerTest {
 
     manager = AuctionManager.getInstance();
 
-    // Vì AuctionManager là Singleton, ta cần dùng Reflection để xóa sạch dữ liệu cũ giữa các lần test
+    // Làm sạch RAM của Singleton trước mỗi lần test
+    clearManagerMemory();
+
+    manager.initialize(mockDao);
+  }
+
+  private void clearManagerMemory() throws Exception {
     Field auctionsField = AuctionManager.class.getDeclaredField("auctions");
     auctionsField.setAccessible(true);
     ((ConcurrentHashMap<?, ?>) auctionsField.get(manager)).clear();
 
-    manager.initialize(mockDao);
+    Field locksField = AuctionManager.class.getDeclaredField("locks");
+    locksField.setAccessible(true);
+    ((ConcurrentHashMap<?, ?>) locksField.get(manager)).clear();
+  }
+
+  // Hàm quan trọng để tránh InvalidBidException: Nạp Auction và Lock vào RAM
+  private void injectAuctionToRam(Auction auction) throws Exception {
+    Field auctionsField = AuctionManager.class.getDeclaredField("auctions");
+    auctionsField.setAccessible(true);
+    ((ConcurrentHashMap<Integer, Auction>) auctionsField.get(manager)).put(auction.getId(), auction);
+
+    Field locksField = AuctionManager.class.getDeclaredField("locks");
+    locksField.setAccessible(true);
+    ((ConcurrentHashMap<Integer, ReentrantLock>) locksField.get(manager)).put(auction.getId(), new ReentrantLock());
   }
 
   private Item createTestItem(int id) {
@@ -62,6 +82,9 @@ public class AuctionManagerTest {
     auction.setId(auctionId);
     auction.setStatus("RUNNING");
 
+    // Nạp vào RAM để tránh lỗi "Không tìm thấy phiên đấu giá"
+    injectAuctionToRam(auction);
+
     // SỬA: Vì manager không có addAuction, ta giả lập hành vi trong RAM
     when(mockDao.findById(auctionId)).thenReturn(auction);
     when(mockDao.placeBid(eq(auctionId), any(Customer.class), any(BigDecimal.class))).thenReturn(true);
@@ -87,6 +110,9 @@ public class AuctionManagerTest {
     auction.setId(auctionId);
     auction.setStatus("OPEN");
 
+    // Phải nạp vào RAM thì mới chạy tới được bước check status
+    injectAuctionToRam(auction);
+
     // Giả lập logic ném lỗi khi đấu giá chưa RUNNING
     when(mockDao.placeBid(eq(auctionId), any(Customer.class), any(BigDecimal.class)))
         .thenThrow(new AuctionClosedException("Phiên đấu giá chưa bắt đầu!"));
@@ -106,6 +132,9 @@ public class AuctionManagerTest {
         LocalDateTime.now().minusHours(1), LocalDateTime.now().plusHours(2));
     auction.setId(auctionId);
     auction.setStatus("RUNNING");
+
+    // Nạp vào RAM để kích hoạt cơ chế Lock đa luồng
+    injectAuctionToRam(auction);
 
     // 2. Mock hành vi của DAO
     // Khi gọi placeBid thành công, ta giả lập việc cập nhật giá trực tiếp vào object auction trong RAM

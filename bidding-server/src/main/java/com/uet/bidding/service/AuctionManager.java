@@ -106,26 +106,38 @@ public class AuctionManager {
   public boolean placeBid(int auctionId, Customer customer, BigDecimal amount)
       throws AuctionClosedException, InvalidBidException, UserException {
 
-    ReentrantLock lock = locks.get(auctionId);
-    if (lock == null) throw new InvalidBidException("Không tìm thấy phiên đấu giá trên hệ thống!");
+    // 1. Kiểm tra tồn tại và trạng thái sơ bộ trên RAM (Fast-fail)
+    Auction auction = auctions.get(auctionId);
+    if (auction == null) {
+      throw new InvalidBidException("Không tìm thấy phiên đấu giá trên hệ thống!");
+    }
 
-    // Khóa luồng ở cấp độ Java để chống 2 người dùng đặt giá cùng 1 mili-giây
+    // Chấp nhận cả việc kiểm tra RUNNING để chặt chẽ hơn
+    if (!"RUNNING".equals(auction.getStatus())) {
+      throw new AuctionClosedException("Phiên đấu giá không ở trạng thái sẵn sàng (Đã đóng hoặc chưa mở)!");
+    }
+
+    // 2. Lấy hoặc tạo Lock an toàn
+    ReentrantLock lock = locks.computeIfAbsent(auctionId, k -> new ReentrantLock());
+
+    // 3. Bắt đầu khóa luồng
     lock.lock();
     try {
-      // 1. Uỷ quyền cho DAO xử lý toàn bộ logic (DB Transaction, Anti-sniping, Auto-bid)
+      // Kiểm tra lại trạng thái một lần nữa sau khi đã có lock để đảm bảo tính nhất quán (Double-check)
+      // (Optional nhưng nên có nếu hệ thống yêu cầu độ chính xác tuyệt đối)
+
       boolean success = auctionSqlDAO.placeBid(auctionId, customer, amount);
 
       if (success) {
-        // 2. Nếu thành công, load lại Auction từ DB lên RAM.
-        // Bắt buộc phải load lại vì DAO có thể đã tự động gia hạn thời gian (Anti-sniping)
         Auction updatedAuction = auctionSqlDAO.findById(auctionId);
-        auctions.put(auctionId, updatedAuction);
-
+        if (updatedAuction != null) {
+          auctions.put(auctionId, updatedAuction);
+        }
         System.out.println("[Server] " + customer.getUsername() + " đặt giá thành công: " + amount);
       }
       return success;
     } finally {
-      lock.unlock(); // Luôn nhả khóa dù thành công hay xảy ra ngoại lệ
+      lock.unlock();
     }
   }
 

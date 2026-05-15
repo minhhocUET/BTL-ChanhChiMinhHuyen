@@ -46,7 +46,6 @@ public class UserProfileController implements Initializable {
     if (currentUser != null) {
       fillDataToFields();
       updateBalanceLabel();
-      updateBankStatusDisplay();
 
       // Thông báo nhắc nhở nếu hồ sơ chưa hoàn thiện
       if (currentUser.getFullName() == null || currentUser.getFullName().isEmpty()) {
@@ -64,16 +63,6 @@ public class UserProfileController implements Initializable {
     txtEmail.setText(currentUser.getEmail() != null ? currentUser.getEmail() : "");
     txtPhone.setText(currentUser.getPhone() != null ? currentUser.getPhone() : "");
     txtAddress.setText(currentUser.getAddress() != null ? currentUser.getAddress() : "");
-  }
-
-  private void updateBankStatusDisplay() {
-    if (currentUser.getLinkedBank() != null && !currentUser.getLinkedBank().trim().isEmpty()) {
-      lblBankStatus.setText("Trạng thái: Đã liên kết (" + currentUser.getLinkedBank() + ")");
-      lblBankStatus.setStyle("-fx-text-fill: #059669; -fx-font-weight: bold;");
-    } else {
-      lblBankStatus.setText("Trạng thái: Chưa liên kết (Bắt buộc)");
-      lblBankStatus.setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
-    }
   }
 
   public void setUserData(Customer user) { // ĐỔI User THÀNH Customer Ở ĐÂY
@@ -96,15 +85,6 @@ public class UserProfileController implements Initializable {
     txtPhone.setText(user.getPhone() != null ? user.getPhone() : "");
     txtAddress.setText(user.getAddress() != null ? user.getAddress() : "");
 
-    // 3. Hiển thị trạng thái ngân hàng
-    if (user.getLinkedBank() != null && !user.getLinkedBank().trim().isEmpty()) {
-      lblBankStatus.setText("Trạng thái: Đã liên kết (" + user.getLinkedBank() + ")");
-      lblBankStatus.setStyle("-fx-text-fill: #059669;"); // Màu xanh lá
-    } else {
-      lblBankStatus.setText("Trạng thái: Chưa liên kết");
-      lblBankStatus.setStyle("-fx-text-fill: red;");
-    }
-
     updateBalanceLabel();
   }
 
@@ -125,10 +105,9 @@ public class UserProfileController implements Initializable {
     String email = txtEmail.getText().trim();
     String phone = txtPhone.getText().trim();
     String address = txtAddress.getText().trim();
-    String bank = currentUser.getLinkedBank();
 
     // 2. Kiểm tra hợp lệ (Validation)
-    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty() || bank == null || bank.trim().isEmpty()) {
+    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()) {
       showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ thông tin cá nhân và ngân hàng!");
       return;
     }
@@ -146,28 +125,7 @@ public class UserProfileController implements Initializable {
   }
 
   @FXML
-  public void handleLinkBank(ActionEvent event) {
-    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-    alert.setTitle("Liên kết ngân hàng");
-    alert.setContentText("Bạn có muốn liên kết với Vietcombank?");
-
-    alert.showAndWait().ifPresent(response -> {
-      if (response == ButtonType.OK) {
-        currentUser.setLinkedBank("Vietcombank");
-        lblBankStatus.setText("Trạng thái: Đã liên kết (Vietcombank)");
-        lblBankStatus.setStyle("-fx-text-fill: #059669;");
-
-        showAlert(Alert.AlertType.INFORMATION, "Ghi nhận", "Đã ghi nhận yêu cầu liên kết. Vui lòng ấn nút 'Lưu thông tin' để hoàn tất!");
-      }
-    });
-  }
-
-  @FXML
   public void handleAddFunds(ActionEvent event) {
-    if (currentUser.getLinkedBank() == null || currentUser.getLinkedBank().trim().isEmpty()) {
-      showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng liên kết ngân hàng trước khi nạp tiền!");
-      return;
-    }
 
     TextInputDialog dialog = new TextInputDialog("100000"); // Mặc định 100k
     dialog.setTitle("Nạp tiền");

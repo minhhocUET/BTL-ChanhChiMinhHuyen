@@ -1,9 +1,8 @@
 package com.uet.bidding.controller;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.uet.bidding.network.ClientService; // Dùng lớp này
 import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.util.ClientApp; // Giả định đây là nơi giữ Socket kết nối
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -11,10 +10,9 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label; // Quan trọng
+import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -25,25 +23,26 @@ import java.util.Map;
 public class AdminDashboardController {
 
   private final Gson gson = new Gson();
-  // 1. Thêm các @FXML Label để điều khiển con số trên giao diện
-  @FXML
-  private Label lblTotalUsers;      // Ô màu xanh (125)
-  @FXML
-  private Label lblActiveSessions;  // Ô màu xanh dương (12)
-  @FXML
-  private Label lblPendingItems;    // Ô màu đỏ (8)
-  @FXML
-  private StackPane contentArea;
 
-  /**
-   * 2. Hàm initialize() sẽ tự động chạy khi giao diện Admin hiện lên
-   */
+  // Lưu instance vào một biến static để ClientService có thể gọi ngược lại và cập nhật UI
+  private static AdminDashboardController instance;
+
+  @FXML private Label lblTotalUsers;
+  @FXML private Label lblActiveSessions;
+  @FXML private Label lblPendingItems;
+  @FXML private StackPane contentArea;
+
+  public static AdminDashboardController getInstance() {
+    return instance;
+  }
+
   @FXML
   public void initialize() {
-    // Cập nhật số liệu ngay lập tức khi vừa mở trang
+    instance = this; // Gán instance khi UI khởi tạo
+
     refreshStatistics();
 
-    // Thiết lập tự động cập nhật mỗi 5 giây một lần (Timeline)
+    // Tự động yêu cầu cập nhật mỗi 5 giây
     Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
       refreshStatistics();
     }));
@@ -51,39 +50,20 @@ public class AdminDashboardController {
     timeline.play();
   }
 
-  /**
-   * 3. Gửi yêu cầu lấy số liệu từ Server và hiển thị lên UI
-   */
   private void refreshStatistics() {
-    // Chạy ngầm để không bị treo giao diện (UI Thread)
-    new Thread(() -> {
-      try {
-        // Gửi lệnh lấy thống kê đến Server
-        // (Giả sử ClientApp.sendRequest là hàm bạn dùng để gửi/nhận tin nhắn Socket)
-        NetworkMessage request = new NetworkMessage("GET_SYSTEM_STATS", "");
+    // Gửi yêu cầu qua ClientService (Kết nối duy nhất đang mở)
+    ClientService.getInstance().sendRequest("GET_SYSTEM_STATS", "");
+  }
 
-        // Gửi qua socket (Bạn cần thay đoạn này bằng hàm gửi nhận thực tế của bạn)
-        ClientApp.sendRequest(request, response -> {
-          if ("SYSTEM_STATS_RESPONSE".equals(response.getType())) {
-            // Chuyển dữ liệu JSON nhận được thành Map
-            Map<String, Double> stats = gson.fromJson(
-                gson.toJson(response.getData()),
-                new TypeToken<Map<String, Double>>() {
-                }.getType()
-            );
-
-            // CẬP NHẬT GIAO DIỆN (Bắt buộc dùng Platform.runLater)
-            Platform.runLater(() -> {
-              lblTotalUsers.setText(String.valueOf(stats.get("totalUsers").intValue()));
-              lblActiveSessions.setText(String.valueOf(stats.get("activeSessions").intValue()));
-              lblPendingItems.setText(String.valueOf(stats.get("pendingItems").intValue()));
-            });
-          }
-        });
-      } catch (Exception e) {
-        System.err.println("Không thể cập nhật thống kê: " + e.getMessage());
-      }
-    }).start();
+  /**
+   * Hàm này sẽ được ClientService gọi khi có dữ liệu đổ về
+   */
+  public void updateStatsUI(Map<String, Double> stats) {
+    Platform.runLater(() -> {
+      lblTotalUsers.setText(String.valueOf(stats.get("totalUsers").intValue()));
+      lblActiveSessions.setText(String.valueOf(stats.get("activeSessions").intValue()));
+      lblPendingItems.setText(String.valueOf(stats.get("pendingItems").intValue()));
+    });
   }
 
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CŨ CỦA BẠN GIỮ NGUYÊN ---
@@ -105,14 +85,8 @@ public class AdminDashboardController {
 
   @FXML
   public void handleLogout(ActionEvent event) {
-    try {
-      Parent root = FXMLLoader.load(getClass().getResource("/Login.fxml"));
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      stage.setScene(new Scene(root));
-      stage.setTitle("Đăng nhập Hệ thống");
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    // Thay vì tự load FXML, hãy dùng hàm bạn đã viết ở Main
+    Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500);
   }
 
   private void loadSubView(String fxmlPath) {

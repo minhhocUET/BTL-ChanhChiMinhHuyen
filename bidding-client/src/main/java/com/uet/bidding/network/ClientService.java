@@ -2,6 +2,8 @@ package com.uet.bidding.network;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import com.uet.bidding.controller.AdminDashboardController;
 import com.uet.bidding.controller.Main;
 import com.uet.bidding.model.Admin;
 import com.uet.bidding.model.Customer;
@@ -17,6 +19,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.util.Map;
 
 public class ClientService {
   private static volatile ClientService instance;
@@ -97,6 +100,19 @@ public class ClientService {
           // Bạn có thể hiển thị một thông báo nhỏ (Toast) hoặc cập nhật ListView
           System.out.println("📢 Thông báo hệ thống: " + info);
         });
+        break;
+
+      // Trong ClientService.java, hàm handleResponse:
+
+      case "SYSTEM_STATS_RESPONSE":
+        // Chuyển data sang Map
+        String json = gson.toJson(msg.getData());
+        Map<String, Double> stats = gson.fromJson(json, new TypeToken<Map<String, Double>>(){}.getType());
+
+        // Đẩy dữ liệu sang Controller
+        if (AdminDashboardController.getInstance() != null) {
+          AdminDashboardController.getInstance().updateStatsUI(stats);
+        }
         break;
     }
   }

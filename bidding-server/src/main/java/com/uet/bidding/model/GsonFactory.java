@@ -3,6 +3,7 @@ package com.uet.bidding.model;
 import com.google.gson.*;
 
 import java.lang.reflect.Type;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -24,14 +25,41 @@ public class GsonFactory {
   private static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ISO_LOCAL_DATE_TIME; // "2025-06-01T10:30:00"
 
-  /** Tạo Gson instance đã cấu hình đầy đủ. */
-  public static Gson create() {
-    return new GsonBuilder()
-        .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeSerializer())
-        .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer())
-        .create();
-  }
+  private static Gson instance;
 
+  public static Gson getInstance() {
+    if (instance == null) {
+      instance = new GsonBuilder()
+          // Dạy Gson cách xử lý LocalDateTime
+          .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
+            @Override
+            public JsonElement serialize(LocalDateTime src, Type typeOfSrc, JsonSerializationContext context) {
+              return new JsonPrimitive(src.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            }
+          })
+          .registerTypeAdapter(LocalDateTime.class, new JsonDeserializer<LocalDateTime>() {
+            @Override
+            public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+              return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
+          })
+          // Dạy Gson cách xử lý LocalDate (Phòng hờ)
+          .registerTypeAdapter(LocalDate.class, new JsonSerializer<LocalDate>() {
+            @Override
+            public JsonElement serialize(LocalDate src, Type typeOfSrc, JsonSerializationContext context) {
+              return new JsonPrimitive(src.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            }
+          })
+          .registerTypeAdapter(LocalDate.class, new JsonDeserializer<LocalDate>() {
+            @Override
+            public LocalDate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+              return LocalDate.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE);
+            }
+          })
+          .create();
+    }
+    return instance;
+  }
   // ── Serializer: LocalDateTime → JSON String ──────────────────────
   private static class LocalDateTimeSerializer
       implements JsonSerializer<LocalDateTime> {

@@ -1,19 +1,17 @@
 package com.uet.bidding.controller;
 
+import com.uet.bidding.model.Admin;
+import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.User;
+import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;
+import com.uet.bidding.util.UserSession;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class LoginController {
 
@@ -24,7 +22,6 @@ public class LoginController {
   @FXML
   private Label messageLabel;
 
-  // 1. Khởi tạo Service để giao tiếp với Cơ sở dữ liệu
   private UserService userService = new UserService();
 
   @FXML
@@ -38,42 +35,48 @@ public class LoginController {
       return;
     }
 
-    messageLabel.setStyle("-fx-text-fill: #2563eb;"); // Màu xanh blue báo trạng thái
+    messageLabel.setStyle("-fx-text-fill: #2563eb;");
     messageLabel.setText("Đang kiểm tra thông tin...");
 
-    userService.login(username, password);
-  }
+    userService.login(username, password).thenAccept(response -> {
+      Platform.runLater(() -> {
+        if ("LOGIN_SUCCESS".equals(response.getType())) {
 
-  /**
-   * Hàm Helper: Hỗ trợ load FXML mới, đổi Scene và truyền Object User sang Controller tiếp theo
-   */
-  private void loadNextScene(ActionEvent event, String fxmlPath, String title, User user) {
-    try {
-      FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-      Parent root = loader.load();
+          // Dùng thẳng ClientService để parse (AN TOÀN 100% VÌ ĐÃ CÓ GSON FACTORY)
+          User user = ClientService.getInstance().parseUser(response.getData());
 
-      // Lấy Controller của màn hình sắp chuyển tới và truyền dữ liệu
-      Object controller = loader.getController();
+          if (user != null) {
+            UserSession.setCurrentUser(user);
 
-      // Nếu trang AuctionList của bạn có hàm set dữ liệu User, có thể bỏ comment đoạn dưới đây:
-      /*
-      if (controller instanceof AuctionListController) {
-          ((AuctionListController) controller).setCurrentUser(user);
-      }
-      */
-
-      // Chuyển cửa sổ
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      Scene scene = new Scene(root);
-      stage.setScene(scene);
-      stage.setTitle(title);
-      stage.show();
-
-    } catch (IOException e) {
-      e.printStackTrace();
-      messageLabel.setStyle("-fx-text-fill: red;");
-      messageLabel.setText("Lỗi hệ thống: Không thể tải giao diện " + fxmlPath);
-    }
+            try {
+              if (user instanceof Admin) {
+                System.out.println("Chào sếp! Đang vào Admin Panel...");
+                Main.changeScene("/AdminDashboard.fxml", "Admin Dashboard", 1100, 800);
+              } else {
+                System.out.println("Chào khách hàng! Đang vào Sàn đấu giá...");
+                Main.changeScene("/AuctionList.fxml", "Sàn Đấu Giá", 1000, 700);
+              }
+            } catch (Exception e) {
+              messageLabel.setStyle("-fx-text-fill: red;");
+              messageLabel.setText("Lỗi giao diện: Không tìm thấy file FXML!");
+              e.printStackTrace();
+            }
+          } else {
+            messageLabel.setStyle("-fx-text-fill: red;");
+            messageLabel.setText("Lỗi: Không thể xác định quyền người dùng!");
+          }
+        } else {
+          messageLabel.setStyle("-fx-text-fill: red;");
+          messageLabel.setText(String.valueOf(response.getData()));
+        }
+      });
+    }).exceptionally(ex -> {
+      Platform.runLater(() -> {
+        messageLabel.setStyle("-fx-text-fill: red;");
+        messageLabel.setText("Lỗi kết nối đến máy chủ!");
+      });
+      return null;
+    });
   }
 
   @FXML

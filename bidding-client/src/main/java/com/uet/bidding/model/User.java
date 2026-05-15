@@ -10,6 +10,7 @@ public abstract class User extends Entity {
   private String password;
   private boolean isBanned = false; // Thuộc tính bắt buộc để Admin thực hiện quản lý (Mục 3.1.1)
 
+  private String role;
   public User() {
   }
 
@@ -54,4 +55,8 @@ public abstract class User extends Entity {
    * Admin sẽ trả về "ADMIN", Customer sẽ trả về "CUSTOMER".
    */
   public abstract String getRole();
+
+  public void setRole(String role) {
+    this.role = role;
+  }
 }

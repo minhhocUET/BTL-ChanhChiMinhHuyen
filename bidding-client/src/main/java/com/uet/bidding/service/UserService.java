@@ -1,11 +1,13 @@
 package com.uet.bidding.service;
 
 import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.NetworkMessage;
 import com.uet.bidding.model.User;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.UserSession;
 
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * UserService (Client-side)
@@ -25,24 +27,14 @@ public class UserService {
   /**
    * Đăng nhập: gửi plain-text, Server dùng BCrypt.checkpw() để xác thực.
    */
-  public void login(String username, String password) {
-    if (username == null || password == null
-        || username.trim().isEmpty() || password.isEmpty()) return;
-
-    // Gửi plain-text, format: "username password"
-    // Server parse split(" ", 2) để tránh cắt nhầm
-    clientService.sendRequest("LOGIN", username.trim() + " " + password);
+  public CompletableFuture<NetworkMessage> login(String username, String password) {
+    if (username == null || password == null) return CompletableFuture.completedFuture(null);
+    return clientService.sendRequest("LOGIN", username.trim() + " " + password);
   }
 
-  /**
-   * Đăng ký: gửi plain-text, Server băm BCrypt rồi mới INSERT vào DB.
-   */
-  public void register(String username, String password) {
-    if (username == null || password == null
-        || username.trim().isEmpty() || password.length() < 6) return;
-
-    // Gửi plain-text, Server sẽ tự băm — không băm tại Client
-    clientService.sendRequest("REGISTER", username.trim() + " " + password);
+  public CompletableFuture<NetworkMessage> register(String username, String password) {
+    if (username == null || password == null) return CompletableFuture.completedFuture(null);
+    return clientService.sendRequest("REGISTER", username.trim() + " " + password);
   }
 
   public void addBalance(BigDecimal amount) {

@@ -2,6 +2,7 @@ package com.uet.bidding.controller;
 
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.service.UserService;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -46,22 +47,29 @@ public class RegisterController {
     }
 
     // 3. THỰC HIỆN LƯU VÀO DATABASE BẰNG TRY-CATCH
-    try {
-      // Chỉ truyền đúng username và password
-      userService.register(username, password);
+    userService.register(username, password).thenAccept(response -> {
+      Platform.runLater(() -> {
+        if ("REGISTER_SUCCESS".equals(response.getType())) {
+          messageLabel.setTextFill(Color.GREEN);
+          messageLabel.setText("Đăng ký thành công! Đang chuyển về Đăng nhập...");
 
-      messageLabel.setTextFill(Color.GREEN);
-      messageLabel.setText("Đăng ký thành công! Vui lòng Đăng nhập.");
-      System.out.println("Đã lưu tài khoản mới vào Database: " + username);
+          // Xóa form
+          usernameField.clear(); passwordField.clear(); confirmPasswordField.clear();
 
-      usernameField.clear();
-      passwordField.clear();
-      confirmPasswordField.clear();
+          // Đợi 1.5s rồi chuyển về Login cho người dùng kịp đọc thông báo
+          new Thread(() -> {
+            try { Thread.sleep(1500); } catch (Exception ignored) {}
+            Platform.runLater(() -> {
+              try { goToLogin(event); } catch (Exception ignored) {}
+            });
+          }).start();
 
-    } catch (UserException e) {
-      messageLabel.setTextFill(Color.RED);
-      messageLabel.setText(e.getMessage());
-    }
+        } else {
+          messageLabel.setTextFill(Color.RED);
+          messageLabel.setText(String.valueOf(response.getData()));
+        }
+      });
+    });
   }
 
   @FXML

@@ -36,7 +36,7 @@ public class Main extends Application {
     // Kết nối mạng ngay khi khởi động
     try {
       // Thay "26.95.102.74" bằng "localhost" nếu chạy cùng máy
-      ClientService.getInstance().connect("26.95.102.74", 8888);
+      ClientService.getInstance().connect("127.0.0.1", 8888);
       System.out.println("✅ Kết nối Server thành công!");
     } catch (IOException e) {
       showErrorAlert("Lỗi kết nối", "Không thể kết nối đến Server tại IP 26.95.102.74:8888");

@@ -91,6 +91,7 @@ public class UserSqlDAO {
     user.setUsername(rs.getString("username"));
     user.setPassword(rs.getString("password"));
     user.setBanned(rs.getBoolean("is_banned"));
+    user.setRole(rs.getString("role"));
   }
 
   /**

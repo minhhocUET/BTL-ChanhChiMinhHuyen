@@ -5,10 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.uet.bidding.controller.AdminDashboardController;
 import com.uet.bidding.controller.Main;
-import com.uet.bidding.model.Admin;
-import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.User;
+import com.uet.bidding.model.*;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -19,16 +16,20 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 import java.util.Map;
 
 public class ClientService {
   private static volatile ClientService instance;
-  private final Gson gson = new Gson();
+  private final Gson gson = GsonFactory.getInstance();
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
   private boolean isRunning = false;
 
+  private final Map<String, CompletableFuture<NetworkMessage>> pendingRequests = new ConcurrentHashMap<>();
   private ClientService() {
   }
 
@@ -53,39 +54,71 @@ public class ClientService {
     System.out.println("🚀 Kết nối mạng thành công!");
   }
 
+  // Trong ClientService.java - Cập nhật lại vòng lặp đọc
   private void listenFromServer() {
     try {
       String jsonResponse;
       while (isRunning && (jsonResponse = in.readLine()) != null) {
-        NetworkMessage msg = gson.fromJson(jsonResponse, NetworkMessage.class);
-        handleResponse(msg);
+        try {
+          System.out.println("📥 Nhận từ Server: " + jsonResponse);
+          NetworkMessage msg = gson.fromJson(jsonResponse, NetworkMessage.class);
+
+          // ƯU TIÊN 1: Trả kết quả về cho hàm đang đợi (CompletableFuture)
+          if (msg.getRequestId() != null && pendingRequests.containsKey(msg.getRequestId())) {
+            System.out.println("✅ Khớp RequestId: " + msg.getRequestId());
+            pendingRequests.remove(msg.getRequestId()).complete(msg);
+          }
+          // ƯU TIÊN 2: Các tin nhắn hệ thống (Broadcast, Update tự động)
+          else {
+            handleResponse(msg);
+          }
+        } catch (Exception e) {
+          System.err.println("❌ Lỗi xử lý tin nhắn: " + e.getMessage());
+        }
       }
     } catch (IOException e) {
-      System.err.println("❌ Kết nối bị ngắt đột ngột!");
+      System.err.println("❌ Mất kết nối Socket!");
       isRunning = false;
-      Platform.runLater(() -> {
-        showAlert("Lỗi kết nối", "Mất kết nối tới máy chủ. Vui lòng kiểm tra lại mạng!", Alert.AlertType.ERROR);
-        Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500); // Đá về màn hình đăng nhập
-      });
+      Platform.runLater(() -> Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500));
+    }
+  }
+
+  /**
+   * HÀM QUAN TRỌNG: Biến Map thành Object thật (Admin hoặc Customer)
+   */
+  public User parseUser(Object data) {
+    if (data == null) return null;
+    try {
+      Gson gson = GsonFactory.getInstance();
+      String json = gson.toJson(data);
+
+      // 1. Chuyển thành JsonObject để soi trường "role"
+      JsonObject obj = gson.fromJson(json, JsonObject.class);
+
+      if (obj.has("role")) {
+        String role = obj.get("role").getAsString();
+
+        if ("admin".equalsIgnoreCase(role)) {
+          return gson.fromJson(json, Admin.class); // Trả về đối tượng Admin
+        }
+      }
+
+      // Mặc định là Customer nếu không phải admin
+      return gson.fromJson(json, Customer.class);
+    } catch (Exception e) {
+      System.err.println("❌ Lỗi parse User: " + e.getMessage());
+      return null;
     }
   }
 
   private void handleResponse(NetworkMessage msg) {
     switch (msg.getType()) {
-      case "LOGIN_SUCCESS":
-        processLogin(msg);
-        break;
-
       case "UPDATE_PROFILE_SUCCESS":
         processUpdateProfile(msg);
         break;
 
       case "UPDATE_BALANCE_SUCCESS":
         processUpdateBalance(msg);
-        break;
-
-      case "REGISTER_SUCCESS":
-        Platform.runLater(() -> Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500));
         break;
 
       case "ERROR":
@@ -120,17 +153,23 @@ public class ClientService {
   // --- CÁC HÀM XỬ LÝ LOGIC CHI TIẾT ---
 
   private void processLogin(NetworkMessage msg) {
-    User user = parseUserFromJson(msg.getData());
+    User user = parseUserFromJson(msg.getData()); // Dùng hàm parse mới ở trên
+
     if (user != null) {
       UserSession.setCurrentUser(user);
+
       Platform.runLater(() -> {
-        // Kiểm tra vai trò để chuyển màn hình
+        // Kiểm tra CHÍNH XÁC kiểu đối tượng
         if (user instanceof Admin) {
+          System.out.println("✅ Chuyển vào màn hình Admin");
           Main.changeScene("/AdminDashboard.fxml", "Admin Control Panel", 1100, 800);
         } else if (user instanceof Customer) {
-          Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá VNU", 1000, 700);
+          System.out.println("✅ Chuyển vào màn hình Khách hàng");
+          Main.changeScene("/AuctionList.fxml", "Hệ thống Đấu giá", 1000, 700);
         }
       });
+    } else {
+      System.err.println("❌ Không thể xác định loại người dùng để chuyển màn hình!");
     }
   }
 
@@ -153,7 +192,7 @@ public class ClientService {
 
       Platform.runLater(() -> {
         showAlert("Nạp tiền thành công",
-            "Số dư mới: " + String.format("%,.0f", currentBalance) + " VNĐ",
+            "Số dư mới: " + String.format("%,.0f", currentBalance.doubleValue()) + " VNĐ",
             Alert.AlertType.INFORMATION);
       });
     }
@@ -166,22 +205,22 @@ public class ClientService {
     if (data == null) return null;
 
     String json = gson.toJson(data);
+    System.out.println("DEBUG - Dữ liệu nhận từ Server: " + json); // Xem Log ở đây!
+
     JsonObject obj = gson.fromJson(json, JsonObject.class);
 
-    // Cách 1: Dựa vào trường 'role' nếu Server có gửi về
+    // Ưu tiên kiểm tra trường 'role' (Phải khớp chính xác chữ hoa/thường với DB)
     if (obj.has("role")) {
-      String role = obj.get("role").getAsString();
-      if ("ADMIN".equalsIgnoreCase(role)) return gson.fromJson(json, Admin.class);
-      if ("CUSTOMER".equalsIgnoreCase(role)) return gson.fromJson(json, Customer.class);
+      String role = obj.get("role").getAsString().toUpperCase();
+      System.out.println("DEBUG - Role nhận được: " + role);
+
+      if ("ADMIN".equals(role)) return gson.fromJson(json, Admin.class);
+      if ("CUSTOMER".equals(role)) return gson.fromJson(json, Customer.class);
     }
 
-    // Cách 2: Dựa vào thuộc tính đặc thù (Phòng hờ Server không gửi role)
-    // Admin có adminLevel, Customer có balance
-    if (obj.has("adminLevel")) {
-      return gson.fromJson(json, Admin.class);
-    } else if (obj.has("balance")) {
-      return gson.fromJson(json, Customer.class);
-    }
+    // Cách dự phòng: Kiểm tra đặc điểm nhận dạng
+    if (obj.has("adminLevel")) return gson.fromJson(json, Admin.class);
+    if (obj.has("balance")) return gson.fromJson(json, Customer.class);
 
     return null;
   }
@@ -194,10 +233,21 @@ public class ClientService {
     alert.showAndWait();
   }
 
-  public void sendRequest(String type, Object data) {
+  // --- 1. SỬA LẠI HÀM sendRequest ---
+// Đổi từ void sang trả về CompletableFuture
+  public CompletableFuture<NetworkMessage> sendRequest(String type, Object data) {
+    CompletableFuture<NetworkMessage> future = new CompletableFuture<>();
     if (out != null) {
-      out.println(gson.toJson(new NetworkMessage(type, data)));
+      String reqId = UUID.randomUUID().toString(); // Tạo ID ngẫu nhiên
+      NetworkMessage msg = new NetworkMessage(type, data);
+      msg.setRequestId(reqId);
+
+      pendingRequests.put(reqId, future); // Đưa vào danh sách chờ
+      out.println(gson.toJson(msg));
+    } else {
+      future.completeExceptionally(new RuntimeException("Mất kết nối máy chủ!"));
     }
+    return future;
   }
 
   public void disconnect() {

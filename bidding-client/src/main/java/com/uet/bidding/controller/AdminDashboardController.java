@@ -1,8 +1,8 @@
 package com.uet.bidding.controller;
 
 import com.google.gson.Gson;
+import com.uet.bidding.model.GsonFactory;
 import com.uet.bidding.network.ClientService; // Dùng lớp này
-import com.uet.bidding.model.NetworkMessage;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -11,10 +11,8 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
@@ -22,7 +20,7 @@ import java.util.Map;
 
 public class AdminDashboardController {
 
-  private final Gson gson = new Gson();
+  private final Gson gson = GsonFactory.getInstance();
 
   // Lưu instance vào một biến static để ClientService có thể gọi ngược lại và cập nhật UI
   private static AdminDashboardController instance;
@@ -69,32 +67,34 @@ public class AdminDashboardController {
   // --- CÁC HÀM XỬ LÝ SỰ KIỆN CŨ CỦA BẠN GIỮ NGUYÊN ---
 
   @FXML
-  public void handleManageUsers(ActionEvent event) {
+  public void handleManageUsers() {
     loadSubView("/AdminUserManagement.fxml");
   }
 
   @FXML
-  public void handleManageItems(ActionEvent event) {
+  public void handleManageItems() {
     loadSubView("/AdminItemManagement.fxml");
   }
 
   @FXML
-  public void handleSystemReports(ActionEvent event) {
+  public void handleSystemReports() {
     loadSubView("/AdminReports.fxml");
   }
 
   @FXML
-  public void handleLogout(ActionEvent event) {
+  public void handleLogout() {
     // Thay vì tự load FXML, hãy dùng hàm bạn đã viết ở Main
     Main.changeScene("/Login.fxml", "Đăng nhập", 400, 500);
   }
 
   private void loadSubView(String fxmlPath) {
     try {
-      Parent node = FXMLLoader.load(getClass().getResource(fxmlPath));
+      FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+      Parent node = loader.load();
       contentArea.getChildren().setAll(node);
     } catch (IOException e) {
-      System.err.println("Chưa tạo file FXML: " + fxmlPath);
+      System.err.println("Lỗi load file: " + fxmlPath);
+      e.printStackTrace(); // Xem nó báo lỗi cụ thể ở dòng nào trong FXML
     }
   }
 }

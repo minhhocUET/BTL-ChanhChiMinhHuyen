@@ -87,6 +87,8 @@ public class AuctionListController implements Initializable {
 
     // 4. Đổ dữ liệu vào bảng
     tableView.setItems(dataList);
+    // Giả sử tên biến bảng của bạn là tableView
+    tableView.setColumnResizePolicy(javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY);
 
     // 5. KHỞI TẠO DANH SÁCH TỈNH THÀNH
     ObservableList<String> cities = FXCollections.observableArrayList(

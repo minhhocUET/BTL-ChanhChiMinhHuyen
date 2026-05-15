@@ -18,7 +18,7 @@ import java.net.Socket;
 public class ClientHandler implements Runnable, AuctionObserver {
   private final Socket clientSocket;
   private final RequestProcessor processor; // Thêm processor
-  private final Gson gson = GsonFactory.create();
+  private final Gson gson = GsonFactory.getInstance();
   private PrintWriter out;
   private User loggedInUser = null;
 
@@ -51,14 +51,30 @@ public class ClientHandler implements Runnable, AuctionObserver {
     }
   }
 
+  // 2. Hàm gửi phản hồi CÓ RequestId (Dành cho Login, Register...)
+  public void sendResponse(String type, Object data, String requestId) {
+    if (out != null) {
+      NetworkMessage response = new NetworkMessage(type, data);
+      response.setRequestId(requestId); // Gắn cờ ID để Client biết đường nhận
+      out.println(gson.toJson(response));
+    }
+  }
+
+  // 3. Hàm gửi phản hồi KHÔNG CÓ RequestId (Dành cho Broadcast, Thông báo chung)
   public void sendResponse(String type, Object data) {
-    if (out != null) out.println(gson.toJson(new NetworkMessage(type, data)));
+    if (out != null) {
+      NetworkMessage response = new NetworkMessage(type, data);
+      out.println(gson.toJson(response));
+    }
   }
 
+  // 4. Hàm sendMessage SỬA LẠI (Không được làm mất RequestId của msg gốc)
   public void sendMessage(NetworkMessage msg) {
-    sendResponse(msg.getType(), msg.getData());
+    if (out != null) {
+      // Gửi thẳng nguyên cái msg để bảo toàn mọi thuộc tính (kể cả requestId)
+      out.println(gson.toJson(msg));
+    }
   }
-
   public User getLoggedInUser() {
     return loggedInUser;
   }
@@ -69,6 +85,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
 
   @Override
   public void updatePrice(String itemName, double newPrice, String topBidder) {
+    // Gọi hàm 2 tham số vì đây là Broadcast từ Server, không phải trả lời Request của Client
     sendResponse("PRICE_UPDATE", "Sản phẩm: " + itemName + " | Giá mới: " + newPrice);
   }
 

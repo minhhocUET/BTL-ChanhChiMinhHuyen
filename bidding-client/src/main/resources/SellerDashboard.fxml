@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.uet.bidding.controller.SellerDashboardController"
+            prefWidth="1000"
+            prefHeight="650"
+            style="-fx-background-color: #fff4f8;">
+
+    <!-- HEADER -->
+    <top>
+        <HBox alignment="CENTER_LEFT"
+              spacing="15"
+              style="-fx-background-color: #ffc1d6;
+                     -fx-padding: 18;">
+
+            <Label text="Seller Dashboard"
+                   style="-fx-text-fill: #8b1e4f;
+                          -fx-font-size: 28px;
+                          -fx-font-weight: bold;"/>
+        </HBox>
+    </top>
+
+    <!-- MAIN -->
+    <center>
+        <VBox spacing="20" padding="20">
+
+            <!-- SHOP INFO -->
+            <HBox spacing="30"
+                  style="-fx-background-color: white;
+                         -fx-background-radius: 20;
+                         -fx-padding: 25;
+                         -fx-border-color: #ffb3cc;
+                         -fx-border-radius: 20;">
+
+                <!-- LEFT -->
+                <VBox spacing="15" prefWidth="650">
+
+                    <Label text="Store Name"
+                           style="-fx-font-size: 18px;
+                                  -fx-text-fill: #c2185b;
+                                  -fx-font-weight: bold;"/>
+
+                    <Label fx:id="storeNameLabel"
+                           text="My Shop"
+                           style="-fx-font-size: 42px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #880e4f;"/>
+
+                    <Label text="Mô tả shop"
+                           style="-fx-font-size: 18px;
+                                  -fx-text-fill: #c2185b;
+                                  -fx-font-weight: bold;"/>
+
+                    <TextArea fx:id="descriptionArea"
+                              wrapText="true"
+                              editable="false"
+                              prefHeight="120"
+                              style="-fx-background-radius: 15;
+                                     -fx-border-radius: 15;
+                                     -fx-border-color: #ffb3cc;
+                                     -fx-font-size: 16px;"/>
+                </VBox>
+
+                <!-- RIGHT -->
+                <VBox spacing="20"
+                      alignment="TOP_CENTER"
+                      prefWidth="220">
+
+                    <Label text="Rating"
+                           style="-fx-font-size: 20px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #c2185b;"/>
+
+                    <Label fx:id="ratingLabel"
+                           text="4.5"
+                           style="-fx-font-size: 50px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #ad1457;"/>
+
+                    <Button text="Xem Review"
+                            fx:id="reviewButton"
+                            onAction="#handleViewReview"
+                            prefWidth="180"
+                            prefHeight="45"
+                            style="-fx-background-color: #ff5c93;
+                                   -fx-text-fill: white;
+                                   -fx-font-size: 16px;
+                                   -fx-font-weight: bold;
+                                   -fx-background-radius: 15;"/>
+                </VBox>
+            </HBox>
+
+            <!-- PRODUCT SECTION -->
+            <VBox spacing="15"
+                  VBox.vgrow="ALWAYS"
+                  style="-fx-background-color: white;
+                         -fx-background-radius: 20;
+                         -fx-padding: 20;
+                         -fx-border-color: #ffb3cc;
+                         -fx-border-radius: 20;">
+
+                <Label text="Sản phẩm"
+                       style="-fx-font-size: 24px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #ad1457;"/>
+
+                <FlowPane fx:id="productPane"
+                          hgap="20"
+                          vgap="20">
+
+                    <!-- ADD PRODUCT BUTTON -->
+                    <VBox alignment="CENTER"
+                          spacing="10"
+                          prefWidth="170"
+                          prefHeight="220"
+                          style="-fx-border-color: #ff5c93;
+                                 -fx-border-style: dashed;
+                                 -fx-border-radius: 20;
+                                 -fx-background-radius: 20;">
+
+                        <Button text="+"
+                                fx:id="addProductButton"
+                                onAction="#handleAddProduct"
+                                prefWidth="80"
+                                prefHeight="80"
+                                style="-fx-background-color: transparent;
+                                       -fx-font-size: 45px;
+                                       -fx-text-fill: #ff4081;
+                                       -fx-font-weight: bold;"/>
+
+                        <Label text="Thêm sản phẩm"
+                               style="-fx-font-size: 18px;
+                                      -fx-text-fill: #ff4081;
+                                      -fx-font-weight: bold;"/>
+                    </VBox>
+
+                </FlowPane>
+            </VBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

@@ -22,6 +22,11 @@ public class Customer extends User {
         this.sellerProfile = new Seller();
     }
 
+    @Override
+    public String getRole() {
+        return "CUSTOMER";
+    }
+
     // Constructor không có id
     public Customer(String username, String password, BigDecimal balance) {
         this(); // Gọi constructor trống để khởi tạo profile

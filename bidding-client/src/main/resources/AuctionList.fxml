@@ -1,81 +1,207 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="900.0" stylesheets="@style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.ui.AuctionListController">
+<AnchorPane prefHeight="600.0" prefWidth="900.0"
+            stylesheets="@style.css"
+            xmlns="http://javafx.com/javafx/17.0.12"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.uet.bidding.controller.AuctionListController">
+
     <children>
-        <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
+
+        <VBox spacing="15.0"
+              alignment="TOP_CENTER"
+              AnchorPane.bottomAnchor="20.0"
+              AnchorPane.leftAnchor="20.0"
+              AnchorPane.rightAnchor="20.0"
+              AnchorPane.topAnchor="20.0">
+
             <children>
 
-                <HBox alignment="CENTER_LEFT">
+                <!-- HEADER -->
+                <HBox alignment="CENTER"
+                      prefWidth="860.0">
+
                     <children>
 
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Label styleClass="title-label" text="DANH SÁCH ĐẤU GIÁ" textFill="#d8466b">
-                            <font>
-                                <Font name="System Bold" size="24.0" />
-                            </font>
-                        </Label>
+                        <!-- Nút bidder hình tròn góc trái -->
+                        <VBox alignment="CENTER"
+                              spacing="4.0"
+                              onMouseClicked="#handleGoToMyManagement"
+                              style="-fx-cursor: hand;">
 
-                        <HBox alignment="CENTER" spacing="20.0">
                             <children>
 
-                                <VBox alignment="CENTER" onMouseClicked="#handleGoToMyProfile" spacing="4.0" style="-fx-cursor: hand;">
+                                <StackPane prefWidth="60.0"
+                                           prefHeight="60.0">
+
                                     <children>
-                                        <Circle fill="#e2e8f0" radius="20.0" stroke="#cbd5e1" strokeType="INSIDE" />
-                                        <Label text="Setting" textFill="#555555">
+                                        <Circle radius="28.0"
+                                                fill="#f26f8d" />
+
+                                        <Label text="👤"
+                                               textFill="white">
                                             <font>
-                                                <Font name="System Bold" size="12.0" />
+                                                <Font size="22.0"/>
                                             </font>
                                         </Label>
                                     </children>
+
+                                </StackPane>
+
+                                <Label text="Bidder"
+                                       textFill="#555555">
+                                    <font>
+                                        <Font name="System Bold"
+                                              size="13.0"/>
+                                    </font>
+                                </Label>
+
+                            </children>
+
+                        </VBox>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <!-- Title căn giữa -->
+                        <Label text="DANH SÁCH ĐẤU GIÁ"
+                               styleClass="title-label"
+                               textFill="#1e3a8a">
+
+                            <font>
+                                <Font name="System Bold"
+                                      size="30.0"/>
+                            </font>
+
+                        </Label>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <!-- Setting + logout -->
+                        <HBox alignment="CENTER"
+                              spacing="20.0">
+
+                            <children>
+
+                                <VBox alignment="CENTER"
+                                      spacing="4.0"
+                                      onMouseClicked="#handleGoToMyProfile"
+                                      style="-fx-cursor: hand;">
+
+                                    <children>
+
+                                        <Circle fill="#e2e8f0"
+                                                radius="20.0"
+                                                stroke="#cbd5e1"
+                                                strokeType="INSIDE"/>
+
+                                        <Label text="Setting"
+                                               textFill="#555555">
+
+                                            <font>
+                                                <Font name="System Bold"
+                                                      size="12.0"/>
+                                            </font>
+
+                                        </Label>
+
+                                    </children>
+
                                 </VBox>
 
-                                <Button mnemonicParsing="false" onAction="#handleLogout" style="-fx-background-color: #ef4444; -fx-text-fill: white; -fx-background-radius: 5; -fx-pref-width: 100px; -fx-pref-height: 35px;" styleClass="action-button" text="Đăng xuất">
+                                <Button text="Đăng xuất"
+                                        mnemonicParsing="false"
+                                        onAction="#handleLogout"
+                                        style="-fx-background-color: #ef4444;
+                                               -fx-text-fill: white;
+                                               -fx-background-radius: 10;
+                                               -fx-pref-width: 110px;
+                                               -fx-pref-height: 38px;">
+
                                     <font>
-                                        <Font name="System Bold" size="13.0" />
+                                        <Font name="System Bold"
+                                              size="13.0"/>
                                     </font>
+
                                 </Button>
+
                             </children>
+
                         </HBox>
+
                     </children>
+
                 </HBox>
 
-                <HBox spacing="10.0">
+                <!-- Search -->
+                <HBox spacing="10.0"
+                      alignment="CENTER_LEFT">
+
                     <children>
-                        <ComboBox fx:id="cityComboBox" prefHeight="42.0" prefWidth="300.0" promptText="Chọn Tỉnh/Thành phố..." style="-fx-background-radius: 5; -fx-border-radius: 5;" styleClass="input-field" />
-                        <Button mnemonicParsing="false" onAction="#handleSearch" style="-fx-background-color: #f26f8d; -fx-text-fill: white; -fx-background-radius: 5; -fx-pref-height: 42px; -fx-pref-width: 110px;" styleClass="action-button" text="Tìm kiếm">
+
+                        <ComboBox fx:id="cityComboBox"
+                                  prefHeight="42.0"
+                                  prefWidth="300.0"
+                                  promptText="Chọn Tỉnh/Thành phố..."
+                                  style="-fx-background-radius: 8;
+                                         -fx-border-radius: 8;" />
+
+                        <Button text="Tìm kiếm"
+                                mnemonicParsing="false"
+                                onAction="#handleSearch"
+                                style="-fx-background-color: #f26f8d;
+                                       -fx-text-fill: white;
+                                       -fx-background-radius: 8;
+                                       -fx-pref-height: 42px;
+                                       -fx-pref-width: 120px;">
+
                             <font>
-                                <Font name="System Bold" size="14.0" />
+                                <Font name="System Bold"
+                                      size="14.0"/>
                             </font>
+
                         </Button>
+
                     </children>
+
                 </HBox>
 
-                <TableView fx:id="tableView" prefHeight="380.0" prefWidth="860.0" VBox.vgrow="ALWAYS">
+                <!-- TABLE -->
+                <TableView fx:id="tableView"
+                           prefHeight="320.0"
+                           prefWidth="860.0"
+                           columnResizePolicy="CONSTRAINED_RESIZE_POLICY">
+
                     <columns>
-                        <TableColumn fx:id="colStt" prefWidth="70.0" text="STT" />
-                        <TableColumn fx:id="colCity" prefWidth="180.0" text="Thành Phố/Tỉnh" />
-                        <TableColumn fx:id="colProduct" prefWidth="300.0" text="Loại sản phẩm" />
-                        <TableColumn fx:id="colInterested" prefWidth="160.0" text="Số người quan tâm" />
-                        <TableColumn fx:id="colAction" prefWidth="148.0" text="Lựa chọn" />
+
+                        <TableColumn fx:id="colStt"
+                                     text="STT"/>
+
+                        <TableColumn fx:id="colCity"
+                                     text="Thành Phố/Tỉnh"/>
+
+                        <TableColumn fx:id="colProduct"
+                                     text="Loại sản phẩm"/>
+
+                        <TableColumn fx:id="colInterested"
+                                     text="Số người quan tâm"/>
+
+                        <TableColumn fx:id="colAction"
+                                     text="Lựa chọn"/>
+
                     </columns>
+
                 </TableView>
 
-                <HBox alignment="CENTER_RIGHT" prefHeight="50.0">
-                    <children>
-                        <Button mnemonicParsing="false" onAction="#handleGoToMyManagement" style="-fx-background-color: #f26f8d; -fx-text-fill: white; -fx-background-radius: 20; -fx-pref-height: 45px; -fx-pref-width: 180px;" text="Quản lí của tôi">
-                            <font>
-                                <Font name="System Bold" size="16.0" />
-                            </font>
-                        </Button>
-                    </children>
-                </HBox>
-
             </children>
+
         </VBox>
+
     </children>
+
 </AnchorPane>

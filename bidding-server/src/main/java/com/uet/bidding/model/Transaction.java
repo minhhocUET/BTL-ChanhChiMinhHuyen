@@ -13,7 +13,8 @@ public class Transaction {
   private TransactionStatus status;
   private LocalDateTime createdAt;
 
-  public Transaction() {}
+  public Transaction() {
+  }
 
   // Constructor cho tạo mới (chưa có id)
   public Transaction(int userId, Integer auctionId, BigDecimal amount, TransactionType type, TransactionStatus status) {
@@ -26,26 +27,61 @@ public class Transaction {
   }
 
   // Getters & Setters
-  public int getId() { return id; }
-  public void setId(int id) { this.id = id; }
+  public int getId() {
+    return id;
+  }
 
-  public int getUserId() { return userId; }
-  public void setUserId(int userId) { this.userId = userId; }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-  public Integer getAuctionId() { return auctionId; }
-  public void setAuctionId(Integer auctionId) { this.auctionId = auctionId; }
+  public int getUserId() {
+    return userId;
+  }
 
-  public BigDecimal getAmount() { return amount; }
-  public void setAmount(BigDecimal amount) { this.amount = amount; }
+  public void setUserId(int userId) {
+    this.userId = userId;
+  }
 
-  public TransactionType getType() { return type; }
-  public void setType(TransactionType type) { this.type = type; }
+  public Integer getAuctionId() {
+    return auctionId;
+  }
 
-  public TransactionStatus getStatus() { return status; }
-  public void setStatus(TransactionStatus status) { this.status = status; }
+  public void setAuctionId(Integer auctionId) {
+    this.auctionId = auctionId;
+  }
 
-  public LocalDateTime getCreatedAt() { return createdAt; }
-  public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+  public BigDecimal getAmount() {
+    return amount;
+  }
+
+  public void setAmount(BigDecimal amount) {
+    this.amount = amount;
+  }
+
+  public TransactionType getType() {
+    return type;
+  }
+
+  public void setType(TransactionType type) {
+    this.type = type;
+  }
+
+  public TransactionStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(TransactionStatus status) {
+    this.status = status;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
 
   @Override
   public String toString() {

@@ -11,6 +11,7 @@ public abstract class User extends Entity {
   private boolean isBanned = false; // Thuộc tính bắt buộc để Admin thực hiện quản lý (Mục 3.1.1)
 
   private String role;
+
   public User() {
   }
 

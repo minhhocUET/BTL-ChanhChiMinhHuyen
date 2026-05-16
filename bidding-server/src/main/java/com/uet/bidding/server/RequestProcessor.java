@@ -7,11 +7,13 @@ import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.*;
+import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.GsonFactory;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.User;
 import com.uet.bidding.service.AuctionManager;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 public class RequestProcessor {
   private final Gson gson = GsonFactory.getInstance();
@@ -190,6 +192,7 @@ public class RequestProcessor {
 
   private void handleLoginLogic(String credentials) throws AuthenticationException {
     if (credentials == null || credentials.trim().isEmpty()) throw new AuthenticationException("Dữ liệu trống!");
-    if (credentials.toLowerCase().contains("root")) throw new AuthenticationException("Tài khoản root không được phép truy cập từ Client!");
+    if (credentials.toLowerCase().contains("root"))
+      throw new AuthenticationException("Tài khoản root không được phép truy cập từ Client!");
   }
 }

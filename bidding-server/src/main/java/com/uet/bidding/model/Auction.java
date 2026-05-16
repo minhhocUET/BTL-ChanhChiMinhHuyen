@@ -122,20 +122,16 @@ public class Auction {
     this.status = status;
   }
 
-  public void setHighestBidder(Customer highestBidder) {
-    this.highestBidder = highestBidder;
-  }
-
-  public void setEndTime(LocalDateTime endTime) {
-    this.endTime = endTime;
-  }
-
   public int getInterestedCount() {
     return interestedCount.get();
   }
 
   public Customer getHighestBidder() {
     return highestBidder;
+  }
+
+  public void setHighestBidder(Customer highestBidder) {
+    this.highestBidder = highestBidder;
   }
 
   public LocalDateTime getStartTime() {
@@ -146,14 +142,33 @@ public class Auction {
     return endTime;
   }
 
-  public BigDecimal getBidIncrement() { return bidIncrement; }
-  public void setBidIncrement(BigDecimal bidIncrement) { this.bidIncrement = bidIncrement; }
+  public void setEndTime(LocalDateTime endTime) {
+    this.endTime = endTime;
+  }
 
-  public int getAntiSnipeWindowMinutes() { return antiSnipeWindowMinutes; }
-  public void setAntiSnipeWindowMinutes(int antiSnipeWindowMinutes) { this.antiSnipeWindowMinutes = antiSnipeWindowMinutes; }
+  public BigDecimal getBidIncrement() {
+    return bidIncrement;
+  }
 
-  public int getAntiSnipeExtensionMinutes() { return antiSnipeExtensionMinutes; }
-  public void setAntiSnipeExtensionMinutes(int antiSnipeExtensionMinutes) { this.antiSnipeExtensionMinutes = antiSnipeExtensionMinutes; }
+  public void setBidIncrement(BigDecimal bidIncrement) {
+    this.bidIncrement = bidIncrement;
+  }
+
+  public int getAntiSnipeWindowMinutes() {
+    return antiSnipeWindowMinutes;
+  }
+
+  public void setAntiSnipeWindowMinutes(int antiSnipeWindowMinutes) {
+    this.antiSnipeWindowMinutes = antiSnipeWindowMinutes;
+  }
+
+  public int getAntiSnipeExtensionMinutes() {
+    return antiSnipeExtensionMinutes;
+  }
+
+  public void setAntiSnipeExtensionMinutes(int antiSnipeExtensionMinutes) {
+    this.antiSnipeExtensionMinutes = antiSnipeExtensionMinutes;
+  }
 
   // ================== LOGIC ==================
   public boolean isActive() {

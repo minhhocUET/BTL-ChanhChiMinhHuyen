@@ -9,16 +9,16 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * GsonFactory – tạo Gson instance dùng chung cho cả Client và Server.
- *
+ * <p>
  * Lý do cần class này:
- *   Gson mặc định không xử lý được java.time.LocalDateTime vì các field
- *   bên trong nó là private → ném lỗi "Failed making field accessible".
- *   Giải pháp: đăng ký TypeAdapter để serialize/deserialize thủ công
- *   dưới dạng chuỗi ISO-8601 (ví dụ: "2025-06-01T10:30:00").
- *
+ * Gson mặc định không xử lý được java.time.LocalDateTime vì các field
+ * bên trong nó là private → ném lỗi "Failed making field accessible".
+ * Giải pháp: đăng ký TypeAdapter để serialize/deserialize thủ công
+ * dưới dạng chuỗi ISO-8601 (ví dụ: "2025-06-01T10:30:00").
+ * <p>
  * Cách dùng:
- *   // Thay vì: private final Gson gson = new Gson();
- *   private final Gson gson = GsonFactory.create();
+ * // Thay vì: private final Gson gson = new Gson();
+ * private final Gson gson = GsonFactory.create();
  */
 public class GsonFactory {
 
@@ -59,6 +59,7 @@ public class GsonFactory {
     }
     return instance;
   }
+
   // ── Serializer: LocalDateTime → JSON String ──────────────────────
   private static class LocalDateTimeSerializer
       implements JsonSerializer<LocalDateTime> {

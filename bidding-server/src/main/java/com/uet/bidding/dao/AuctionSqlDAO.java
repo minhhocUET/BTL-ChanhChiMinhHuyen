@@ -38,22 +38,22 @@ public class AuctionSqlDAO {
   /**
    * Tạo phiên đấu giá mới, lưu vào DB.
    *
-   * @param item           sản phẩm (đã có id)
-   * @param startPrice     giá khởi điểm
-   * @param startTime      thời gian bắt đầu
-   * @param endTime        thời gian kết thúc dự kiến
-   * @param bidIncrement   bước giá tối thiểu (nếu null dùng 5.00)
+   * @param item         sản phẩm (đã có id)
+   * @param startPrice   giá khởi điểm
+   * @param startTime    thời gian bắt đầu
+   * @param endTime      thời gian kết thúc dự kiến
+   * @param bidIncrement bước giá tối thiểu (nếu null dùng 5.00)
    * @return Auction đã được gán id
    */
   public Auction createAuction(Item item, BigDecimal startPrice,
                                LocalDateTime startTime, LocalDateTime endTime,
                                BigDecimal bidIncrement) throws UserException {
     String sql = """
-                INSERT INTO auctions
-                    (item_id, current_price, start_time, end_time, status,
-                     bid_increment, anti_snipe_window_minutes, anti_snipe_extension_minutes)
-                VALUES (?, ?, ?, ?, 'OPEN', ?, 2, 5)
-                """;
+        INSERT INTO auctions
+            (item_id, current_price, start_time, end_time, status,
+             bid_increment, anti_snipe_window_minutes, anti_snipe_extension_minutes)
+        VALUES (?, ?, ?, ?, 'OPEN', ?, 2, 5)
+        """;
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -207,9 +207,9 @@ public class AuctionSqlDAO {
       updateAuctionInTransaction(conn, auction);
       // Lưu kết quả
       String sqlResult = """
-                    INSERT INTO auction_results (auction_id, winner_id, final_price)
-                    VALUES (?, ?, ?)
-                    """;
+          INSERT INTO auction_results (auction_id, winner_id, final_price)
+          VALUES (?, ?, ?)
+          """;
       try (PreparedStatement stmt = conn.prepareStatement(sqlResult)) {
         stmt.setInt(1, auctionId);
         if (auction.getHighestBidder() != null) {
@@ -240,10 +240,10 @@ public class AuctionSqlDAO {
 
   public void setAutoBid(int auctionId, int bidderId, BigDecimal maxBid) throws UserException {
     String sql = """
-                INSERT INTO auto_bids (auction_id, bidder_id, max_bid, is_active)
-                VALUES (?, ?, ?, TRUE)
-                ON DUPLICATE KEY UPDATE max_bid = ?, is_active = TRUE
-                """;
+        INSERT INTO auto_bids (auction_id, bidder_id, max_bid, is_active)
+        VALUES (?, ?, ?, TRUE)
+        ON DUPLICATE KEY UPDATE max_bid = ?, is_active = TRUE
+        """;
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setInt(1, auctionId);
@@ -356,12 +356,12 @@ public class AuctionSqlDAO {
     do {
       changed = false;
       String sql = """
-                    SELECT ab.id, ab.bidder_id, ab.max_bid
-                    FROM auto_bids ab
-                    WHERE ab.auction_id = ? AND ab.is_active = TRUE
-                      AND ab.bidder_id != ?
-                    ORDER BY ab.max_bid DESC
-                    """;
+          SELECT ab.id, ab.bidder_id, ab.max_bid
+          FROM auto_bids ab
+          WHERE ab.auction_id = ? AND ab.is_active = TRUE
+            AND ab.bidder_id != ?
+          ORDER BY ab.max_bid DESC
+          """;
       try (PreparedStatement stmt = conn.prepareStatement(sql)) {
         stmt.setInt(1, auction.getId());
         stmt.setInt(2, auction.getHighestBidder().getId());
@@ -423,6 +423,85 @@ public class AuctionSqlDAO {
       transactionDao.addTransaction(receiveTx);
     } catch (UserException | SQLException e) {
       throw new UserException("Lỗi tạo transaction nhận tiền: " + e.getMessage());
+    }
+  }
+
+  // =========================================================
+  //  DELETE – Chức năng dành riêng cho Admin
+  // =========================================================
+
+  /**
+   * Xóa hoàn toàn phiên đấu giá khỏi hệ thống (Chức năng Admin).
+   * Xử lý trọn gói trong một Transaction để dọn dẹp các bảng con trước, tránh lỗi Khóa Ngoại.
+   */
+  public void deleteAuction(int auctionId) throws UserException {
+    // 1. Đọc thông tin phiên trước khi xóa để lấy item_id nhằm giải phóng sản phẩm sau đó
+    Auction auction = findById(auctionId);
+
+    // Định nghĩa các câu lệnh xóa sạch "tàn dư" ở các bảng liên quan
+    String deleteRegistrations = "DELETE FROM auction_registrations WHERE auction_id = ?";
+    String deleteAutoBidLogs = "DELETE FROM auto_bid_logs WHERE auto_bid_id IN (SELECT id FROM auto_bids WHERE auction_id = ?)";
+    String deleteAutoBids = "DELETE FROM auto_bids WHERE auction_id = ?";
+    String deleteSnipingLogs = "DELETE FROM sniping_logs WHERE auction_id = ?";
+    String deleteBids = "DELETE FROM bids WHERE auction_id = ?";
+    String deleteAuction = "DELETE FROM auctions WHERE id = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+      conn.setAutoCommit(false); // Bật Transaction
+      try {
+        // a. Xóa đăng ký tham gia của Bidder
+        try (PreparedStatement stmt = conn.prepareStatement(deleteRegistrations)) {
+          stmt.setInt(1, auctionId);
+          stmt.executeUpdate();
+        }
+
+        // b. Xóa log của Auto-bid trước
+        try (PreparedStatement stmt = conn.prepareStatement(deleteAutoBidLogs)) {
+          stmt.setInt(1, auctionId);
+          stmt.executeUpdate();
+        }
+
+        // c. Xóa cấu hình Auto-bid
+        try (PreparedStatement stmt = conn.prepareStatement(deleteAutoBids)) {
+          stmt.setInt(1, auctionId);
+          stmt.executeUpdate();
+        }
+
+        // d. Xóa lịch sử Anti-sniping
+        try (PreparedStatement stmt = conn.prepareStatement(deleteSnipingLogs)) {
+          stmt.setInt(1, auctionId);
+          stmt.executeUpdate();
+        }
+
+        // e. Xóa tất cả lượt đặt giá (bids) của phiên này
+        try (PreparedStatement stmt = conn.prepareStatement(deleteBids)) {
+          stmt.setInt(1, auctionId);
+          stmt.executeUpdate();
+        }
+
+        // f. Cuối cùng, xóa phiên đấu giá chính gốc
+        try (PreparedStatement stmt = conn.prepareStatement(deleteAuction)) {
+          stmt.setInt(1, auctionId);
+          int affectedRows = stmt.executeUpdate();
+          if (affectedRows == 0) {
+            throw new UserException("Không tìm thấy phiên đấu giá mang ID: " + auctionId + " để xóa.");
+          }
+        }
+
+        // g. GIẢI PHÓNG SẢN PHẨM: Đưa trạng thái sản phẩm về tự do (is_in_auction = false)
+        // Việc này giúp sản phẩm có cơ hội được đăng vào một phiên đấu giá hợp lệ khác!
+        itemDao.setInAuction(auction.getItem().getId(), false);
+
+        conn.commit(); // Hoàn tất cuộc dọn dẹp
+        System.out.println("[DB Sync] Admin đã xóa sạch dữ liệu phiên đấu giá ID: " + auctionId);
+      } catch (SQLException | UserException ex) {
+        conn.rollback(); // Có biến cố xảy ra thì hủy bỏ toàn bộ thao tác, hoàn tác DB
+        throw new UserException("Lỗi hệ thống khi dọn dẹp dữ liệu phiên đấu giá: " + ex.getMessage());
+      } finally {
+        conn.setAutoCommit(true);
+      }
+    } catch (SQLException e) {
+      throw new UserException("Lỗi kết nối cơ sở dữ liệu: " + e.getMessage());
     }
   }
 }

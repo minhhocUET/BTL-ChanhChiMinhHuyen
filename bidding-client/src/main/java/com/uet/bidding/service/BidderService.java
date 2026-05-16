@@ -3,6 +3,7 @@ package com.uet.bidding.service;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.UserSession;
+
 import java.math.BigDecimal;
 
 public class BidderService {

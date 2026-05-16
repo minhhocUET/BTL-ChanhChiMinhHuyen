@@ -16,20 +16,20 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.UUID;
-import java.util.Map;
 
 public class ClientService {
   private static volatile ClientService instance;
   private final Gson gson = GsonFactory.getInstance();
+  private final Map<String, CompletableFuture<NetworkMessage>> pendingRequests = new ConcurrentHashMap<>();
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
   private boolean isRunning = false;
 
-  private final Map<String, CompletableFuture<NetworkMessage>> pendingRequests = new ConcurrentHashMap<>();
   private ClientService() {
   }
 
@@ -140,7 +140,8 @@ public class ClientService {
       case "SYSTEM_STATS_RESPONSE":
         // Chuyển data sang Map
         String json = gson.toJson(msg.getData());
-        Map<String, Double> stats = gson.fromJson(json, new TypeToken<Map<String, Double>>(){}.getType());
+        Map<String, Double> stats = gson.fromJson(json, new TypeToken<Map<String, Double>>() {
+        }.getType());
 
         // Đẩy dữ liệu sang Controller
         if (AdminDashboardController.getInstance() != null) {

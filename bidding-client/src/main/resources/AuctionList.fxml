@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.shape.*?>
+<?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.*?>
-
-<AnchorPane prefHeight="600.0" prefWidth="900.0"
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0"
+            prefWidth="900.0"
             stylesheets="@style.css"
             xmlns="http://javafx.com/javafx/17.0.12"
-            xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.uet.bidding.controller.AuctionListController">
 
     <children>
@@ -42,7 +40,7 @@
 
                                     <children>
                                         <Circle radius="28.0"
-                                                fill="#f26f8d" />
+                                                fill="#f26f8d"/>
 
                                         <Label text="👤"
                                                textFill="white">
@@ -149,7 +147,7 @@
                                   prefWidth="300.0"
                                   promptText="Chọn Tỉnh/Thành phố..."
                                   style="-fx-background-radius: 8;
-                                         -fx-border-radius: 8;" />
+                                         -fx-border-radius: 8;"/>
 
                         <Button text="Tìm kiếm"
                                 mnemonicParsing="false"

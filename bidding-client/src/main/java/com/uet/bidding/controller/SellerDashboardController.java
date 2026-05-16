@@ -6,7 +6,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.FlowPane;
@@ -64,19 +63,19 @@ public class SellerDashboardController {
     card.setPrefHeight(220);
 
     card.setStyle("""
-                -fx-background-color: #ffe4ec;
-                -fx-background-radius: 20;
-                -fx-border-radius: 20;
-                -fx-border-color: #ffb3cc;
-                -fx-padding: 15;
-                """);
+        -fx-background-color: #ffe4ec;
+        -fx-background-radius: 20;
+        -fx-border-radius: 20;
+        -fx-border-color: #ffb3cc;
+        -fx-padding: 15;
+        """);
 
     Label name = new Label(item.getName());
     name.setStyle("""
-                -fx-font-size: 18px;
-                -fx-font-weight: bold;
-                -fx-text-fill: #880e4f;
-                """);
+        -fx-font-size: 18px;
+        -fx-font-weight: bold;
+        -fx-text-fill: #880e4f;
+        """);
 
     card.getChildren().add(name);
 

@@ -11,7 +11,8 @@ public class Review {
   private String comment;
   private LocalDateTime createdAt;
 
-  public Review() {}
+  public Review() {
+  }
 
   public Review(int auctionId, int sellerId, Customer reviewer, int stars, String comment) {
     this.auctionId = auctionId;
@@ -23,26 +24,61 @@ public class Review {
   }
 
   // Getters & Setters
-  public int getId() { return id; }
-  public void setId(int id) { this.id = id; }
+  public int getId() {
+    return id;
+  }
 
-  public int getAuctionId() { return auctionId; }
-  public void setAuctionId(int auctionId) { this.auctionId = auctionId; }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-  public int getSellerId() { return sellerId; }
-  public void setSellerId(int sellerId) { this.sellerId = sellerId; }
+  public int getAuctionId() {
+    return auctionId;
+  }
 
-  public Customer getReviewer() { return reviewer; }
-  public void setReviewer(Customer reviewer) { this.reviewer = reviewer; }
+  public void setAuctionId(int auctionId) {
+    this.auctionId = auctionId;
+  }
 
-  public int getStars() { return stars; }
-  public void setStars(int stars) { this.stars = stars; }
+  public int getSellerId() {
+    return sellerId;
+  }
 
-  public String getComment() { return comment; }
-  public void setComment(String comment) { this.comment = comment; }
+  public void setSellerId(int sellerId) {
+    this.sellerId = sellerId;
+  }
 
-  public LocalDateTime getCreatedAt() { return createdAt; }
-  public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+  public Customer getReviewer() {
+    return reviewer;
+  }
+
+  public void setReviewer(Customer reviewer) {
+    this.reviewer = reviewer;
+  }
+
+  public int getStars() {
+    return stars;
+  }
+
+  public void setStars(int stars) {
+    this.stars = stars;
+  }
+
+  public String getComment() {
+    return comment;
+  }
+
+  public void setComment(String comment) {
+    this.comment = comment;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
 
   public String getReviewerName() {
     return reviewer != null ? reviewer.getFullName() : "Unknown";

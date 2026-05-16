@@ -7,7 +7,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -20,15 +19,17 @@ import java.util.Map;
 
 public class AdminDashboardController {
 
-  private final Gson gson = GsonFactory.getInstance();
-
   // Lưu instance vào một biến static để ClientService có thể gọi ngược lại và cập nhật UI
   private static AdminDashboardController instance;
-
-  @FXML private Label lblTotalUsers;
-  @FXML private Label lblActiveSessions;
-  @FXML private Label lblPendingItems;
-  @FXML private StackPane contentArea;
+  private final Gson gson = GsonFactory.getInstance();
+  @FXML
+  private Label lblTotalUsers;
+  @FXML
+  private Label lblActiveSessions;
+  @FXML
+  private Label lblPendingItems;
+  @FXML
+  private StackPane contentArea;
 
   public static AdminDashboardController getInstance() {
     return instance;

@@ -2,7 +2,6 @@ package com.uet.bidding.controller;
 
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.User;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;
 import com.uet.bidding.util.UserSession;
@@ -52,7 +51,7 @@ public class UserProfileController implements Initializable {
         showAlert(Alert.AlertType.WARNING, "Yêu cầu cập nhật",
             "Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán sản phẩm.");
       } else {
-      // Nếu là Admin đi lạc vào đây thì đá ra ngoài hoặc báo lỗi
+        // Nếu là Admin đi lạc vào đây thì đá ra ngoài hoặc báo lỗi
         System.err.println("Lỗi: Admin không có hồ sơ khách hàng!");
       }
     }

@@ -39,14 +39,14 @@ public class ItemFactory {
 
     return switch (type.toUpperCase()) {
       case "ELECTRONICS" -> new Electronics(id, name, description, price, image, sellerId,
-          (String)extra[0], (Integer)extra[1]);
+          (String) extra[0], (Integer) extra[1]);
 
       case "ART" -> new Art(id, name, description, price, image, sellerId,
-          (String)extra[0], (Integer)extra[1], (String)extra[2]);
+          (String) extra[0], (Integer) extra[1], (String) extra[2]);
 
       case "VEHICLE" -> new Vehicle(id, name, description, price, image, sellerId,
-          (String)extra[0], (String)extra[1], (Integer)extra[2],
-          (Double)extra[3], (String)extra[4], (String)extra[5]);
+          (String) extra[0], (String) extra[1], (Integer) extra[2],
+          (Double) extra[3], (String) extra[4], (String) extra[5]);
 
       default -> throw new IllegalArgumentException("Loại sản phẩm không xác định: " + type);
     };

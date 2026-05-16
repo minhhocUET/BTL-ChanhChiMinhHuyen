@@ -1,4 +1,4 @@
-package com.uet.bidding;
+package com.uet.bidding.service;
 
 import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.exception.AuctionClosedException;
@@ -6,7 +6,6 @@ import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Item;
 import com.uet.bidding.model.ItemFactory;
-import com.uet.bidding.service.AuctionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

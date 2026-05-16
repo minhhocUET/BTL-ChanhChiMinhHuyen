@@ -12,7 +12,8 @@ public class AutoBid {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public AutoBid() {}
+  public AutoBid() {
+  }
 
   public AutoBid(int auctionId, int bidderId, BigDecimal maxBid, boolean isActive) {
     this.auctionId = auctionId;
@@ -24,24 +25,59 @@ public class AutoBid {
   }
 
   // Getters & Setters
-  public int getId() { return id; }
-  public void setId(int id) { this.id = id; }
+  public int getId() {
+    return id;
+  }
 
-  public int getAuctionId() { return auctionId; }
-  public void setAuctionId(int auctionId) { this.auctionId = auctionId; }
+  public void setId(int id) {
+    this.id = id;
+  }
 
-  public int getBidderId() { return bidderId; }
-  public void setBidderId(int bidderId) { this.bidderId = bidderId; }
+  public int getAuctionId() {
+    return auctionId;
+  }
 
-  public BigDecimal getMaxBid() { return maxBid; }
-  public void setMaxBid(BigDecimal maxBid) { this.maxBid = maxBid; }
+  public void setAuctionId(int auctionId) {
+    this.auctionId = auctionId;
+  }
 
-  public boolean isActive() { return isActive; }
-  public void setActive(boolean active) { isActive = active; }
+  public int getBidderId() {
+    return bidderId;
+  }
 
-  public LocalDateTime getCreatedAt() { return createdAt; }
-  public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+  public void setBidderId(int bidderId) {
+    this.bidderId = bidderId;
+  }
 
-  public LocalDateTime getUpdatedAt() { return updatedAt; }
-  public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+  public BigDecimal getMaxBid() {
+    return maxBid;
+  }
+
+  public void setMaxBid(BigDecimal maxBid) {
+    this.maxBid = maxBid;
+  }
+
+  public boolean isActive() {
+    return isActive;
+  }
+
+  public void setActive(boolean active) {
+    isActive = active;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(LocalDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+  }
 }

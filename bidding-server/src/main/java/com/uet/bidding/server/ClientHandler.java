@@ -75,6 +75,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
       out.println(gson.toJson(msg));
     }
   }
+
   public User getLoggedInUser() {
     return loggedInUser;
   }

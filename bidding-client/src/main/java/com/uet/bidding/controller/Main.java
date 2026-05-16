@@ -2,11 +2,13 @@ package com.uet.bidding.controller;
 
 import com.uet.bidding.network.ClientService;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
+
 import java.io.IOException;
 import java.net.URL;
 
@@ -29,6 +31,10 @@ public class Main extends Application {
     }
   }
 
+  public static void main(String[] args) {
+    launch(args);
+  }
+
   @Override
   public void start(Stage primaryStage) {
     window = primaryStage;
@@ -39,10 +45,14 @@ public class Main extends Application {
       ClientService.getInstance().connect("127.0.0.1", 8888);
       System.out.println("✅ Kết nối Server thành công!");
     } catch (IOException e) {
-      showErrorAlert("Lỗi kết nối", "Không thể kết nối đến Server tại IP 26.95.102.74:8888");
-      // Có thể dừng app hoặc cho phép chạy offline tùy bạn
-    }
+      // 1. Hiển thị thông báo lỗi
+      showErrorAlert("Lỗi kết nối", "Không thể kết nối đến Server tại IP 127.0.0.1:8888. Vui lòng bật Server trước!");
 
+      // 2. Dừng chương trình ngay lập tức
+      Platform.exit();
+      return;
+    }
+    // Dòng này sẽ KHÔNG bao giờ được chạy nếu rơi vào catch ở trên
     changeScene("/Login.fxml", "Đăng nhập hệ thống", 400, 500);
     window.show();
   }
@@ -58,9 +68,5 @@ public class Main extends Application {
     alert.setHeaderText(null);
     alert.setContentText(content);
     alert.showAndWait();
-  }
-
-  public static void main(String[] args) {
-    launch(args);
   }
 }

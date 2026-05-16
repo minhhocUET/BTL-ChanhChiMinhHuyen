@@ -1,6 +1,5 @@
 package com.uet.bidding.controller;
 
-import com.uet.bidding.exception.UserException;
 import com.uet.bidding.service.UserService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -54,13 +53,21 @@ public class RegisterController {
           messageLabel.setText("Đăng ký thành công! Đang chuyển về Đăng nhập...");
 
           // Xóa form
-          usernameField.clear(); passwordField.clear(); confirmPasswordField.clear();
+          usernameField.clear();
+          passwordField.clear();
+          confirmPasswordField.clear();
 
           // Đợi 1.5s rồi chuyển về Login cho người dùng kịp đọc thông báo
           new Thread(() -> {
-            try { Thread.sleep(1500); } catch (Exception ignored) {}
+            try {
+              Thread.sleep(1500);
+            } catch (Exception ignored) {
+            }
             Platform.runLater(() -> {
-              try { goToLogin(event); } catch (Exception ignored) {}
+              try {
+                goToLogin(event);
+              } catch (Exception ignored) {
+              }
             });
           }).start();
 

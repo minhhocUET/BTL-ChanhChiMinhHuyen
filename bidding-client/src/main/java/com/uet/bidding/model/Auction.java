@@ -90,27 +90,35 @@ public class Auction {
   public int getId() {
     return id;
   }
+
   public void setId(int id) {
     this.id = id;
   }
+
   public Item getItem() {
     return item;
   }
+
   public void setItem(Item item) {
     this.item = item;
   }
+
   public BigDecimal getCurrentPrice() {
     return currentPrice;
   }
+
   public void setCurrentPrice(BigDecimal currentPrice) {
     this.currentPrice = currentPrice;
   }
+
   public String getStatus() {
     return status;
   }
+
   public void setStatus(String status) {
     this.status = status;
   }
+
   public int getInterestedCount() {
     return interestedCount.get();
   }
@@ -118,9 +126,11 @@ public class Auction {
   public Customer getHighestBidder() {
     return highestBidder;
   }
+
   public LocalDateTime getStartTime() {
     return startTime;
   }
+
   public LocalDateTime getEndTime() {
     return endTime;
   }

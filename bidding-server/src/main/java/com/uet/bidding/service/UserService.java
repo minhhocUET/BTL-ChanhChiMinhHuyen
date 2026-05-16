@@ -3,7 +3,10 @@ package com.uet.bidding.service;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
-import com.uet.bidding.model.*;
+import com.uet.bidding.model.Bidder;
+import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.Seller;
+import com.uet.bidding.model.User;
 
 import java.math.BigDecimal;
 

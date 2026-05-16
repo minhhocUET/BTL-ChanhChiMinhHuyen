@@ -1,7 +1,6 @@
 package com.uet.bidding.controller;
 
 import com.uet.bidding.model.Admin;
-import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.User;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;

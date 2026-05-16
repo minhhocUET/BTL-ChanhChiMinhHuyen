@@ -6,14 +6,13 @@ import com.uet.bidding.model.Electronics;
 import com.uet.bidding.model.Item;
 import com.uet.bidding.model.Vehicle;
 
-import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * ItemSqlDAO – CRUD đầy đủ cho bảng {@code items}.
- *
+ * <p>
  * ┌────────────────────────────────────────────────────────────────────┐
  * │  Schema (single table, khớp với ERD)                               │
  * │                                                                    │
@@ -25,24 +24,29 @@ import java.util.List;
  * │          mileage, engine_type, fuel_type,          ← Vehicle      │
  * │          created_at                                                │
  * └────────────────────────────────────────────────────────────────────┘
- *
+ * <p>
  * Model hierarchy (mirror của User/Admin/Customer):
- *   Entity
- *   └── Item  (abstract)  ← getType() trả về "ART" | "ELECTRONICS" | "VEHICLE"
- *       ├── Art
- *       ├── Electronics
- *       └── Vehicle
- *
+ * Entity
+ * └── Item  (abstract)  ← getType() trả về "ART" | "ELECTRONICS" | "VEHICLE"
+ * ├── Art
+ * ├── Electronics
+ * └── Vehicle
+ * <p>
  * Quy tắc:
- *  - mapResultSetToItem() đọc item_type rồi new đúng subclass.
- *  - addItem() dùng 1 INSERT duy nhất (single table), các cột không dùng để NULL.
- *  - Xóa item → ON DELETE CASCADE tự dọn auctions liên quan.
+ * - mapResultSetToItem() đọc item_type rồi new đúng subclass.
+ * - addItem() dùng 1 INSERT duy nhất (single table), các cột không dùng để NULL.
+ * - Xóa item → ON DELETE CASCADE tự dọn auctions liên quan.
  */
 public class ItemSqlDAO {
 
   // =========================================================
   //  PRIVATE HELPERS
   // =========================================================
+
+  /**
+   * Câu SELECT đầy đủ tất cả cột, dùng chung cho mọi truy vấn.
+   */
+  private static final String BASE_SELECT = "SELECT * FROM items ";
 
   private void setStringOrNull(PreparedStatement stmt, int index, String value)
       throws SQLException {
@@ -137,9 +141,6 @@ public class ItemSqlDAO {
     return item;
   }
 
-  /** Câu SELECT đầy đủ tất cả cột, dùng chung cho mọi truy vấn. */
-  private static final String BASE_SELECT = "SELECT * FROM items ";
-
   // =========================================================
   //  CREATE
   // =========================================================
@@ -233,7 +234,9 @@ public class ItemSqlDAO {
   //  READ – danh sách
   // =========================================================
 
-  /** Toàn bộ item trong hệ thống (dùng cho Admin hoặc trang browse). */
+  /**
+   * Toàn bộ item trong hệ thống (dùng cho Admin hoặc trang browse).
+   */
   public List<Item> getAllItems() {
     return queryList(BASE_SELECT + "ORDER BY created_at DESC", null);
   }
@@ -273,7 +276,9 @@ public class ItemSqlDAO {
     );
   }
 
-  /** Hàm nội bộ thực thi SELECT trả về List. */
+  /**
+   * Hàm nội bộ thực thi SELECT trả về List.
+   */
   private List<Item> queryList(String sql, StatementSetter setter) {
     List<Item> items = new ArrayList<>();
     try (Connection conn = DatabaseConnection.getConnection();
@@ -360,23 +365,30 @@ public class ItemSqlDAO {
         setStringOrNull(stmt, 6, a.getAuthor());
         setIntOrNull(stmt, 7, a.getCreationYear() == 0 ? null : a.getCreationYear());
         setStringOrNull(stmt, 8, a.getMaterial());
-        stmt.setNull(9,  Types.VARCHAR); stmt.setNull(10, Types.INTEGER);
-        stmt.setNull(11, Types.VARCHAR); stmt.setNull(12, Types.INTEGER);
-        stmt.setNull(13, Types.DOUBLE);  stmt.setNull(14, Types.VARCHAR);
+        stmt.setNull(9, Types.VARCHAR);
+        stmt.setNull(10, Types.INTEGER);
+        stmt.setNull(11, Types.VARCHAR);
+        stmt.setNull(12, Types.INTEGER);
+        stmt.setNull(13, Types.DOUBLE);
+        stmt.setNull(14, Types.VARCHAR);
         stmt.setNull(15, Types.VARCHAR);
 
       } else if (item instanceof Electronics e) {
-        stmt.setNull(6,  Types.VARCHAR); stmt.setNull(7,  Types.INTEGER);
-        stmt.setNull(8,  Types.VARCHAR);
+        stmt.setNull(6, Types.VARCHAR);
+        stmt.setNull(7, Types.INTEGER);
+        stmt.setNull(8, Types.VARCHAR);
         setStringOrNull(stmt, 9, e.getBrand());
         setIntOrNull(stmt, 10, e.getWarrantyMonths());
-        stmt.setNull(11, Types.VARCHAR); stmt.setNull(12, Types.INTEGER);
-        stmt.setNull(13, Types.DOUBLE);  stmt.setNull(14, Types.VARCHAR);
+        stmt.setNull(11, Types.VARCHAR);
+        stmt.setNull(12, Types.INTEGER);
+        stmt.setNull(13, Types.DOUBLE);
+        stmt.setNull(14, Types.VARCHAR);
         stmt.setNull(15, Types.VARCHAR);
 
       } else if (item instanceof Vehicle v) {
-        stmt.setNull(6,  Types.VARCHAR); stmt.setNull(7,  Types.INTEGER);
-        stmt.setNull(8,  Types.VARCHAR);
+        stmt.setNull(6, Types.VARCHAR);
+        stmt.setNull(7, Types.INTEGER);
+        stmt.setNull(8, Types.VARCHAR);
         setStringOrNull(stmt, 9, v.getBrand());
         stmt.setNull(10, Types.INTEGER);
         setStringOrNull(stmt, 11, v.getModel());
@@ -467,17 +479,23 @@ public class ItemSqlDAO {
   //  THỐNG KÊ
   // =========================================================
 
-  /** Tổng số item trong hệ thống. */
+  /**
+   * Tổng số item trong hệ thống.
+   */
   public int getTotalItemCount() {
     return countByQuery("SELECT COUNT(*) FROM items");
   }
 
-  /** Số item đang trong phiên đấu giá. */
+  /**
+   * Số item đang trong phiên đấu giá.
+   */
   public int getInAuctionCount() {
     return countByQuery("SELECT COUNT(*) FROM items WHERE in_auction = TRUE");
   }
 
-  /** Số item của một seller cụ thể. */
+  /**
+   * Số item của một seller cụ thể.
+   */
   public int getItemCountBySeller(int sellerId) {
     String sql = "SELECT COUNT(*) FROM items WHERE seller_id = ?";
     try (Connection conn = DatabaseConnection.getConnection();

@@ -4,7 +4,8 @@ import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.Admin;
 import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.User;import org.mindrot.jbcrypt.BCrypt;
+import com.uet.bidding.model.User;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -13,19 +14,19 @@ import java.util.List;
 
 /**
  * UserSqlDAO – CRUD đầy đủ, khớp với model hierarchy:
- *
- *   Entity
- *   └── User  (abstract)  ← username, password, isBanned
- *       ├── Admin          ← getRole() = "ADMIN"
- *       └── Customer       ← getRole() = "CUSTOMER"
- *                            + fullName, email, phone, address, balance, ...
- *                            + Seller  sellerProfile  (composition)
- *                            + Bidder  bidderProfile  (composition)
- *
+ * <p>
+ * Entity
+ * └── User  (abstract)  ← username, password, isBanned
+ * ├── Admin          ← getRole() = "ADMIN"
+ * └── Customer       ← getRole() = "CUSTOMER"
+ * + fullName, email, phone, address, balance, ...
+ * + Seller  sellerProfile  (composition)
+ * + Bidder  bidderProfile  (composition)
+ * <p>
  * Schema DB:
- *   users   → thông tin chung (cả ADMIN lẫn CUSTOMER)
- *   sellers → 1-1 với CUSTOMER  (store_name, description, rating)
- *   bidders → 1-1 với CUSTOMER  (user_id only)
+ * users   → thông tin chung (cả ADMIN lẫn CUSTOMER)
+ * sellers → 1-1 với CUSTOMER  (store_name, description, rating)
+ * bidders → 1-1 với CUSTOMER  (user_id only)
  */
 public class UserSqlDAO {
 
@@ -33,7 +34,21 @@ public class UserSqlDAO {
   //  PRIVATE HELPERS
   // =========================================================
 
-  /** Tránh lỗi UNIQUE constraint khi value là "" (chuỗi rỗng). */
+  /**
+   * Câu SELECT dùng chung – LEFT JOIN để ADMIN vẫn được trả về (cột seller = NULL).
+   * Alias store_description tránh đụng tên với cột description của bảng khác.
+   */
+  private static final String BASE_SELECT =
+      "SELECT u.*, " +
+          "       s.store_name, " +
+          "       s.description AS store_description, " +
+          "       s.rating " +
+          "FROM   users   u " +
+          "LEFT   JOIN sellers s ON s.user_id = u.id ";
+
+  /**
+   * Tránh lỗi UNIQUE constraint khi value là "" (chuỗi rỗng).
+   */
   private void setStringOrNull(PreparedStatement pstmt, int index, String value)
       throws SQLException {
     if (value == null || value.trim().isEmpty()) {
@@ -45,11 +60,11 @@ public class UserSqlDAO {
 
   /**
    * Ánh xạ ResultSet → đúng subclass (Admin hoặc Customer).
-   *
+   * <p>
    * Cột cần có trong ResultSet:
-   *   Từ users  : id, username, password, role, full_name, email, phone,
-   *               address, balance, is_profile_completed, is_banned, created_at
-   *   Từ sellers: store_name, store_description, rating   (NULL nếu ADMIN)
+   * Từ users  : id, username, password, role, full_name, email, phone,
+   * address, balance, is_profile_completed, is_banned, created_at
+   * Từ sellers: store_name, store_description, rating   (NULL nếu ADMIN)
    */
   private User mapResultSetToUser(ResultSet rs) throws SQLException {
     String role = rs.getString("role");
@@ -85,7 +100,9 @@ public class UserSqlDAO {
     }
   }
 
-  /** Nạp các trường chung của lớp User (abstract) vào subclass bất kỳ. */
+  /**
+   * Nạp các trường chung của lớp User (abstract) vào subclass bất kỳ.
+   */
   private void fillBaseFields(User user, ResultSet rs) throws SQLException {
     user.setId(rs.getInt("id"));
     user.setUsername(rs.getString("username"));
@@ -93,18 +110,6 @@ public class UserSqlDAO {
     user.setBanned(rs.getBoolean("is_banned"));
     user.setRole(rs.getString("role"));
   }
-
-  /**
-   * Câu SELECT dùng chung – LEFT JOIN để ADMIN vẫn được trả về (cột seller = NULL).
-   * Alias store_description tránh đụng tên với cột description của bảng khác.
-   */
-  private static final String BASE_SELECT =
-      "SELECT u.*, " +
-          "       s.store_name, " +
-          "       s.description AS store_description, " +
-          "       s.rating " +
-          "FROM   users   u " +
-          "LEFT   JOIN sellers s ON s.user_id = u.id ";
 
   // =========================================================
   //  CREATE
@@ -253,12 +258,16 @@ public class UserSqlDAO {
   //  READ – danh sách
   // =========================================================
 
-  /** Toàn bộ User (Admin + Customer), dùng cho màn hình quản lý của Admin. */
+  /**
+   * Toàn bộ User (Admin + Customer), dùng cho màn hình quản lý của Admin.
+   */
   public List<User> getAllUsers() {
     return queryList(BASE_SELECT + "ORDER BY u.created_at DESC", null);
   }
 
-  /** Lọc theo role: truyền "ADMIN" hoặc "CUSTOMER". */
+  /**
+   * Lọc theo role: truyền "ADMIN" hoặc "CUSTOMER".
+   */
   public List<User> getUsersByRole(String role) {
     return queryList(
         BASE_SELECT + "WHERE u.role = ? ORDER BY u.created_at DESC",
@@ -266,7 +275,9 @@ public class UserSqlDAO {
     );
   }
 
-  /** Hàm nội bộ thực thi SELECT trả về danh sách. */
+  /**
+   * Hàm nội bộ thực thi SELECT trả về danh sách.
+   */
   private List<User> queryList(String sql, StatementSetter setter) {
     List<User> users = new ArrayList<>();
     try (Connection conn = DatabaseConnection.getConnection();
@@ -287,7 +298,9 @@ public class UserSqlDAO {
   //  READ – tìm kiếm theo khoá
   // =========================================================
 
-  /** Tìm theo id. @throws UserException nếu không tìm thấy. */
+  /**
+   * Tìm theo id. @throws UserException nếu không tìm thấy.
+   */
   public User findById(int id) throws UserException {
     String sql = BASE_SELECT + "WHERE u.id = ?";
 
@@ -305,7 +318,9 @@ public class UserSqlDAO {
     throw new UserException("Không tìm thấy User với ID: " + id);
   }
 
-  /** Tìm theo username. @throws UserException nếu không tìm thấy. */
+  /**
+   * Tìm theo username. @throws UserException nếu không tìm thấy.
+   */
   public User findByUsername(String username) throws UserException {
     String sql = BASE_SELECT + "WHERE u.username = ?";
 
@@ -323,7 +338,9 @@ public class UserSqlDAO {
     throw new UserException("Không tìm thấy User: " + username);
   }
 
-  /** Kiểm tra username đã tồn tại chưa (dùng khi validate form đăng ký). */
+  /**
+   * Kiểm tra username đã tồn tại chưa (dùng khi validate form đăng ký).
+   */
   public boolean existsByUsername(String username) {
     String sql = "SELECT 1 FROM users WHERE username = ?";
     try (Connection conn = DatabaseConnection.getConnection();
@@ -420,7 +437,7 @@ public class UserSqlDAO {
    * @throws UserException nếu tài khoản không tồn tại hoặc mật khẩu cũ sai.
    */
   public void updatePassword(int userId, String oldPlain, String newPlain) throws UserException {
-    String checkSql  = "SELECT password FROM users WHERE id = ?";
+    String checkSql = "SELECT password FROM users WHERE id = ?";
     String updateSql = "UPDATE users SET password = ? WHERE id = ?";
 
     try (Connection conn = DatabaseConnection.getConnection()) {
@@ -473,6 +490,7 @@ public class UserSqlDAO {
       throw new UserException("Lỗi cập nhật số dư: " + e.getMessage());
     }
   }
+
   /**
    * Lấy số dư hiện tại của user.
    */
@@ -489,8 +507,10 @@ public class UserSqlDAO {
       throw new UserException("Lỗi lấy số dư: " + e.getMessage());
     }
   }
+
   /**
    * Rút một khoản tiền (nghiệp vụ). Tự động kiểm tra số dư đủ.
+   *
    * @param amount số tiền cần rút (phải > 0)
    */
   public void withdraw(int userId, BigDecimal amount) throws UserException {
@@ -596,17 +616,23 @@ public class UserSqlDAO {
   //  THỐNG KÊ
   // =========================================================
 
-  /** Tổng số tài khoản (dùng cho dashboard Admin). */
+  /**
+   * Tổng số tài khoản (dùng cho dashboard Admin).
+   */
   public int getTotalUserCount() {
     return countByQuery("SELECT COUNT(*) FROM users");
   }
 
-  /** Tổng số tài khoản đang bị khóa. */
+  /**
+   * Tổng số tài khoản đang bị khóa.
+   */
   public int getBannedUserCount() {
     return countByQuery("SELECT COUNT(*) FROM users WHERE is_banned = TRUE");
   }
 
-  /** Tổng số CUSTOMER. */
+  /**
+   * Tổng số CUSTOMER.
+   */
   public int getCustomerCount() {
     return countByQuery("SELECT COUNT(*) FROM users WHERE role = 'CUSTOMER'");
   }
@@ -626,7 +652,9 @@ public class UserSqlDAO {
   //  FUNCTIONAL INTERFACE NỘI BỘ
   // =========================================================
 
-  /** Cho phép truyền lambda set tham số vào queryList() gọn hơn. */
+  /**
+   * Cho phép truyền lambda set tham số vào queryList() gọn hơn.
+   */
   @FunctionalInterface
   private interface StatementSetter {
     void set(PreparedStatement stmt) throws SQLException;

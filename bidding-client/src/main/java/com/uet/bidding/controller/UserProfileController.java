@@ -39,20 +39,23 @@ public class UserProfileController implements Initializable {
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    // Sử dụng hàm helper bạn đã viết trong UserSession
     this.currentUser = UserSession.getLoggedInCustomer();
 
     if (currentUser != null) {
       fillDataToFields();
       updateBalanceLabel();
 
-      // Thông báo nhắc nhở nếu hồ sơ chưa hoàn thiện
-      if (currentUser.getFullName() == null || currentUser.getFullName().isEmpty()) {
-        showAlert(Alert.AlertType.WARNING, "Yêu cầu cập nhật",
-            "Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán sản phẩm.");
-      } else {
-        // Nếu là Admin đi lạc vào đây thì đá ra ngoài hoặc báo lỗi
+      // 1. Kiểm tra nếu thực sự là quyền ADMIN đi lạc vào đây (Dựa vào getRole() của bạn)
+      if ("ADMIN".equalsIgnoreCase(currentUser.getRole())) {
         System.err.println("Lỗi: Admin không có hồ sơ khách hàng!");
+        // Bạn có thể tắt màn hình hoặc chuyển hướng Admin ra chỗ khác ở đây nếu muốn
+        return;
+      }
+
+      // 2. Nếu là CUSTOMER, kiểm tra xem họ đã hoàn thiện hồ sơ chưa
+      if (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty()) {
+        showAlert(Alert.AlertType.WARNING, "Yêu cầu cập nhật",
+            "Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán.");
       }
     }
   }

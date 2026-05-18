@@ -51,12 +51,6 @@ public class UserProfileController implements Initializable {
         // Bạn có thể tắt màn hình hoặc chuyển hướng Admin ra chỗ khác ở đây nếu muốn
         return;
       }
-
-      // 2. Nếu là CUSTOMER, kiểm tra xem họ đã hoàn thiện hồ sơ chưa
-      if (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty()) {
-        showAlert(Alert.AlertType.WARNING, "Yêu cầu cập nhật",
-            "Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán.");
-      }
     }
   }
 
@@ -78,8 +72,7 @@ public class UserProfileController implements Initializable {
       txtEmail.setPromptText("Bắt buộc nhập email");
       txtPhone.setPromptText("Bắt buộc nhập số điện thoại");
       txtAddress.setPromptText("Bắt buộc nhập địa chỉ");
-      showAlert(Alert.AlertType.WARNING, "Cập nhật hồ sơ", "Vui lòng điền ĐẦY ĐỦ tất cả thông tin cá nhân và liên kết ngân hàng trước khi tham gia đấu giá!");
-    }
+      }
 
     // 2. Đổ dữ liệu cũ lên giao diện (nếu là null thì set thành chuỗi rỗng để tránh lỗi)
     txtName.setText(user.getFullName() != null ? user.getFullName() : "");

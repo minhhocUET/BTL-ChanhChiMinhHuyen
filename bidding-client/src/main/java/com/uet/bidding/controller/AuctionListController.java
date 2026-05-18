@@ -1,7 +1,9 @@
 package com.uet.bidding.controller;
 
 import com.uet.bidding.model.Auction;
+import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Electronics;
+import com.uet.bidding.util.UserSession;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -172,6 +174,22 @@ public class AuctionListController implements Initializable {
                 );
 
                 btn.setOnAction(event -> {
+
+                // 1. CHÈN LOGIC KIỂM TRA HỒ SƠ TẠI ĐÂY
+                  Customer currentUser = UserSession.getLoggedInCustomer();
+                  if (currentUser != null) {
+                    // Nếu chưa hoàn thiện họ tên (hồ sơ trống)
+                    if (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty()) {
+
+                      Alert alert = new Alert(Alert.AlertType.WARNING);
+                      alert.setTitle("Yêu cầu cập nhật");
+                      alert.setHeaderText(null);
+                      alert.setContentText("Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán.");
+                      alert.showAndWait();
+
+                      return; // Dừng lại luôn, không cho mở trang chi tiết sản phẩm!
+                    }
+                  }
 
                   Auction selectedAuction =
                       getTableView()

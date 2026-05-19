@@ -9,6 +9,8 @@ public class Bid {
   private BigDecimal amount; // Đổi từ double sang BigDecimal
   private LocalDateTime time;
 
+  public Bid() {
+  }
   // Cập nhật Constructor khớp với lời gọi bên Auction.java
   public Bid(Bidder bidder, BigDecimal amount, LocalDateTime time) {
     this.bidder = bidder;

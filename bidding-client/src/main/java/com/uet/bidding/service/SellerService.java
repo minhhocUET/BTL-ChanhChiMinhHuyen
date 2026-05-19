@@ -5,7 +5,9 @@ import com.uet.bidding.network.ClientService;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SellerService {
   private ClientService clientService = ClientService.getInstance();
@@ -62,26 +64,12 @@ public class SellerService {
   /**
    * CHỨC NĂNG 3: RATING NÂNG CAO (Kết hợp logic tính toán của bạn + Gửi Server)
    */
-  public void addReviewToSeller(Customer rater, Seller seller, int stars, String comment) {
-    // 1. Logic tính toán của bạn (Giữ nguyên)
-    Review newReview = new Review(rater, stars, comment);
-    seller.getReviews().add(newReview);
-
-    double totalStars = 0;
-    for (Review r : seller.getReviews()) {
-      totalStars += r.getStars();
-    }
-    double newAverage = totalStars / seller.getReviews().size();
-    seller.setSellerRating(newAverage);
-
-    // 2. Gửi kết quả cuối cùng lên Server để lưu vào Database vĩnh viễn
-    // Gửi Object chứa: Tên cửa hàng, số sao mới, và comment
-    clientService.sendRequest("UPDATE_SELLER_RATING", new Object[]{
-        seller.getStoreName(),
-        newAverage,
-        comment
-    });
-
-    System.out.println("Đã cập nhật & đồng bộ Rating cho " + seller.getStoreName());
+  public void submitReview(int auctionId, int sellerId, int stars, String comment) {
+    Map<String, Object> payload = new HashMap<>();
+    payload.put("auctionId", auctionId);
+    payload.put("sellerId", sellerId);
+    payload.put("stars", stars);
+    payload.put("comment", comment);
+    clientService.sendRequest("ADD_REVIEW", payload);
   }
 }

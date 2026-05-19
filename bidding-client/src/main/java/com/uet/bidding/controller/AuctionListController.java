@@ -3,7 +3,9 @@ package com.uet.bidding.controller;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Electronics;
+import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.UserSession;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -23,6 +25,7 @@ import javafx.util.Callback;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Random;
 import java.util.ResourceBundle;
 
@@ -51,82 +54,21 @@ public class AuctionListController implements Initializable {
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-
-    // STT
+    instance = this;
     colStt.setCellValueFactory(cellData ->
-        new SimpleObjectProperty<>(cellData.getValue().getId())
-    );
-
-    // Tên sản phẩm
+            new SimpleObjectProperty<>(cellData.getValue().getId()));
     colProduct.setCellValueFactory(cellData ->
-        new SimpleStringProperty(
-            cellData.getValue().getItem().getName()
-        )
-    );
-
-    // Thành phố
+            new SimpleStringProperty(cellData.getValue().getItem().getName()));
     colCity.setCellValueFactory(cellData ->
-        new SimpleStringProperty("Hà Nội")
-    );
-
-    // Số người quan tâm
+            new SimpleStringProperty("Hà Nội"));
     colInterested.setCellValueFactory(cellData ->
-        new SimpleObjectProperty<>(
-            new Random().nextInt(100) + 10
-        )
-    );
-
-    // Cột nút bấm
+            new SimpleObjectProperty<>(new Random().nextInt(100) + 10));
     setupActionColumn();
+    loadAuctionsFromServer();
+    tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-    // Danh sách dữ liệu fake
-    ObservableList<Auction> dataList =
-        FXCollections.observableArrayList();
-
-    String[] products = {
-        "Laptop Dell XPS 15",
-        "Đồng hồ Apple Watch S9",
-        "Xe đạp điện VinFast",
-        "Máy ảnh Canon EOS R5"
-    };
-
-    for (int i = 0; i < products.length; i++) {
-
-      Electronics fakeProduct = new Electronics(
-          i + 1,
-          products[i],
-          "Mô tả chi tiết: " + products[i]
-              + " chính hãng, bảo hành đầy đủ.",
-          new BigDecimal("1500000"),
-          "/images/default.jpg",
-          1,
-          "Thương hiệu VNU",
-          12
-      );
-
-      Auction fakeAuction = new Auction(
-          fakeProduct,
-          fakeProduct.getStartingPrice(),
-          LocalDateTime.now(),
-          LocalDateTime.now().plusDays(3)
-      );
-
-      fakeAuction.setId(i + 1);
-
-      dataList.add(fakeAuction);
-    }
-
-    // Đổ dữ liệu vào bảng
-    tableView.setItems(dataList);
-
-    // Tự co cột
-    tableView.setColumnResizePolicy(
-        TableView.CONSTRAINED_RESIZE_POLICY
-    );
-
+    cityComboBox.setItems(FXCollections.observableArrayList(
     // Danh sách tỉnh thành
-    ObservableList<String> cities =
-        FXCollections.observableArrayList(
             "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu",
             "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước",
             "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng",
@@ -140,9 +82,7 @@ public class AuctionListController implements Initializable {
             "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa",
             "Thừa Thiên Huế", "Tiền Giang", "TP Hồ Chí Minh", "Trà Vinh",
             "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
-        );
-
-    cityComboBox.setItems(cities);
+        ));
   }
 
   private void setupActionColumn() {
@@ -380,5 +320,33 @@ public class AuctionListController implements Initializable {
       e.printStackTrace();
       System.out.println("Lỗi khi chuyển sang trang: " + fxmlPath);
     }
+  }
+  private static AuctionListController instance;
+
+  public static AuctionListController getInstance() {
+    return instance;
+  }
+
+
+  public void refreshOneAuction(Auction updated) {
+    if (tableView == null || updated == null) return;
+    for (int i = 0; i < tableView.getItems().size(); i++) {
+      if (tableView.getItems().get(i).getId() == updated.getId()) {
+        tableView.getItems().set(i, updated);
+        break;
+      }
+    }
+  }
+
+  private void loadAuctionsFromServer() {
+    ClientService.getInstance().sendRequest("GET_ALL_AUCTIONS", "")
+            .thenAccept(response -> Platform.runLater(() -> {
+              if ("SUCCESS".equals(response.getType())) {
+                String json = ClientService.getInstance().getGson().toJson(response.getData());
+                List<Auction> list = ClientService.getInstance().getGson()
+                        .fromJson(json, new com.google.gson.reflect.TypeToken<List<Auction>>(){}.getType());
+                tableView.setItems(FXCollections.observableArrayList(list));
+              }
+            }));
   }
 }

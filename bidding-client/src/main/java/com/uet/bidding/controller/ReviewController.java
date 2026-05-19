@@ -1,5 +1,13 @@
 package com.uet.bidding.controller;
-
+import com.google.gson.reflect.TypeToken;
+import com.uet.bidding.model.GsonFactory;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.Review;
+import com.uet.bidding.network.ClientService;
+import com.uet.bidding.util.ReviewContext;
+import com.uet.bidding.util.UserSession;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -7,32 +15,109 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-
 import java.io.IOException;
-
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 public class ReviewController {
-
-  @FXML
-  private VBox reviewsContainer; // Container nhận danh sách từ FXML
-
+  @FXML private VBox reviewsContainer;
+  @FXML private Label lblShopName;
+  @FXML private Label lblAvgRating;
+  @FXML private Label lblReviewCount;
+  @FXML private VBox addReviewBox;
+  @FXML private ComboBox<Integer> cmbStars;
+  @FXML private TextArea txtReviewComment;
+  @FXML private Button btnAddReview;
   @FXML
   public void initialize() {
-    // Tự động đổ dữ liệu review chính xác theo ảnh mẫu khi trang được mở lên
-    addReviewCard("Nguyễn Hoài An", "12/05/2026", "⭐⭐⭐⭐⭐", "Sản phẩm rất đẹp, đóng gói cẩn thận, shop tư vấn nhiệt tình. Sẽ ủng hộ tiếp!");
-    addReviewCard("Trần Minh Khoa", "10/05/2026", "⭐⭐⭐⭐★", "Chất lượng ổn, giao hàng nhanh. Màu sắc đúng như hình.");
-    addReviewCard("Lê Thu Trang", "08/05/2026", "⭐⭐⭐⭐⭐", "Shop dễ thương, sản phẩm xinh xỉu luôn! Rất hài lòng.");
-    addReviewCard("Phạm Đức Nhật", "05/05/2026", "⭐⭐⭐⭐★", "Sản phẩm tốt, giá hợp lý. Sẽ quay lại mua lần sau.");
+    cmbStars.setItems(FXCollections.observableArrayList(1, 2, 3, 4, 5));
+    cmbStars.getSelectionModel().select(4);
+    lblShopName.setText(ReviewContext.storeName != null ? ReviewContext.storeName : "Shop");
+    addReviewBox.setVisible(ReviewContext.showAddForm);
+    addReviewBox.setManaged(ReviewContext.showAddForm);
+    btnAddReview.setVisible(!ReviewContext.showAddForm);
+    btnAddReview.setManaged(!ReviewContext.showAddForm);
+    loadReviews();
+  }
+  private void loadReviews() {
+    reviewsContainer.getChildren().clear();
+    ClientService.getInstance()
+            .sendRequest("GET_REVIEWS_BY_SELLER", ReviewContext.sellerId)
+            .thenAccept(this::onReviewsLoaded)
+            .exceptionally(ex -> {
+              Platform.runLater(() -> showAlert("Lỗi", ex.getMessage()));
+              return null;
+            });
+  }
+  private void onReviewsLoaded(NetworkMessage response) {
+    Platform.runLater(() -> {
+      if (!"SUCCESS".equals(response.getType())) {
+        showAlert("Lỗi", String.valueOf(response.getData()));
+        return;
+      }
+      String json = GsonFactory.getInstance().toJson(response.getData());
+      List<Review> reviews = GsonFactory.getInstance().fromJson(json,
+              new TypeToken<List<Review>>() {}.getType());
+      double sum = 0;
+      for (Review r : reviews) {
+        sum += r.getStars();
+        String date = r.getCreatedAt() != null
+                ? r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                : "";
+        addReviewCard(r.getReviewerName(), date, starsToEmoji(r.getStars()), r.getComment());
+      }
+      double avg = reviews.isEmpty() ? 0 : sum / reviews.size();
+      lblAvgRating.setText(String.format("%.1f", avg));
+      lblReviewCount.setText("(" + reviews.size() + " đánh giá)");
+    });
+  }
+  @FXML
+  private void handleOpenAddReview() {
+    addReviewBox.setVisible(true);
+    addReviewBox.setManaged(true);
+    btnAddReview.setVisible(false);
+    btnAddReview.setManaged(false);
+  }
+  @FXML
+  private void handleSubmitReview() {
+    if (UserSession.getLoggedInCustomer() == null) {
+      showAlert("Lỗi", "Đăng nhập trước!");
+      return;
+    }
+    int stars = cmbStars.getValue();
+    String comment = txtReviewComment.getText().trim();
+    if (comment.isEmpty()) {
+      showAlert("Lỗi", "Nhập nội dung đánh giá!");
+      return;
+    }
+    Map<String, Object> payload = new HashMap<>();
+    payload.put("auctionId", ReviewContext.auctionId);
+    payload.put("sellerId", ReviewContext.sellerId);
+    payload.put("stars", stars);
+    payload.put("comment", comment);
+    ClientService.getInstance().sendRequest("ADD_REVIEW", payload)
+            .thenAccept(res -> Platform.runLater(() -> {
+              if ("SUCCESS".equals(res.getType())) {
+                showAlert("OK", "Đã gửi đánh giá!");
+                txtReviewComment.clear();
+                addReviewBox.setVisible(false);
+                addReviewBox.setManaged(false);
+                loadReviews();
+              } else {
+                showAlert("Lỗi", String.valueOf(res.getData()));
+              }
+            }));
+  }
+  private String starsToEmoji(int stars) {
+    return "⭐".repeat(Math.max(0, stars));
   }
 
   /**
@@ -113,5 +198,11 @@ public class ReviewController {
       e.printStackTrace();
       System.out.println("❌ Lỗi nghiêm trọng: Không thể tìm thấy hoặc tải file AuctionList.fxml!");
     }
+  }
+  private void showAlert(String title, String msg) {
+    Alert a = new Alert(Alert.AlertType.INFORMATION);
+    a.setTitle(title);
+    a.setContentText(msg);
+    a.showAndWait();
   }
 }

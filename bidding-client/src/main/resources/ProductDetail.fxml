@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
@@ -28,6 +31,55 @@
                         <Button mnemonicParsing="false"
                                 style="-fx-background-color: transparent; -fx-font-size: 16px; -fx-cursor: hand;"
                                 text="❤️" textFill="#e84393"/>
+                        <!-- ANTI-SNIPING -->
+                        <Label fx:id="lblAntiSnipeInfo"
+                               text="⏱ Đặt giá trong 2 phút cuối → gia hạn thêm 5 phút"
+                               style="-fx-text-fill: #64748b; -fx-font-size: 12px;"
+                               wrapText="true"/>
+
+                        <!-- AUTO BID -->
+                        <VBox spacing="8.0"
+                              style="-fx-background-color: #fff5f7; -fx-padding: 12; -fx-background-radius: 10; -fx-border-color: #fd79a8; -fx-border-radius: 10;">
+                            <children>
+                                <Label text="🤖 Đấu giá tự động (Auto-Bid)"
+                                       style="-fx-font-weight: bold; -fx-text-fill: #e84393;"/>
+                                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                                    <children>
+                                        <Label text="Trần giá tối đa:" style="-fx-text-fill: #64748b;"/>
+                                        <TextField fx:id="txtMaxAutoBid" promptText="VD: 5000000"
+                                                   HBox.hgrow="ALWAYS"
+                                                   style="-fx-border-color: #fd79a8; -fx-background-radius: 5;"/>
+                                    </children>
+                                </HBox>
+                                <HBox spacing="10.0">
+                                    <children>
+                                        <Button text="Bật Auto-Bid" onAction="#handleEnableAutoBid"
+                                                style="-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"
+                                                HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                                        <Button text="Tắt Auto-Bid" onAction="#handleDisableAutoBid"
+                                                style="-fx-background-color: #94a3b8; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"
+                                                HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <!-- BẢNG / BIỂU ĐỒ LỊCH SỬ GIÁ (PHẦN 5) -->
+                        <Label text="📊 Lịch sử đặt giá" style="-fx-font-weight: bold; -fx-text-fill: #e84393; -fx-font-size: 16px;"/>
+                        <TableView fx:id="bidHistoryTable" prefHeight="160.0" VBox.vgrow="NEVER">
+                            <columns>
+                                <TableColumn fx:id="colBidTime" prefWidth="180.0" text="Thời gian"/>
+                                <TableColumn fx:id="colBidAmount" prefWidth="150.0" text="Số tiền (VNĐ)"/>
+                            </columns>
+                        </TableView>
+                        <LineChart fx:id="bidLineChart" prefHeight="200.0" legendVisible="false">
+                            <xAxis>
+                                <CategoryAxis label="Thời gian"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis label="Giá (VNĐ)"/>
+                            </yAxis>
+                        </LineChart>
                     </children>
                 </HBox>
 

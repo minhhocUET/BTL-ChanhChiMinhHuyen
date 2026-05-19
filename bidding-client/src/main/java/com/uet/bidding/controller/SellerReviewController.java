@@ -1,5 +1,10 @@
 package com.uet.bidding.controller;
 
+import com.uet.bidding.model.Customer;
+import com.uet.bidding.network.ClientService;
+import com.uet.bidding.util.ReviewContext;
+import com.uet.bidding.util.UserSession;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -20,7 +25,13 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-
+import com.google.gson.reflect.TypeToken;
+import com.uet.bidding.model.GsonFactory;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.Review;
+import javafx.scene.control.Alert;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 public class SellerReviewController {
 
   @FXML
@@ -28,11 +39,60 @@ public class SellerReviewController {
 
   @FXML
   public void initialize() {
-    // Tự động thêm các bình luận khớp với hình ảnh thiết kế
-    addReviewCard("Nguyễn Hoài An", "12/05/2026", "⭐⭐⭐⭐⭐", "Sản phẩm rất đẹp, đóng gói cẩn thận, shop tư vấn nhiệt tình. Sẽ ủng hộ tiếp!");
-    addReviewCard("Trần Minh Khoa", "10/05/2026", "⭐⭐⭐⭐★", "Chất lượng ổn, giao hàng nhanh. Màu sắc đúng như hình.");
-    addReviewCard("Lê Thu Trang", "08/05/2026", "⭐⭐⭐⭐⭐", "Shop dễ thương, sản phẩm xinh xỉu luôn! Rất hài lòng.");
-    addReviewCard("Phạm Đức Nhật", "05/05/2026", "⭐⭐⭐⭐★", "Sản phẩm tốt, giá hợp lý. Sẽ quay lại mua lần sau.");
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null) {
+      return;
+    }
+
+    String storeName = customer.getSellerProfile() != null
+            ? customer.getSellerProfile().getStoreName()
+            : "Cửa hàng";
+
+    // auctionId = 0 vì màn này chỉ XEM review, không gửi mới
+    ReviewContext.set(0, customer.getId(), storeName, false);
+
+    loadReviews();
+  }
+
+  private void loadReviews() {
+    if (reviewsContainer == null) return;
+    reviewsContainer.getChildren().clear();
+
+    ClientService.getInstance()
+            .sendRequest("GET_REVIEWS_BY_SELLER", ReviewContext.sellerId)
+            .thenAccept(this::onReviewsLoaded)
+            .exceptionally(ex -> {
+              Platform.runLater(() -> showAlert("Lỗi", ex.getMessage()));
+              return null;
+            });
+  }
+
+  private void onReviewsLoaded(NetworkMessage response) {
+    Platform.runLater(() -> {
+      if (!"SUCCESS".equals(response.getType())) {
+        showAlert("Lỗi", String.valueOf(response.getData()));
+        return;
+      }
+
+      String json = GsonFactory.getInstance().toJson(response.getData());
+      List<Review> reviews = GsonFactory.getInstance().fromJson(json,
+              new TypeToken<List<Review>>() {}.getType());
+
+      for (Review r : reviews) {
+        String date = r.getCreatedAt() != null
+                ? r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                : "";
+        String stars = "⭐".repeat(Math.max(0, r.getStars()));
+        addReviewCard(r.getReviewerName(), date, stars, r.getComment());
+      }
+    });
+  }
+
+  private void showAlert(String title, String msg) {
+    Alert a = new Alert(Alert.AlertType.INFORMATION);
+    a.setTitle(title);
+    a.setContentText(msg);
+    a.showAndWait();
   }
 
   private void addReviewCard(String name, String date, String stars, String content) {

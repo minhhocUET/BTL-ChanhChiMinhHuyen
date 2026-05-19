@@ -52,7 +52,7 @@ public class AuctionSqlDAO {
         INSERT INTO auctions
             (item_id, current_price, start_time, end_time, status,
              bid_increment, anti_snipe_window_minutes, anti_snipe_extension_minutes)
-        VALUES (?, ?, ?, ?, 'OPEN', ?, 2, 5)
+        VALUES (?, ?, ?, ?, 'RUNNING', ?, 2, 5)
         """;
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {

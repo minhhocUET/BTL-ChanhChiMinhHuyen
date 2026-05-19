@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.uet.bidding.controller.AdminDashboardController;
+import com.uet.bidding.controller.AuctionListController;
 import com.uet.bidding.controller.Main;
+import com.uet.bidding.controller.ProductDetailController;
 import com.uet.bidding.model.*;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
@@ -21,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClientService {
+public class  ClientService {
   private static volatile ClientService instance;
   private final Gson gson = GsonFactory.getInstance();
   private final Map<String, CompletableFuture<NetworkMessage>> pendingRequests = new ConcurrentHashMap<>();
@@ -40,6 +42,9 @@ public class ClientService {
       }
     }
     return instance;
+  }
+  public Gson getGson() {
+    return gson;
   }
 
   public void connect(String host, int port) throws IOException {
@@ -148,6 +153,23 @@ public class ClientService {
           AdminDashboardController.getInstance().updateStatsUI(stats);
         }
         break;
+      case "AUCTION_UPDATED":
+        try {
+          String auctionJson = gson.toJson(msg.getData());
+          Auction updated = gson.fromJson(auctionJson, Auction.class);
+          Platform.runLater(() -> {
+            if (ProductDetailController.getInstance() != null) {
+              ProductDetailController.getInstance().applyAuctionUpdate(updated);
+            }
+            if (AuctionListController.getInstance() != null) {
+              AuctionListController.getInstance().refreshOneAuction(updated);
+            }
+          });
+        } catch (Exception e) {
+          System.err.println("Lỗi parse AUCTION_UPDATED: " + e.getMessage());
+        }
+        break;
+
     }
   }
 

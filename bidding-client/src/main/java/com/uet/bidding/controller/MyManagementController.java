@@ -1,5 +1,6 @@
 package com.uet.bidding.controller;
 
+import com.uet.bidding.util.ReviewContext;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -100,6 +101,13 @@ public class MyManagementController {
    */
   private void handleGoToReview(ActionEvent event) {
     try {
+      // Tạm: dùng dữ liệu giả — sau này lấy auctionId/sellerId thật từ dòng bảng
+      ReviewContext.set(
+              1,           // auctionId thật từ DB
+              2,           // sellerId
+              "Pink Shop",
+              true         // true = form gửi đánh giá
+      );
       Parent root = FXMLLoader.load(getClass().getResource("/Review.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       stage.setScene(new Scene(root));
@@ -109,6 +117,7 @@ public class MyManagementController {
       e.printStackTrace();
       System.out.println("Lỗi: Không thể tải file Review.fxml");
     }
+
   }
 
   @FXML

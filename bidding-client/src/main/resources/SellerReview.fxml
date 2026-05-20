@@ -2,20 +2,23 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.shape.*?>
+<?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.*?>
-
-<AnchorPane prefHeight="650.0" prefWidth="850.0" style="-fx-background-color: #fce4ec;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.SellerReviewController">
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="850.0"
+            style="-fx-background-color: #fce4ec;" xmlns="http://javafx.com/javafx/17.0.12"
+            fx:controller="com.uet.bidding.controller.SellerReviewController">
     <children>
-        <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
+        <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
+              AnchorPane.topAnchor="20.0">
             <children>
 
-                <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: #ffffff; -fx-padding: 20; -fx-background-radius: 18; -fx-border-color: #f8bbd0; -fx-border-radius: 18; -fx-border-width: 1.5;">
+                <HBox alignment="CENTER_LEFT" spacing="20.0"
+                      style="-fx-background-color: #ffffff; -fx-padding: 20; -fx-background-radius: 18; -fx-border-color: #f8bbd0; -fx-border-radius: 18; -fx-border-width: 1.5;">
                     <children>
                         <StackPane prefHeight="80.0" prefWidth="80.0">
                             <children>
-                                <Circle fill="#ffe4ec" radius="40.0" stroke="#ffb3cc" strokeType="INSIDE" />
-                                <Label text="🏪" style="-fx-font-size: 40px;" />
+                                <Circle fill="#ffe4ec" radius="40.0" stroke="#ffb3cc" strokeType="INSIDE"/>
+                                <Label text="🏪" style="-fx-font-size: 40px;"/>
                             </children>
                         </StackPane>
 
@@ -23,67 +26,72 @@
                             <children>
                                 <Label text="Chuyên bán đồ cute và phụ kiện màu" textFill="#880e4f">
                                     <font>
-                                        <Font name="System Bold" size="20.0" />
+                                        <Font name="System Bold" size="20.0"/>
                                     </font>
                                 </Label>
                                 <HBox alignment="BASELINE_LEFT" spacing="8.0">
                                     <children>
                                         <Label text="4.8" textFill="#c2185b">
                                             <font>
-                                                <Font name="System Bold" size="28.0" />
+                                                <Font name="System Bold" size="28.0"/>
                                             </font>
                                         </Label>
                                         <Label text="/ 5" textFill="#888888">
                                             <font>
-                                                <Font name="System Bold" size="18.0" />
+                                                <Font name="System Bold" size="18.0"/>
                                             </font>
                                         </Label>
-                                        <Label text="⭐⭐⭐⭐★" textFill="#e91e63" style="-fx-font-size: 20px;" />
+                                        <Label text="⭐⭐⭐⭐★" textFill="#e91e63" style="-fx-font-size: 20px;"/>
                                     </children>
                                 </HBox>
                                 <Label text="(128 đánh giá)" textFill="#888888">
                                     <font>
-                                        <Font size="14.0" />
+                                        <Font size="14.0"/>
                                     </font>
                                 </Label>
                             </children>
                         </VBox>
 
-                        <Region HBox.hgrow="ALWAYS" />
+                        <Region HBox.hgrow="ALWAYS"/>
 
                         <GridPane hgap="10.0" vgap="5.0">
                             <columnConstraints>
-                                <ColumnConstraints halignment="RIGHT" minWidth="30.0" />
-                                <ColumnConstraints minWidth="150.0" />
-                                <ColumnConstraints halignment="LEFT" minWidth="30.0" />
+                                <ColumnConstraints halignment="RIGHT" minWidth="30.0"/>
+                                <ColumnConstraints minWidth="150.0"/>
+                                <ColumnConstraints halignment="LEFT" minWidth="30.0"/>
                             </columnConstraints>
                             <rowConstraints>
-                                <RowConstraints minHeight="15.0" />
-                                <RowConstraints minHeight="15.0" />
-                                <RowConstraints minHeight="15.0" />
-                                <RowConstraints minHeight="15.0" />
-                                <RowConstraints minHeight="15.0" />
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
                             </rowConstraints>
                             <children>
-                                <Label text="5 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                <ProgressBar progress="0.8" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                                <Label text="102" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                                <Label text="5 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                                <ProgressBar progress="0.8" prefWidth="150.0" style="-fx-accent: #e91e63;"
+                                             GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                <Label text="102" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
 
-                                <Label text="4 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                <ProgressBar progress="0.14" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                <Label text="18" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                <Label text="4 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                                <ProgressBar progress="0.14" prefWidth="150.0" style="-fx-accent: #e91e63;"
+                                             GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                <Label text="18" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
 
-                                <Label text="3 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                <ProgressBar progress="0.04" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                <Label text="5" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                <Label text="3 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                                <ProgressBar progress="0.04" prefWidth="150.0" style="-fx-accent: #e91e63;"
+                                             GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                <Label text="5" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
 
-                                <Label text="2 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                                <ProgressBar progress="0.015" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                <Label text="2" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                                <Label text="2 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                                <ProgressBar progress="0.015" prefWidth="150.0" style="-fx-accent: #e91e63;"
+                                             GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                <Label text="2" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
 
-                                <Label text="1 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-                                <ProgressBar progress="0.005" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                                <Label text="1" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                                <Label text="1 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                                <ProgressBar progress="0.005" prefWidth="150.0" style="-fx-accent: #e91e63;"
+                                             GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                <Label text="1" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
                             </children>
                         </GridPane>
                     </children>
@@ -91,19 +99,25 @@
 
                 <Label text="Danh sách đánh giá" textFill="#c2185b">
                     <font>
-                        <Font name="System Bold" size="16.0" />
+                        <Font name="System Bold" size="16.0"/>
                     </font>
                 </Label>
 
-                <ScrollPane fitToWidth="true" prefHeight="330.0" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;" VBox.vgrow="ALWAYS">
+                <ScrollPane fitToWidth="true" prefHeight="330.0"
+                            style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;"
+                            VBox.vgrow="ALWAYS">
                     <content>
-                        <VBox fx:id="reviewsContainer" spacing="12.0" style="-fx-background-color: transparent; -fx-padding: 5;" />
+                        <VBox fx:id="reviewsContainer" spacing="12.0"
+                              style="-fx-background-color: transparent; -fx-padding: 5;"/>
                     </content>
                 </ScrollPane>
 
                 <HBox alignment="CENTER" style="-fx-padding: 10 0 0 0;">
                     <children>
-                        <Button mnemonicParsing="false" onAction="#handleBackToSellerDashboard" prefHeight="40.0" prefWidth="250.0" style="-fx-background-color: #fdf2f4; -fx-text-fill: #e91e63; -fx-border-color: #f8bbd0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;" text="⬅ Quay lại Seller Dashboard" />
+                        <Button mnemonicParsing="false" onAction="#handleBackToSellerDashboard" prefHeight="40.0"
+                                prefWidth="250.0"
+                                style="-fx-background-color: #fdf2f4; -fx-text-fill: #e91e63; -fx-border-color: #f8bbd0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;"
+                                text="⬅ Quay lại Seller Dashboard"/>
                     </children>
                 </HBox>
 

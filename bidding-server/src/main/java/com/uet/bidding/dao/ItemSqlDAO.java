@@ -140,6 +140,11 @@ public class ItemSqlDAO {
       // column may not exist until migration is applied
     }
 
+    try {
+      item.setStatus(rs.getString("status"));
+    } catch (Exception e) {
+      // Dự phòng nếu class Item của bạn chưa kịp viết hàm setStatus()
+    }
     return item;
   }
 
@@ -155,67 +160,64 @@ public class ItemSqlDAO {
    */
   public void addItem(Item item) throws ItemException {
     String sql =
-        "INSERT INTO items " +
-            "    (seller_id, name, description, starting_price, image_path, image_data, city, " +
-            "     in_auction, item_type, " +
-            "     author, creation_year, material, " +
-            "     brand, warranty_months, " +
-            "     model, manufacturing_year, mileage, engine_type, fuel_type) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, " +
-            "        FALSE, ?, " +
-            "        ?, ?, ?, " +
-            "        ?, ?, " +
-            "        ?, ?, ?, ?, ?)";
+        "INSERT INTO items (" +
+            "seller_id, name, description, starting_price, image_path, image_data, city, " +
+            "in_auction, item_type, status, " +
+            "author, creation_year, material, " +
+            "brand, warranty_months, " +
+            "model, manufacturing_year, mileage, engine_type, fuel_type) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, FALSE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-      // ── Cột chung ─────────────────────────────────────────────
+      // ── Cột chung (Index từ 1 đến 9) ────────────────────────
       stmt.setInt(1, item.getSellerId());
       stmt.setString(2, item.getName());
       setStringOrNull(stmt, 3, item.getDescription());
       stmt.setBigDecimal(4, item.getStartingPrice());
-      setStringOrNull(stmt, 5, null); // image_path unused
+      setStringOrNull(stmt, 5, item.getImagePath());
       setStringOrNull(stmt, 6, item.getImageData());
       setStringOrNull(stmt, 7, item.getCity());
-      stmt.setString(8, item.getType()); // "ART" | "ELECTRONICS" | "VEHICLE"
+      stmt.setString(8, item.getType());
+      stmt.setString(9, "PENDING"); // Fixed lỗi gán đè index 8
 
-      // ── Cột riêng từng loại ───────────────────────────────────
+      // ── Cột riêng (Index từ 10 đến 19) ──────────────────────
       if (item instanceof Art a) {
-        setStringOrNull(stmt, 9, a.getAuthor());
-        setIntOrNull(stmt, 10, a.getCreationYear() == 0 ? null : a.getCreationYear());
-        setStringOrNull(stmt, 11, a.getMaterial());
-        stmt.setNull(12, Types.VARCHAR); // brand
-        stmt.setNull(13, Types.INTEGER); // warranty_months
-        stmt.setNull(14, Types.VARCHAR); // model
-        stmt.setNull(15, Types.INTEGER); // manufacturing_year
-        stmt.setNull(16, Types.DOUBLE);  // mileage
-        stmt.setNull(17, Types.VARCHAR); // engine_type
-        stmt.setNull(18, Types.VARCHAR); // fuel_type
+        setStringOrNull(stmt, 10, a.getAuthor());
+        setIntOrNull(stmt, 11, a.getCreationYear() == 0 ? null : a.getCreationYear());
+        setStringOrNull(stmt, 12, a.getMaterial());
+        stmt.setNull(13, Types.VARCHAR); // brand
+        stmt.setNull(14, Types.INTEGER); // warranty_months
+        stmt.setNull(15, Types.VARCHAR); // model
+        stmt.setNull(16, Types.INTEGER); // manufacturing_year
+        stmt.setNull(17, Types.DOUBLE);  // mileage
+        stmt.setNull(18, Types.VARCHAR); // engine_type
+        stmt.setNull(19, Types.VARCHAR); // fuel_type
 
       } else if (item instanceof Electronics e) {
-        stmt.setNull(9, Types.VARCHAR);  // author
-        stmt.setNull(10, Types.INTEGER);  // creation_year
-        stmt.setNull(11, Types.VARCHAR); // material
-        setStringOrNull(stmt, 12, e.getBrand());
-        setIntOrNull(stmt, 13, e.getWarrantyMonths());
-        stmt.setNull(14, Types.VARCHAR); // model
-        stmt.setNull(15, Types.INTEGER); // manufacturing_year
-        stmt.setNull(16, Types.DOUBLE);  // mileage
-        stmt.setNull(17, Types.VARCHAR); // engine_type
-        stmt.setNull(18, Types.VARCHAR); // fuel_type
+        stmt.setNull(10, Types.VARCHAR);  // author
+        stmt.setNull(11, Types.INTEGER);  // creation_year
+        stmt.setNull(12, Types.VARCHAR); // material
+        setStringOrNull(stmt, 13, e.getBrand());
+        setIntOrNull(stmt, 14, e.getWarrantyMonths());
+        stmt.setNull(15, Types.VARCHAR); // model
+        stmt.setNull(16, Types.INTEGER); // manufacturing_year
+        stmt.setNull(17, Types.DOUBLE);  // mileage
+        stmt.setNull(18, Types.VARCHAR); // engine_type
+        stmt.setNull(19, Types.VARCHAR); // fuel_type
 
       } else if (item instanceof Vehicle v) {
-        stmt.setNull(9, Types.VARCHAR);  // author
-        stmt.setNull(10, Types.INTEGER);  // creation_year
-        stmt.setNull(11, Types.VARCHAR); // material
-        setStringOrNull(stmt, 12, v.getBrand());
-        stmt.setNull(13, Types.INTEGER); // warranty_months
-        setStringOrNull(stmt, 14, v.getModel());
-        setIntOrNull(stmt, 15, v.getManufacturingYear());
-        setDoubleOrNull(stmt, 16, v.getMileage());
-        setStringOrNull(stmt, 17, v.getEngineType());
-        setStringOrNull(stmt, 18, v.getFuelType());
+        stmt.setNull(10, Types.VARCHAR);  // author
+        stmt.setNull(11, Types.INTEGER);  // creation_year
+        stmt.setNull(12, Types.VARCHAR); // material
+        setStringOrNull(stmt, 13, v.getBrand());
+        stmt.setNull(14, Types.INTEGER); // warranty_months
+        setStringOrNull(stmt, 15, v.getModel());
+        setIntOrNull(stmt, 16, v.getManufacturingYear());
+        setDoubleOrNull(stmt, 17, v.getMileage());
+        setStringOrNull(stmt, 18, v.getEngineType());
+        setStringOrNull(stmt, 19, v.getFuelType());
 
       } else {
         throw new ItemException("Loại Item không được hỗ trợ: " + item.getClass().getSimpleName());
@@ -263,6 +265,16 @@ public class ItemSqlDAO {
     return queryList(
         BASE_SELECT + "WHERE item_type = ? ORDER BY created_at DESC",
         stmt -> stmt.setString(1, type.toUpperCase())
+    );
+  }
+
+  /**
+   * HÀM ĐƯỢC THÊM MỚI: Lấy danh sách sản phẩm lọc theo trạng thái duyệt (Ví dụ: "PENDING")
+   */
+  public List<Item> getItemsByStatus(String status) {
+    return queryList(
+        BASE_SELECT + "WHERE status = ? ORDER BY id ASC",
+        stmt -> stmt.setString(1, status.toUpperCase())
     );
   }
 
@@ -329,6 +341,25 @@ public class ItemSqlDAO {
   // =========================================================
 
   /**
+   * HÀM ĐƯỢC THÊM MỚI: Cập nhật trạng thái duyệt mới cho sản phẩm (APPROVED hoặc REJECTED)
+   * Trả về true nếu cập nhật thành công ít nhất 1 dòng trong DB.
+   */
+  public boolean updateItemStatus(int itemId, String newStatus) {
+    String sql = "UPDATE items SET status = ? WHERE id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+      pstmt.setString(1, newStatus.toUpperCase());
+      pstmt.setInt(2, itemId);
+
+      return pstmt.executeUpdate() > 0;
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi cập nhật trạng thái sản phẩm trong ItemSqlDAO: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
    * Cập nhật thông tin sản phẩm.
    * Chỉ cập nhật các trường có thể thay đổi sau khi tạo;
    * {@code seller_id} và {@code item_type} là bất biến.
@@ -362,7 +393,7 @@ public class ItemSqlDAO {
       stmt.setString(1, item.getName());
       setStringOrNull(stmt, 2, item.getDescription());
       stmt.setBigDecimal(3, item.getStartingPrice());
-      setStringOrNull(stmt, 4, null);
+      setStringOrNull(stmt, 4, item.getImagePath());
       setStringOrNull(stmt, 5, item.getImageData());
       setStringOrNull(stmt, 6, item.getCity());
 
@@ -403,7 +434,7 @@ public class ItemSqlDAO {
         setStringOrNull(stmt, 16, v.getFuelType());
       }
 
-      stmt.setInt(17, item.getId());
+      stmt.setInt(17, item.getId()); // ID đẩy về số 17 mới chuẩn
 
       if (stmt.executeUpdate() == 0)
         throw new ItemException("Cập nhật thất bại! Không tìm thấy Item ID: " + item.getId());
@@ -499,18 +530,31 @@ public class ItemSqlDAO {
   }
 
   /**
+   * Tổng số sản phẩm đang chờ Admin duyệt (status = PENDING).
+   */
+  public int getPendingItemsCount() {
+    return countByQuery("SELECT COUNT(*) FROM items WHERE status = 'PENDING'");
+  }
+
+  /**
    * Số item của một seller cụ thể.
    */
   public int getItemCountBySeller(int sellerId) {
     String sql = "SELECT COUNT(*) FROM items WHERE seller_id = ?";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+      // 1. Phải nạp tham số vào dấu ? TRƯỚC
       stmt.setInt(1, sellerId);
+
+      // 2. Sau đó mới thực thi câu lệnh truy vấn SAU
       try (ResultSet rs = stmt.executeQuery()) {
-        if (rs.next()) return rs.getInt(1);
+        if (rs.next()) {
+          return rs.getInt(1);
+        }
       }
     } catch (SQLException e) {
-      e.printStackTrace();
+      System.err.println("❌ Lỗi đếm sản phẩm của Seller: " + e.getMessage());
     }
     return 0;
   }

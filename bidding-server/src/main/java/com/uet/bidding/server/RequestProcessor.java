@@ -16,10 +16,12 @@ import java.util.List;
 public class RequestProcessor {
   private final Gson gson = GsonFactory.getInstance();
   private final UserSqlDAO userSqlDAO;
+  private final ItemSqlDAO itemSqlDAO;
   private final AuctionSqlDAO auctionSqlDAO;
 
-  public RequestProcessor(UserSqlDAO userSqlDAO, AuctionSqlDAO auctionSqlDAO) {
+  public RequestProcessor(UserSqlDAO userSqlDAO, ItemSqlDAO itemSqlDAO, AuctionSqlDAO auctionSqlDAO) {
     this.userSqlDAO = userSqlDAO;
+    this.itemSqlDAO = itemSqlDAO;
     this.auctionSqlDAO = auctionSqlDAO;
   }
 
@@ -34,13 +36,18 @@ public class RequestProcessor {
         case "ADD_BALANCE" -> handleAddBalance(msg, handler);
         case "BID" -> handleBid(msg, handler);
         case "GET_BID_HISTORY" -> handleGetBidHistory(msg, handler);
-        case "GET_ALL_AUCTIONS" ->
-                handler.sendResponse("SUCCESS", auctionSqlDAO.getAllAuctions(), reqId);
+        case "GET_ALL_AUCTIONS" -> handler.sendResponse("SUCCESS", auctionSqlDAO.getAllAuctions(), reqId);
         case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
         case "SET_AUTO_BID" -> handleSetAutoBid(msg, handler);
         case "REMOVE_AUTO_BID" -> handleRemoveAutoBid(msg, handler);
         case "ADD_REVIEW" -> handleAddReview(msg, handler);
         case "GET_REVIEWS_BY_SELLER" -> handleGetReviewsBySeller(msg, handler);
+        // ─── THÊM 3 CASE MỚI VÀO ĐÂY ĐỂ ĐIỀU HƯỚNG SỰ KIỆN ADMIN ───────────
+        case "GET_PENDING_ITEMS" -> handleGetPendingItems(msg, handler);
+        case "APPROVE_ITEM" -> handleApproveItem(msg, handler);
+        case "REJECT_ITEM" -> handleRejectItem(msg, handler);
+        // ─── THÊM CASE NÀY ĐỂ XỬ LÝ LỆNH THỐNG KÊ ─────────────────────────
+        case "GET_SYSTEM_STATS" -> handleGetSystemStats(msg, handler);
         case "LOGOUT" -> {
           handler.setLoggedInUser(null);
           handler.sendResponse("SUCCESS", "Đã đăng xuất khỏi hệ thống.", reqId);
@@ -53,15 +60,149 @@ public class RequestProcessor {
         case "GET_MY_REGISTRATIONS" -> handleGetMyRegistrations(msg, handler);
         case "IS_REGISTERED_FOR_AUCTION" -> handleIsRegisteredForAuction(msg, handler);
 
+
+        // Thêm 3 case này vào switch-case trong RequestProcessor.java của Server
+        case "GET_ALL_USERS" -> {
+          try {
+            // Gọi DAO lấy dữ liệu từ database TiDB Cloud
+            List<User> list = userSqlDAO.getAllUsers();
+
+            // Phải gửi trả đúng chuỗi loại phản hồi mà Client đang đợi (ALL_USERS_RESPONSE)
+            handler.sendResponse("ALL_USERS_RESPONSE", list, reqId);
+          } catch (Exception e) {
+            handler.sendResponse("ERROR", "Lỗi lấy danh sách user: " + e.getMessage(), reqId);
+          }
+        }
+
+        case "BAN_USER" -> {
+          int userId = ((Number) msg.getData()).intValue();
+          // Gọi lệnh cập nhật trườngis_banned = TRUE trong Database
+          boolean success = userSqlDAO.updateBanStatus(userId, true);
+          if (success) {
+            handler.sendResponse("SUCCESS", "Đã khóa tài khoản thành công.", reqId);
+          } else {
+            handler.sendResponse("ERROR", "Không thể cập nhật trạng thái khóa tài khoản.", reqId);
+          }
+        }
+
+        case "UNBAN_USER" -> {
+          int userId = ((Number) msg.getData()).intValue();
+          // Gọi lệnh cập nhật trường is_banned = FALSE trong Database
+          boolean success = userSqlDAO.updateBanStatus(userId, false);
+          if (success) {
+            handler.sendResponse("SUCCESS", "Mở khóa tài khoản thành công.", reqId);
+          } else {
+            handler.sendResponse("ERROR", "Không thể mở khóa tài khoản.", reqId);
+          }
+        }
         default -> handler.sendResponse("ERROR", "Lệnh không hợp lệ hoặc chưa được hỗ trợ!", reqId);
       }
+
+
     } catch (Exception e) {
       handler.sendResponse("ERROR", "Lỗi hệ thống: " + e.getMessage(), reqId);
       e.printStackTrace();
     }
   }
 
-  // --- CÁC HÀM XỬ LÝ CHI TIẾT ---
+  // --- CÁC HÀM XỬ LÝ CHI TIẾT ĐƯỢC VIẾT THÊM VÀO PHÍA DƯỚI ---
+
+  /**
+   * Xử lý gom số liệu đếm từ database TiDB Cloud gửi về cho màn hình Admin Thống kê
+   */
+  private void handleGetSystemStats(NetworkMessage msg, ClientHandler handler) {
+    try {
+      // 1. Thực hiện gọi SQL COUNT từ các DAO truy vấn dữ liệu (Đảm bảo DAO của bạn đã viết các hàm đếm này)
+      int totalUsers = userSqlDAO.getTotalUserCount();
+      int activeAuctions = auctionSqlDAO.getActiveAuctionsCount();
+      int pendingItems = itemSqlDAO.getPendingItemsCount();
+
+      // 2. Đóng gói 3 con số vào 1 JsonObject gọn gàng chuẩn cấu trúc Client đang bóc tách
+      JsonObject statsJson = new JsonObject();
+      statsJson.addProperty("totalUsers", totalUsers);
+      statsJson.addProperty("activeAuctions", activeAuctions);
+      statsJson.addProperty("pendingItems", pendingItems);
+
+      // 3. Bắn trả kết quả về chính xác requestId của màn hình Admin đang đợi thông qua Type SUCCESS
+      handler.sendResponse("GET_SYSTEM_STATS_SUCCESS", statsJson, msg.getRequestId());
+      System.out.println("📊 [Server] Đã tổng hợp và gửi số liệu thống kê mới nhất cho Admin.");
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", "Lỗi tổng hợp số liệu thống kê: " + e.getMessage(), msg.getRequestId());
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * 1. Xử lý lấy danh sách sản phẩm chưa duyệt gửi về cho Admin
+   */
+  private void handleGetPendingItems(NetworkMessage msg, ClientHandler handler) {
+    if (!(handler.getLoggedInUser() instanceof Admin)) {
+      handler.sendResponse("ERROR", "Bạn không có quyền thực hiện chức năng này!", msg.getRequestId());
+      return;
+    }
+    try {
+      // Khởi tạo DAO sản phẩm để truy vấn DB (giống cách làm ReviewSqlDAO của bạn)
+      List<Item> pendingItems = itemSqlDAO.getItemsByStatus("PENDING");
+
+      // Trả phản hồi kèm gói dữ liệu về chính xác RequestId đang đợi ở Client
+      handler.sendResponse("GET_PENDING_ITEMS_SUCCESS", pendingItems, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", "Lỗi lấy danh sách chờ duyệt: " + e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  /**
+   * 2. Xử lý cập nhật trạng thái APPROVED khi Admin duyệt bài
+   */
+  private void handleApproveItem(NetworkMessage msg, ClientHandler handler) {
+    if (!(handler.getLoggedInUser() instanceof Admin)) {
+      handler.sendResponse("ERROR", "Bạn không có quyền thực hiện chức năng này!", msg.getRequestId());
+      return;
+    }
+    try {
+      // Ép kiểu an toàn từ dữ liệu số nguyên nhận qua Gson
+      int approveId = ((Number) msg.getData()).intValue();
+
+      boolean success = new ItemSqlDAO().updateItemStatus(approveId, "APPROVED");
+      if (success) {
+        handler.sendResponse("APPROVE_SUCCESS", "Phê duyệt sản phẩm thành công!", msg.getRequestId());
+
+        // (Tùy chọn) Phát thông báo Realtime cho toàn bộ các Client đang online biết
+        Server.broadcast(new NetworkMessage("BROADCAST", "🎉 Một sản phẩm mới (Mã #" + approveId + ") vừa được phê duyệt lên sàn!"));
+      } else {
+        handler.sendResponse("ERROR", "Không tìm thấy sản phẩm hoặc cập nhật thất bại.", msg.getRequestId());
+      }
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", "Lỗi xử lý duyệt: " + e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  /**
+   * 3. Xử lý cập nhật trạng thái REJECTED khi Admin từ chối bài
+   */
+  private void handleRejectItem(NetworkMessage msg, ClientHandler handler) {
+    if (!(handler.getLoggedInUser() instanceof Admin)) {
+      handler.sendResponse("ERROR", "Bạn không có quyền thực hiện chức năng này!", msg.getRequestId());
+      return;
+    }
+    try {
+      // Nhận chuỗi định dạng "ID|Lý do từ chối" truyền từ Client sang
+      String rejectData = String.valueOf(msg.getData());
+      String[] parts = rejectData.split("\\|");
+      int rejectId = Integer.parseInt(parts[0]);
+      String reason = parts.length > 1 ? parts[1] : "Không có lý do cụ thể.";
+
+      boolean success = new ItemSqlDAO().updateItemStatus(rejectId, "REJECTED");
+      if (success) {
+        System.out.println("[Server] Đã từ chối SP #" + rejectId + ". Lý do: " + reason);
+        handler.sendResponse("REJECT_SUCCESS", "Đã từ chối phê duyệt sản phẩm.", msg.getRequestId());
+      } else {
+        handler.sendResponse("ERROR", "Không thể cập nhật trạng thái từ chối.", msg.getRequestId());
+      }
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", "Lỗi xử lý từ chối: " + e.getMessage(), msg.getRequestId());
+    }
+  }
 
   private void handleLogin(NetworkMessage msg, ClientHandler handler) {
     try {
@@ -87,6 +228,10 @@ public class RequestProcessor {
     try {
       handleRegister(String.valueOf(msg.getData()));
       handler.sendResponse("REGISTER_SUCCESS", "Đăng ký thành công!", msg.getRequestId());
+
+      // 💡 THÊM DÒNG NÀY: Phát tín hiệu cho toàn mạng biết vừa có user mới
+      Server.broadcast(new NetworkMessage("NEW_USER_REGISTERED", "Có tài khoản mới vừa gia nhập!"));
+
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }
@@ -171,13 +316,13 @@ public class RequestProcessor {
         boolean extended = updated.getEndTime().isAfter(endBefore);
         if (extended) {
           Server.broadcast(new NetworkMessage("BROADCAST",
-                  "⏱ Phiên #" + auctionId + " được gia hạn thêm "
-                          + updated.getAntiSnipeExtensionMinutes() + " phút (anti-sniping)!"));
+              "⏱ Phiên #" + auctionId + " được gia hạn thêm "
+                  + updated.getAntiSnipeExtensionMinutes() + " phút (anti-sniping)!"));
         }
 
         Server.broadcast(new NetworkMessage("BROADCAST",
-                "Người dùng [" + bidder.getUsername() + "] đặt giá "
-                        + bidAmount + " cho phiên #" + auctionId));
+            "Người dùng [" + bidder.getUsername() + "] đặt giá "
+                + bidAmount + " cho phiên #" + auctionId));
 
         Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
         handler.sendResponse("SUCCESS", "Đặt giá thành công!", msg.getRequestId());
@@ -282,6 +427,7 @@ public class RequestProcessor {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }
   }
+
   private void handleGetBidHistory(NetworkMessage msg, ClientHandler handler) {
     try {
       int auctionId = Integer.parseInt(String.valueOf(msg.getData()));
@@ -342,7 +488,7 @@ public class RequestProcessor {
         throw new UserException("Chỉ được đánh giá sau khi phiên đã kết thúc!");
       }
       if (auction.getHighestBidder() == null
-              || auction.getHighestBidder().getId() != customer.getId()) {
+          || auction.getHighestBidder().getId() != customer.getId()) {
         throw new UserException("Chỉ người thắng đấu giá mới được đánh giá!");
       }
 

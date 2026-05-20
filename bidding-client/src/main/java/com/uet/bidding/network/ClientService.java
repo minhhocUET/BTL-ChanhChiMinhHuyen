@@ -2,11 +2,10 @@ package com.uet.bidding.network;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
-import com.uet.bidding.controller.AdminDashboardController;
 import com.uet.bidding.controller.AuctionListController;
 import com.uet.bidding.controller.Main;
 import com.uet.bidding.controller.ProductDetailController;
+import com.uet.bidding.controller.admin.AdminUserManagementController;
 import com.uet.bidding.model.*;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
@@ -24,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class  ClientService {
+public class ClientService {
   private static volatile ClientService instance;
   private final Gson gson = GsonFactory.getInstance();
   private final Map<String, CompletableFuture<NetworkMessage>> pendingRequests = new ConcurrentHashMap<>();
@@ -44,8 +43,10 @@ public class  ClientService {
     }
     return instance;
   }
+
+  // Bên trong file ClientService.java của bạn, hãy sửa lại thành:
   public Gson getGson() {
-    return gson;
+    return com.uet.bidding.model.GsonFactory.getInstance();
   }
 
   public void connect(String host, int port) throws IOException {
@@ -141,19 +142,18 @@ public class  ClientService {
         });
         break;
 
-      // Trong ClientService.java, hàm handleResponse:
-
-      case "SYSTEM_STATS_RESPONSE":
-        // Chuyển data sang Map
-        String json = gson.toJson(msg.getData());
-        Map<String, Double> stats = gson.fromJson(json, new TypeToken<Map<String, Double>>() {
-        }.getType());
-
-        // Đẩy dữ liệu sang Controller
-        if (AdminDashboardController.getInstance() != null) {
-          AdminDashboardController.getInstance().updateStatsUI(stats);
+      // 💡 THÊM CASE NÀY VÀO BÊN TRONG switch (msg.getType()):
+      case "NEW_USER_REGISTERED":
+        // Kiểm tra xem Admin có đang mở màn hình Quản lý User không?
+        if (AdminUserManagementController.getInstance() != null) {
+          // Nếu có, ra lệnh tải lại danh sách mới ngầm dưới background
+          Platform.runLater(() -> {
+            AdminUserManagementController.getInstance().loadUsersFromServer();
+            System.out.println("🔄 Auto-refresh: Đã tải lại danh sách vì có User mới!");
+          });
         }
         break;
+
       case "AUCTION_UPDATED":
       case "NEW_AUCTION_ADDED":
         try {
@@ -176,7 +176,6 @@ public class  ClientService {
           System.err.println("Lỗi parse auction broadcast: " + e.getMessage());
         }
         break;
-
     }
   }
 

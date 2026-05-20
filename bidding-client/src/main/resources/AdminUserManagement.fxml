@@ -4,27 +4,44 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="660.0" spacing="15.0"
-      style="-fx-background-color: #f1f2f6;" xmlns="http://javafx.com/javafx/21">
+<VBox xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.uet.bidding.controller.admin.AdminUserManagementController"
+      prefHeight="600.0" prefWidth="660.0" spacing="15.0" style="-fx-background-color: #ffffff;">
+
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>
+
     <children>
-        <Label text="QUẢN LÝ NGƯỜI DÙNG" textFill="#1e3799">
-            <font>
-                <Font name="System Bold" size="22.0"/>
-            </font>
-        </Label>
-        <Label text="Danh sách toàn bộ Bidder và Seller trên hệ thống:" textFill="#2f3542"/>
-        <TableView fx:id="userTable" prefHeight="500.0" prefWidth="620.0" stylesheets="@admin_table.css"
-                   VBox.vgrow="ALWAYS">
+        <VBox spacing="5.0">
+            <children>
+                <Label text="QUẢN LÝ NGƯỜI DÙNG" textFill="#1b3394">
+                    <font>
+                        <Font name="Segoe UI Bold" size="22.0"/>
+                    </font>
+                </Label>
+                <Label text="Danh sách toàn bộ tài khoản hệ thống. Admin có quyền khóa hoặc mở khóa tài khoản vi phạm."
+                       textFill="#7f8c8d">
+                    <font>
+                        <Font name="Segoe UI" size="14.0"/>
+                    </font>
+                </Label>
+            </children>
+        </VBox>
+
+        <TableView fx:id="userTable" prefHeight="450.0" prefWidth="620.0" VBox.vgrow="ALWAYS"
+                   style="-fx-background-color: white; -fx-background-radius: 4; -fx-border-color: #e2e8f0; -fx-border-radius: 4; -fx-font-family: 'Segoe UI';">
             <columns>
-                <TableColumn fx:id="colUserId" prefWidth="50.0" text="ID"/>
-                <TableColumn fx:id="colUsername" prefWidth="150.0" text="Tên đăng nhập"/>
-                <TableColumn fx:id="colRole" prefWidth="100.0" text="Vai trò"/>
-                <TableColumn fx:id="colStatus" prefWidth="120.0" text="Trạng thái"/>
-                <TableColumn fx:id="colUserAction" prefWidth="180.0" text="Thao tác (Khóa/Mở)"/>
+                <TableColumn fx:id="colUserId" prefWidth="60.0" text="ID" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colUsername" prefWidth="180.0" text="Tên tài khoản"
+                             style="-fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 15;"/>
+                <TableColumn fx:id="colRole" prefWidth="120.0" text="Vai trò" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colStatus" prefWidth="140.0" text="Trạng thái" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colUserAction" prefWidth="120.0" text="Hành động" style="-fx-alignment: CENTER;"/>
             </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+            </columnResizePolicy>
         </TableView>
     </children>
 </VBox>

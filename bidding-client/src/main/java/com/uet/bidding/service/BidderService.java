@@ -16,11 +16,11 @@ public class BidderService {
     Customer current = UserSession.getLoggedInCustomer();
     if (current == null) {
       return CompletableFuture.failedFuture(
-              new RuntimeException("Vui lòng đăng nhập!"));
+          new RuntimeException("Vui lòng đăng nhập!"));
     }
     if (!current.isProfileComplete()) {
       return CompletableFuture.failedFuture(
-              new RuntimeException("Hoàn thiện hồ sơ trước khi đặt giá!"));
+          new RuntimeException("Hoàn thiện hồ sơ trước khi đặt giá!"));
     }
     // Server đọc: "auctionId amount"
     String data = auctionId + " " + amount.toPlainString();

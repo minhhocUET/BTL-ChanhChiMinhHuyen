@@ -14,8 +14,14 @@ public abstract class Item extends Entity {
   // Thuộc tính quan trọng để kiểm soát luồng đấu giá
   private boolean inAuction = false;
 
-// Constructor dùng khi đọc từ dữ liệu
+  // ─── THUỘC TÍNH MỚI BỔ SUNG ───────────────────────────────────────
+  // Trạng thái phê duyệt: "PENDING" (Chờ duyệt), "APPROVED" (Đã duyệt), "REJECTED" (Bị từ chối)
+  private String status = "PENDING";
 
+  // 🌟 THÊM DÒNG NÀY: Một biến type vật lý để Gson ở Server có thể nhìn thấy và đóng gói
+  private String type;
+
+  // Constructor dùng khi đọc từ dữ liệu
   public Item(int id, String name, String description, BigDecimal startingPrice, String imagePath, int sellerId) {
     super(); // Gọi constructor của Entity
     this.setId(id);
@@ -24,7 +30,9 @@ public abstract class Item extends Entity {
     this.startingPrice = startingPrice;
     this.imagePath = imagePath;
     this.sellerId = sellerId;
-
+    this.status = "PENDING"; // Mặc định khi đọc hoặc khởi tạo
+    // 🌟 THÊM DÒNG NÀY: Ép hàm abstract nạp giá trị vào biến type ngay khi tạo object
+    this.type = this.getType();
   }
 
 // Constructor dùng khi tạo mới (chưa có id)
@@ -35,6 +43,9 @@ public abstract class Item extends Entity {
     this.startingPrice = startingPrice;
     this.imagePath = imagePath;
     this.sellerId = sellerId;
+    this.status = "PENDING"; // Mặc định chờ duyệt
+    // 🌟 THÊM DÒNG NÀY: Ép hàm abstract nạp giá trị vào biến type ngay khi tạo object
+    this.type = this.getType();
   }
 
 
@@ -107,6 +118,16 @@ public abstract class Item extends Entity {
    */
   public void setInAuction(boolean inAuction) {
     this.inAuction = inAuction;
+  }
+
+  // ─── GETTER & SETTER CHO STATUS MỚI ───────────────────────────────
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
   }
 
   public String getProductType() {

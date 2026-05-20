@@ -25,7 +25,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
   public ClientHandler(Socket socket, UserSqlDAO userSqlDAO, ItemSqlDAO itemFileDAO, AuctionSqlDAO auctionSqlDAO) {
     this.clientSocket = socket;
     // Khởi tạo processor với các DAO tương ứng
-    this.processor = new RequestProcessor(userSqlDAO, auctionSqlDAO);
+    this.processor = new RequestProcessor(userSqlDAO, itemFileDAO, auctionSqlDAO);
   }
 
   @Override

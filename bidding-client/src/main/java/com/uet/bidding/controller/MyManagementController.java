@@ -103,10 +103,10 @@ public class MyManagementController {
     try {
       // Tạm: dùng dữ liệu giả — sau này lấy auctionId/sellerId thật từ dòng bảng
       ReviewContext.set(
-              1,           // auctionId thật từ DB
-              2,           // sellerId
-              "Pink Shop",
-              true         // true = form gửi đánh giá
+          1,           // auctionId thật từ DB
+          2,           // sellerId
+          "Pink Shop",
+          true         // true = form gửi đánh giá
       );
       Parent root = FXMLLoader.load(getClass().getResource("/Review.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -155,9 +155,20 @@ public class MyManagementController {
     }
 
     // Getter bắt buộc phải có để TableView có thể đọc được dữ liệu
-    public int getStt() { return stt; }
-    public String getName() { return name; }
-    public String getStartPrice() { return startPrice; }
-    public String getHighestBid() { return highestBid; }
+    public int getStt() {
+      return stt;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getStartPrice() {
+      return startPrice;
+    }
+
+    public String getHighestBid() {
+      return highestBid;
+    }
   }
 }

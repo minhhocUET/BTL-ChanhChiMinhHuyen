@@ -1,6 +1,8 @@
 package com.uet.bidding.model;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Lớp Admin - Kế thừa từ User.
@@ -45,15 +47,18 @@ public class Admin extends User {
           System.err.println("❌ Không thể xóa: Phiên đấu giá đang hoạt động và đã có người đặt giá!");
           return false;
         }
-
-        // Thực hiện xóa khỏi danh sách RAM
-        auctionList.remove(auction);
-        System.out.println("✅ Xóa thành công phiên đấu giá ID: " + auctionId + " khỏi danh sách tạm thời.");
-        return true;
+        break;
       }
     }
-    System.err.println("❌ Lỗi: Không tìm thấy phiên đấu giá ID " + auctionId);
-    return false;
+
+    // Thực hiện xóa an toàn
+    boolean removed = auctionList.removeIf(auction -> auction.getId() == auctionId);
+    if (removed) {
+      System.out.println("✅ Xóa thành công phiên đấu giá ID: " + auctionId + " khỏi hệ thống tạm thời.");
+    } else {
+      System.err.println("❌ Lỗi: Không tìm thấy phiên đấu giá ID " + auctionId);
+    }
+    return removed;
   }
 
   /**
@@ -100,15 +105,62 @@ public class Admin extends User {
   }
 
   /**
-   * 4. Duyệt sản phẩm mới
-   * Giả định lớp Item của bạn có thuộc tính trạng thái (status hoặc approved)
+   * 4. Duyệt sản phẩm mới (Mục 3.1.2)
    */
   public void approveItem(Item item) {
     if (item == null) return;
+    // Giả định lớp Item của bạn có thuộc tính status
+    item.setStatus("APPROVED");
+    System.out.println("✅ Sản phẩm '" + item.getName() + "' (ID: " + item.getId() + ") đã được PHÊ DUYỆT.");
+  }
 
-    // Nếu lớp Item của bạn có trường status, hãy bỏ comment dòng dưới:
-    // item.setStatus("APPROVED");
+  /**
+   * 5. TỪ CHỐI sản phẩm mới (Bổ sung cho Mục 3.1.2)
+   * Khi sản phẩm không rõ nguồn gốc hoặc vi phạm quy định đăng bán.
+   */
+  public void rejectItem(Item item, String reason) {
+    if (item == null) return;
+    item.setStatus("REJECTED");
+    System.out.println("❌ Sản phẩm '" + item.getName() + "' (ID: " + item.getId() + ") bị TỪ CHỐI. Lý do: " + reason);
+  }
 
-    System.out.println("✅ Sản phẩm '" + item.getName() + "' (ID: " + item.getId() + ") đã được phê duyệt đăng bán.");
+  /**
+   * 6. Cấu hình tỷ lệ phí sàn của hệ thống (Bổ sung logic vận hành)
+   */
+  public void setSystemCommissionRate(double rate) {
+    if (rate < 0 || rate > 1) {
+      System.err.println("❌ Tỷ lệ phí không hợp lệ! Phải nằm trong khoảng từ 0.0 đến 1.0 (0% - 100%)");
+      return;
+    }
+    //systemCommissionRate = rate;
+    System.out.println("⚙️ Admin " + getUsername() + " đã cập nhật phí sàn hệ thống thành: " + (rate * 100) + "%");
+  }
+
+  //public static double getSystemCommissionRate() {
+  //return systemCommissionRate;
+  //}
+
+  /**
+   * 7. Thống kê báo cáo tổng quan hệ thống (Mục báo cáo quản trị)
+   * Trả về một Map chứa các thông số tổng hợp từ bộ nhớ RAM/DB.
+   */
+  public Map<String, Object> generateSystemReport(List<User> userList, List<Auction> auctionList) {
+    System.out.println("📊 --- ĐANG KHỞI TẠO BÁO CÁO HỆ THỐNG ---");
+    Map<String, Object> report = new HashMap<>();
+
+    int totalUsers = userList.size();
+    long bannedUsers = userList.stream().filter(User::isBanned).count();
+    int totalAuctions = auctionList.size();
+    long activeAuctions = auctionList.stream().filter(a -> "RUNNING".equals(a.getStatus())).count();
+    long completedAuctions = auctionList.stream().filter(a -> "FINISHED".equals(a.getStatus())).count();
+
+    report.put("totalUsers", totalUsers);
+    report.put("bannedUsers", bannedUsers);
+    report.put("totalAuctions", totalAuctions);
+    report.put("activeAuctions", activeAuctions);
+    report.put("completedAuctions", completedAuctions);
+
+    System.out.println("📈 Báo cáo hoàn tất: " + totalUsers + " Người dùng | " + totalAuctions + " Phiên đấu giá.");
+    return report;
   }
 }

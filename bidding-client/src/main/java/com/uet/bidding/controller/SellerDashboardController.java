@@ -93,6 +93,8 @@ public class SellerDashboardController {
 
   @FXML private TableColumn<Item, String> invColName;
 
+  @FXML private TableColumn<Item, String> invColStatus;
+
 
 
   @FXML private TableView<Auction> activeAuctionsTable;
@@ -172,6 +174,7 @@ public class SellerDashboardController {
     invColName.setCellValueFactory(cd ->
 
         new SimpleStringProperty(cd.getValue() != null ? cd.getValue().getName() : "-"));
+
 
     inventoryTable.setItems(inventoryItems);
     inventoryTable.setRowFactory(tv -> {

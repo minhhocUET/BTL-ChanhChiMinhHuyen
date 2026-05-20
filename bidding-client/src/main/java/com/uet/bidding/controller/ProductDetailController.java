@@ -4,7 +4,7 @@ import com.uet.bidding.model.*;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.AutoBidService;
 import com.uet.bidding.service.BidderService;
-import com.uet.bidding.util.ImageUtil;
+import com.uet.bidding.util.ImageUtils;
 import com.uet.bidding.util.UserSession;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -92,7 +92,7 @@ public class ProductDetailController {
       lblHighestBidder.setText("Chưa có ai đặt giá");
     }
 
-    ImageUtil.loadItemImage(imgProduct, item);
+    ImageUtils.loadItemImage(imgProduct, item);
     if (lblRegisteredCount != null) {
       lblRegisteredCount.setText("Đã đăng ký: " + auction.getRegisteredCount() + " người");
     }

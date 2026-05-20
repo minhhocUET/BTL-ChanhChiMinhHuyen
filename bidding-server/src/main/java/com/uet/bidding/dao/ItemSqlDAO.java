@@ -74,78 +74,77 @@ public class ItemSqlDAO {
    * sau đó nạp thêm các trường riêng của từng loại.
    */
   private Item mapResultSetToItem(ResultSet rs) throws SQLException {
-    String type = rs.getString("item_type");
+    // 1. Ép hoa để tránh lỗi electronics vs ELECTRONICS
+    String typeFromDb = rs.getString("item_type");
+    String type = (typeFromDb != null) ? typeFromDb.toUpperCase().trim() : "";
+
     Item item;
 
-    switch (type) {
-      case "ART" -> {
-        Art art = new Art(
-            rs.getInt("id"),
-            rs.getString("name"),
-            rs.getString("description"),
-            rs.getBigDecimal("starting_price"),
-            rs.getString("image_path"),
-            rs.getInt("seller_id"),
-            rs.getString("author"),
-            rs.getInt("creation_year"),
-            rs.getString("material")
-        );
-        item = art;
-      }
-      case "ELECTRONICS" -> {
-        Electronics elec = new Electronics(
-            rs.getInt("id"),
-            rs.getString("name"),
-            rs.getString("description"),
-            rs.getBigDecimal("starting_price"),
-            rs.getString("image_path"),
-            rs.getInt("seller_id"),
-            rs.getString("brand"),
-            rs.getInt("warranty_months")
-        );
-        item = elec;
-      }
-      case "VEHICLE" -> {
-        // manufacturingYear và mileage có thể NULL trong DB
-        int mfYear = rs.getInt("manufacturing_year");
-        Integer manufacturingYear = rs.wasNull() ? null : mfYear;
-
-        double mil = rs.getDouble("mileage");
-        Double mileage = rs.wasNull() ? null : mil;
-
-        Vehicle vehicle = new Vehicle(
-            rs.getInt("id"),
-            rs.getString("name"),
-            rs.getString("description"),
-            rs.getBigDecimal("starting_price"),
-            rs.getString("image_path"),
-            rs.getInt("seller_id"),
-            rs.getString("brand"),
-            rs.getString("model"),
-            manufacturingYear,
-            mileage,
-            rs.getString("engine_type"),
-            rs.getString("fuel_type")
-        );
-        item = vehicle;
-      }
-      default -> throw new SQLException("Loại item không hợp lệ trong DB: " + type);
-    }
-
-    item.setInAuction(rs.getBoolean("in_auction"));
-    item.setCity(rs.getString("city"));
     try {
-      item.setImageData(rs.getString("image_data"));
-    } catch (SQLException ignored) {
-      // column may not exist until migration is applied
-    }
+      switch (type) {
+        case "ART" -> {
+          Art art = new Art(
+              rs.getInt("id"),
+              rs.getString("name"),
+              rs.getString("description"),
+              rs.getBigDecimal("starting_price"),
+              rs.getString("image_path"),
+              rs.getInt("seller_id"),
+              rs.getString("author"),
+              rs.getInt("creation_year"),
+              rs.getString("material")
+          );
+          item = art;
+        }
+        case "ELECTRONICS" -> {
+          Electronics elec = new Electronics(
+              rs.getInt("id"),
+              rs.getString("name"),
+              rs.getString("description"),
+              rs.getBigDecimal("starting_price"),
+              rs.getString("image_path"),
+              rs.getInt("seller_id"),
+              rs.getString("brand"),
+              rs.getInt("warranty_months")
+          );
+          item = elec;
+        }
+        case "VEHICLE" -> {
+          // manufacturingYear và mileage có thể NULL trong DB
+          int mfYear = rs.getInt("manufacturing_year");
+          Integer manufacturingYear = rs.wasNull() ? null : mfYear;
 
-    try {
+          double mil = rs.getDouble("mileage");
+          Double mileage = rs.wasNull() ? null : mil;
+
+          Vehicle vehicle = new Vehicle(
+              rs.getInt("id"),
+              rs.getString("name"),
+              rs.getString("description"),
+              rs.getBigDecimal("starting_price"),
+              rs.getString("image_path"),
+              rs.getInt("seller_id"),
+              rs.getString("brand"),
+              rs.getString("model"),
+              manufacturingYear,
+              mileage,
+              rs.getString("engine_type"),
+              rs.getString("fuel_type")
+          );
+          item = vehicle;
+        }
+        default -> throw new SQLException("Loại item không hợp lệ trong DB: " + type);
+      }
+
+      // 2. Gán các thuộc tính chung
+      item.setInAuction(rs.getBoolean("in_auction"));
+      item.setCity(rs.getString("city"));
       item.setStatus(rs.getString("status"));
+      return item;
     } catch (Exception e) {
-      // Dự phòng nếu class Item của bạn chưa kịp viết hàm setStatus()
+      System.err.println("❌ Lỗi khi tạo Object Item từ ResultSet: " + e.getMessage());
+      return null;
     }
-    return item;
   }
 
   // =========================================================
@@ -159,34 +158,39 @@ public class ItemSqlDAO {
    * @throws ItemException nếu lỗi SQL.
    */
   public void addItem(Item item) throws ItemException {
+    // Thay đổi: Dùng 19 dấu ? cho 19 cột, không hardcode chữ FALSE vào chuỗi SQL nữa
     String sql =
         "INSERT INTO items (" +
-            "seller_id, name, description, starting_price, image_path, image_data, city, " +
+            "seller_id, name, description, starting_price, image_path, city, " +
             "in_auction, item_type, status, " +
             "author, creation_year, material, " +
             "brand, warranty_months, " +
             "model, manufacturing_year, mileage, engine_type, fuel_type) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, FALSE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-      // ── Cột chung (Index từ 1 đến 9) ────────────────────────
+      // --- 9 cột cơ bản dùng chung ---
       stmt.setInt(1, item.getSellerId());
       stmt.setString(2, item.getName());
       setStringOrNull(stmt, 3, item.getDescription());
       stmt.setBigDecimal(4, item.getStartingPrice());
       setStringOrNull(stmt, 5, item.getImagePath());
-      setStringOrNull(stmt, 6, item.getImageData());
-      setStringOrNull(stmt, 7, item.getCity());
-      stmt.setString(8, item.getType());
-      stmt.setString(9, "PENDING"); // Fixed lỗi gán đè index 8
+      setStringOrNull(stmt, 6, item.getCity());
 
-      // ── Cột riêng (Index từ 10 đến 19) ──────────────────────
+      // Vị trí số 7 và 9 xử lý trực tiếp trạng thái mặc định
+      stmt.setBoolean(7, false); // in_auction: tinyint(1) nhận false sẽ lưu là 0
+      stmt.setString(8, item.getType());
+      stmt.setString(9, "PENDING"); // status: Mặc định chờ duyệt
+
+      // --- Các cột riêng biệt (từ index 10 đến 19) ---
       if (item instanceof Art a) {
         setStringOrNull(stmt, 10, a.getAuthor());
         setIntOrNull(stmt, 11, a.getCreationYear() == 0 ? null : a.getCreationYear());
         setStringOrNull(stmt, 12, a.getMaterial());
+
+        // Các cột không liên quan đến Art thì setNull
         stmt.setNull(13, Types.VARCHAR); // brand
         stmt.setNull(14, Types.INTEGER); // warranty_months
         stmt.setNull(15, Types.VARCHAR); // model
@@ -198,9 +202,11 @@ public class ItemSqlDAO {
       } else if (item instanceof Electronics e) {
         stmt.setNull(10, Types.VARCHAR);  // author
         stmt.setNull(11, Types.INTEGER);  // creation_year
-        stmt.setNull(12, Types.VARCHAR); // material
+        stmt.setNull(12, Types.VARCHAR);  // material
+
         setStringOrNull(stmt, 13, e.getBrand());
         setIntOrNull(stmt, 14, e.getWarrantyMonths());
+
         stmt.setNull(15, Types.VARCHAR); // model
         stmt.setNull(16, Types.INTEGER); // manufacturing_year
         stmt.setNull(17, Types.DOUBLE);  // mileage
@@ -210,9 +216,11 @@ public class ItemSqlDAO {
       } else if (item instanceof Vehicle v) {
         stmt.setNull(10, Types.VARCHAR);  // author
         stmt.setNull(11, Types.INTEGER);  // creation_year
-        stmt.setNull(12, Types.VARCHAR); // material
+        stmt.setNull(12, Types.VARCHAR);  // material
+
         setStringOrNull(stmt, 13, v.getBrand());
-        stmt.setNull(14, Types.INTEGER); // warranty_months
+        stmt.setNull(14, Types.INTEGER);  // warranty_months
+
         setStringOrNull(stmt, 15, v.getModel());
         setIntOrNull(stmt, 16, v.getManufacturingYear());
         setDoubleOrNull(stmt, 17, v.getMileage());
@@ -510,6 +518,55 @@ public class ItemSqlDAO {
       throw new ItemException("Lỗi xóa item: " + e.getMessage());
     }
   }
+  public String getImagePath(int itemId) {
+    String sql = "SELECT image_path FROM items WHERE id = ?";
+    try (Connection conn = DatabaseConnection.getConnection(); // Thay bằng cách lấy Conn của bạn
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+      pstmt.setInt(1, itemId);
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString("image_path");
+        }
+      }
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi lấy path ảnh: " + e.getMessage());
+    }
+    return null;
+  }
+
+  // 3. Hàm XÓA HOÀN TOÀN sản phẩm (Admin xóa hoặc Seller tự rút lại bài)
+  public boolean deleteItemCompletely(int itemId) {
+    // 1. Lấy path ảnh trước
+    String imagePath = getImagePath(itemId);
+
+    // 2. Xóa trong Database
+    String sql = "DELETE FROM items WHERE id = ?";
+    boolean dbDeleted = false;
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+      pstmt.setInt(1, itemId);
+      dbDeleted = pstmt.executeUpdate() > 0;
+
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi xóa SP trong DB: " + e.getMessage());
+      return false;
+    }
+
+    // 3. Nếu DB xóa xong thì dọn file trên ổ cứng
+    if (dbDeleted && imagePath != null) {
+      try {
+        java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get(imagePath));
+        System.out.println("✅ Đã dọn dẹp file: " + imagePath);
+      } catch (Exception e) {
+        System.err.println("⚠️ Không xóa được file vật lý: " + e.getMessage());
+      }
+    }
+
+    return dbDeleted;
+  }
 
   // =========================================================
   //  THỐNG KÊ
@@ -536,6 +593,10 @@ public class ItemSqlDAO {
     return countByQuery("SELECT COUNT(*) FROM items WHERE status = 'PENDING'");
   }
 
+  // Trong ItemSqlDAO.java
+  public List<Item> getPendingItems() {
+    return queryList( BASE_SELECT +  " WHERE status = 'PENDING'", null);
+  }
   /**
    * Số item của một seller cụ thể.
    */

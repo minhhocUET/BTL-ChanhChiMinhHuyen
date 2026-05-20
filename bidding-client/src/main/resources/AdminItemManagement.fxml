@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
-<VBox xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
-      fx:controller="com.uet.bidding.controller.admin.AdminItemManagementController"
-      prefHeight="600.0" prefWidth="660.0" spacing="15.0" style="-fx-background-color: #ffffff;">
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox prefHeight="650.0" prefWidth="950.0" spacing="15.0" style="-fx-background-color: #f4f7f6;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.admin.AdminItemManagementController">
 
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
     </padding>
 
     <children>
@@ -18,49 +17,69 @@
             <children>
                 <Label text="PHÊ DUYỆT SẢN PHẨM" textFill="#1b3394">
                     <font>
-                        <Font name="Segoe UI Bold" size="22.0"/>
+                        <Font name="Segoe UI Bold" size="22.0" />
                     </font>
                 </Label>
-                <Label text="Sản phẩm do Seller đăng cần được duyệt trước khi chính thức lên sàn đấu giá."
-                       textFill="#7f8c8d">
+                <Label text="Kiểm tra thông tin chi tiết và hình ảnh trước khi cho phép đấu giá." textFill="#7f8c8d">
                     <font>
-                        <Font name="Segoe UI" size="14.0"/>
+                        <Font name="Segoe UI" size="14.0" />
                     </font>
                 </Label>
             </children>
         </VBox>
 
-        <TableView fx:id="tablePendingItems" prefHeight="450.0" prefWidth="620.0" VBox.vgrow="ALWAYS"
-                   style="-fx-background-color: white; -fx-background-radius: 4; -fx-border-color: #e2e8f0; -fx-border-radius: 4; -fx-font-family: 'Segoe UI';">
-            <columns>
-                <TableColumn fx:id="colId" prefWidth="60.0" text="ID" style="-fx-alignment: CENTER;"/>
-                <TableColumn fx:id="colName" prefWidth="240.0" text="Tên Sản phẩm" style="-fx-alignment: CENTER-LEFT;"/>
-                <TableColumn fx:id="colSellerId" prefWidth="140.0" text="Mã Người bán" style="-fx-alignment: CENTER;"/>
-                <TableColumn fx:id="colPrice" prefWidth="160.0" text="Giá khởi điểm"
-                             style="-fx-alignment: CENTER-RIGHT; -fx-padding: 0 15 0 0;"/>
-            </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
-        </TableView>
-
-        <HBox alignment="CENTER_RIGHT" spacing="15.0">
+        <HBox spacing="15.0" VBox.vgrow="ALWAYS">
             <children>
-                <Button mnemonicParsing="false" onAction="#handleRejectAction" prefHeight="38.0" prefWidth="130.0"
-                        style="-fx-background-color: #ff4757; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"
-                        text="Từ chối">
-                    <font>
-                        <Font size="13.0"/>
-                    </font>
-                </Button>
 
-                <Button mnemonicParsing="false" onAction="#handleApproveAction" prefHeight="38.0" prefWidth="130.0"
-                        style="-fx-background-color: #2ed573; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"
-                        text="Phê duyệt">
-                    <font>
-                        <Font size="13.0"/>
-                    </font>
-                </Button>
+                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label style="-fx-font-weight: bold; -fx-text-fill: #34495e;" text="Danh sách chờ duyệt" />
+                        <TableView fx:id="tablePendingItems" prefWidth="779.0" style="-fx-background-color: white; -fx-background-radius: 4; -fx-border-color: #bdc3c7; -fx-border-radius: 4; -fx-font-family: 'Segoe UI';" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colId" prefWidth="60.0" style="-fx-alignment: CENTER;" text="ID" />
+                                <TableColumn fx:id="colName" prefWidth="240.0" style="-fx-alignment: CENTER-LEFT;" text="Tên Sản phẩm" />
+                                <TableColumn fx:id="colSellerId" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Mã Người bán" />
+                                <TableColumn fx:id="colPrice" prefWidth="150.0" style="-fx-alignment: CENTER-RIGHT; -fx-padding: 0 15 0 0;" text="Giá khởi điểm" />
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                            </columnResizePolicy>
+                        </TableView>
+                    </children>
+                </VBox>
+
+                <VBox prefHeight="527.0" prefWidth="326.0" spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #bdc3c7; -fx-border-radius: 6; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 1);">
+                    <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                    </padding>
+                    <children>
+                        <Label style="-fx-font-weight: bold; -fx-text-fill: #1b3394;" text="XEM TRƯỚC CHI TIẾT" />
+
+                        <StackPane prefHeight="220.0" prefWidth="300.0" style="-fx-background-color: #ecf0f1; -fx-background-radius: 6; -fx-border-color: #bdc3c7;">
+                            <children>
+                                <ImageView fx:id="imgPreview" fitHeight="210.0" fitWidth="290.0" pickOnBounds="true" preserveRatio="true" smooth="true">
+                                </ImageView>
+                            </children>
+                        </StackPane>
+
+                        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: white;" VBox.vgrow="ALWAYS">
+                            <content>
+                                <Label fx:id="lblDetailInfo" alignment="TOP_LEFT" lineSpacing="4.0" text="Chọn một sản phẩm để xem chi tiết..." wrapText="true">
+                                    <font>
+                                        <Font name="Segoe UI" size="13.0" />
+                                    </font>
+                                </Label>
+                            </content>
+                        </ScrollPane>
+
+                        <HBox alignment="CENTER" spacing="10.0">
+                            <children>
+                                <Button onAction="#handleRejectAction" prefHeight="38.0" prefWidth="135.0" style="-fx-background-color: #ff4757; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;" text="TỪ CHỐI" />
+                                <Button onAction="#handleApproveAction" prefHeight="38.0" prefWidth="135.0" style="-fx-background-color: #2ed573; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;" text="DUYỆT BÀI" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
             </children>
         </HBox>
     </children>

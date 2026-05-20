@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 
 public class Electronics extends Item {
 
-  private static final long serialVersionUID = 1L;
-
   private String brand;
   private int warrantyMonths;
 

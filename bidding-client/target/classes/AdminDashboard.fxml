@@ -3,130 +3,66 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
-            minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0"
-            xmlns="http://javafx.com/javafx/21"
-            fx:controller="com.uet.bidding.controller.AdminDashboardController">
-    <left>
-        <VBox prefHeight="600.0" prefWidth="240.0" style="-fx-background-color: #1e3799;" BorderPane.alignment="CENTER">
+<?import javafx.scene.text.Font?>
+<HBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="950.0" style="-fx-background-color: #ffffff;"
+      xmlns="http://javafx.com/javafx/21" fx:controller="com.uet.bidding.controller.admin.AdminDashboardController">
+    <children>
+
+        <VBox alignment="TOP_CENTER" prefHeight="650.0" prefWidth="240.0" spacing="12.0"
+              style="-fx-background-color: #1b3394;" HBox.hgrow="NEVER">
+            <padding>
+                <Insets bottom="20.0" left="15.0" right="15.0" top="30.0"/>
+            </padding>
             <children>
                 <Label text="ADMIN PANEL" textFill="WHITE">
                     <font>
-                        <Font name="System Bold" size="22.0"/>
+                        <Font name="Segoe UI Bold" size="22.0"/>
                     </font>
                     <VBox.margin>
-                        <Insets bottom="40.0" left="30.0" top="30.0"/>
+                        <Insets bottom="25.0"/>
                     </VBox.margin>
                 </Label>
-                <Button mnemonicParsing="false" onAction="#handleManageUsers" prefHeight="45.0" prefWidth="240.0"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;"
-                        text="👤 Quản lý Người dùng">
+
+                <Button fx:id="btnOverview" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                        onAction="#showOverviewPage" prefHeight="45.0" prefWidth="210.0"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-cursor: hand; -fx-background-radius: 8;"
+                        text="📊  Tổng quan">
                     <padding>
-                        <Insets left="30.0"/>
+                        <Insets left="20.0"/>
                     </padding>
-                    <font>
-                        <Font name="System Bold" size="14.0"/>
-                    </font>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#handleManageItems" prefHeight="45.0" prefWidth="240.0"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;"
-                        text="📦 Phê duyệt Sản phẩm">
+
+                <Button fx:id="btnUserManagement" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                        onAction="#showUserManagementPage" prefHeight="45.0" prefWidth="210.0"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-cursor: hand; -fx-background-radius: 8;"
+                        text="👤  Quản lý Người dùng">
                     <padding>
-                        <Insets left="30.0"/>
+                        <Insets left="20.0"/>
                     </padding>
-                    <font>
-                        <Font name="System Bold" size="14.0"/>
-                    </font>
                 </Button>
-                <Button mnemonicParsing="false" onAction="#handleSystemReports" prefHeight="45.0" prefWidth="240.0"
-                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT; -fx-cursor: hand;"
-                        text="📊 Thống kê Hệ thống">
+
+                <Button fx:id="btnItemApproval" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                        onAction="#showItemApprovalPage" prefHeight="45.0" prefWidth="210.0"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-cursor: hand; -fx-background-radius: 8;"
+                        text="🎁  Phê duyệt Sản phẩm">
                     <padding>
-                        <Insets left="30.0"/>
+                        <Insets left="20.0"/>
                     </padding>
-                    <font>
-                        <Font name="System Bold" size="14.0"/>
-                    </font>
                 </Button>
-                <VBox VBox.vgrow="ALWAYS"/>
-                <Button mnemonicParsing="false" onAction="#handleLogout" prefHeight="45.0" prefWidth="240.0"
-                        style="-fx-background-color: #eb2f06; -fx-text-fill: white; -fx-cursor: hand;" text="Đăng xuất">
-                    <font>
-                        <Font name="System Bold" size="14.0"/>
-                    </font>
-                    <VBox.margin>
-                        <Insets bottom="20.0" left="20.0" right="20.0"/>
-                    </VBox.margin>
-                </Button>
-            </children>
-        </VBox>
-    </left>
-    <center>
-        <StackPane fx:id="contentArea" style="-fx-background-color: #f1f2f6;" BorderPane.alignment="CENTER">
-            <children>
-                <VBox spacing="30.0">
-                    <padding>
-                        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
-                    </padding>
+
+                <VBox alignment="BOTTOM_CENTER" VBox.vgrow="ALWAYS">
                     <children>
-                        <Label text="THỐNG KÊ HỆ THỐNG" textFill="#1e3799">
-                            <font>
-                                <Font name="System Bold" size="24.0"/>
-                            </font>
-                        </Label>
-                        <HBox spacing="20.0">
-                            <children>
-                                <VBox alignment="CENTER" prefHeight="140.0" prefWidth="200.0"
-                                      style="-fx-background-color: #3c6382; -fx-background-radius: 10;">
-                                    <children>
-                                        <Label text="TỔNG NGƯỜI DÙNG" textFill="WHITE">
-                                            <font>
-                                                <Font name="System Bold" size="14.0"/>
-                                            </font>
-                                        </Label>
-                                        <Label fx:id="lblTotalUsers" text="0" textFill="#00d2d3">
-                                            <font>
-                                                <Font name="System Bold" size="40.0"/>
-                                            </font>
-                                        </Label>
-                                    </children>
-                                </VBox>
-                                <VBox alignment="CENTER" prefHeight="140.0" prefWidth="200.0"
-                                      style="-fx-background-color: #3c6382; -fx-background-radius: 10;">
-                                    <children>
-                                        <Label text="PHIÊN ĐANG MỞ" textFill="WHITE">
-                                            <font>
-                                                <Font name="System Bold" size="14.0"/>
-                                            </font>
-                                        </Label>
-                                        <Label fx:id="lblActiveSessions" text="0" textFill="#ff9f43">
-                                            <font>
-                                                <Font name="System Bold" size="40.0"/>
-                                            </font>
-                                        </Label>
-                                    </children>
-                                </VBox>
-                                <VBox alignment="CENTER" prefHeight="140.0" prefWidth="200.0"
-                                      style="-fx-background-color: #3c6382; -fx-background-radius: 10;">
-                                    <children>
-                                        <Label text="SP CHỜ DUYỆT" textFill="WHITE">
-                                            <font>
-                                                <Font name="System Bold" size="14.0"/>
-                                            </font>
-                                        </Label>
-                                        <Label fx:id="lblPendingItems" text="0" textFill="#ee5253">
-                                            <font>
-                                                <Font name="System Bold" size="40.0"/>
-                                            </font>
-                                        </Label>
-                                    </children>
-                                </VBox>
-                            </children>
-                        </HBox>
+                        <Button fx:id="btnLogout" onAction="#handleLogout" mnemonicParsing="false" prefHeight="40.0"
+                                prefWidth="210.0"
+                                style="-fx-background-color: #ff4757; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"
+                                text="Đăng xuất"/>
                     </children>
                 </VBox>
             </children>
-        </StackPane>
-    </center>
-</BorderPane>
+        </VBox>
+
+        <StackPane fx:id="contentArea" prefHeight="650.0" prefWidth="710.0" style="-fx-background-color: #ffffff;"
+                   HBox.hgrow="ALWAYS"/>
+
+    </children>
+</HBox>

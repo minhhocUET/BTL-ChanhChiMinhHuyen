@@ -1,7 +1,10 @@
 package com.uet.bidding.controller.admin;
 
 import com.google.gson.Gson; // Đã thêm import Gson
+import com.uet.bidding.model.Art;
+import com.uet.bidding.model.Electronics;
 import com.uet.bidding.model.Item;
+import com.uet.bidding.model.Vehicle;
 import com.uet.bidding.network.ClientService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -9,6 +12,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;import javafx.scene.image.ImageView;
 
 import java.math.BigDecimal; // Nhớ thêm import này ở trên cùng nhé
 import java.util.List;
@@ -20,6 +24,10 @@ public class AdminItemManagementController {
   private static AdminItemManagementController instance;
   private final ObservableList<Item> pendingData = FXCollections.observableArrayList();
 
+  @FXML
+  private Label lblDetailInfo; // Label hiển thị thông tin chi tiết
+  @FXML
+  private ImageView imgPreview; // Image view để xem ảnh sản phẩm
   @FXML
   private TableView<Item> tablePendingItems;
   @FXML
@@ -63,9 +71,78 @@ public class AdminItemManagementController {
     // 👆 SỬA LẠI ĐOẠN FORMAT GIÁ TIỀN THÀNH THẾ NÀY 👆
 
     tablePendingItems.setItems(pendingData);
+    // Lắng nghe sự kiện click dòng trong TableView
+    tablePendingItems.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+      if (newVal != null) {
+        renderItemPreview(newVal);
+      }
+    });
 
     // 2. Bắn request lên Server xin danh sách sản phẩm đang chờ duyệt (PENDING)
     requestDataFromServer();
+  }
+
+  private void renderItemPreview(Item item) {
+    // 1. Cập nhật thông tin chữ trước (Load cực nhanh)
+    StringBuilder sb = new StringBuilder();
+    sb.append("===== CHI TIẾT SẢN PHẨM =====\n\n");
+    sb.append("📍 Thành phố: ").append(item.getCity() != null ? item.getCity() : "Không rõ").append("\n");
+    sb.append("📝 Mô tả: ").append(item.getDescription() != null ? item.getDescription() : "Không có mô tả").append("\n\n");
+
+    sb.append("--- THÔNG SỐ KỸ THUẬT ---\n");
+
+    // Tối ưu: Dùng pattern matching (nếu dùng Java 17+) hoặc ép kiểu chuẩn
+    if (item instanceof Electronics e) {
+      sb.append("• Loại: Đồ điện tử\n");
+      sb.append("• Hãng sản xuất: ").append(e.getBrand()).append("\n");
+      sb.append("• Bảo hành: ").append(e.getWarrantyMonths()).append(" tháng\n");
+    }
+    else if (item instanceof Art a) {
+      sb.append("• Loại: Tác phẩm nghệ thuật\n");
+      sb.append("• Tác giả: ").append(a.getAuthor()).append("\n");
+      sb.append("• Chất liệu: ").append(a.getMaterial()).append("\n");
+      sb.append("• Năm sáng tác: ").append(a.getCreationYear()).append("\n");
+    }
+    else if (item instanceof Vehicle v) {
+      sb.append("• Loại: Phương tiện\n");
+      sb.append("• Hãng & Dòng: ").append(v.getBrand()).append(" ").append(v.getModel()).append("\n");
+      sb.append("• ODO: ").append(v.getMileage()).append(" km\n");
+      sb.append("• Động cơ: ").append(v.getEngineType()).append(" (").append(v.getFuelType()).append(")\n");
+    }
+
+    lblDetailInfo.setText(sb.toString());
+
+    // 2. Xử lý tải ảnh từ Server (Tối ưu: Chỉ tải khi được click)
+    // Xóa ảnh cũ đang hiện để tránh Admin nhìn nhầm ảnh sản phẩm trước đó
+    imgPreview.setImage(null);
+
+    if (item.getImagePath() != null && !item.getImagePath().isEmpty()) {
+      ClientService.getInstance().sendRequest("GET_ITEM_IMAGE", item.getId())
+          .thenAccept(response -> {
+            if ("GET_IMAGE_SUCCESS".equals(response.getType())) {
+              String base64 = (String) response.getData();
+              byte[] imageBytes = java.util.Base64.getDecoder().decode(base64);
+
+              Platform.runLater(() -> {
+                Image img = new Image(new java.io.ByteArrayInputStream(imageBytes));
+                imgPreview.setImage(img);
+
+                // Nếu chiều cao lớn hơn chiều rộng (ảnh đứng) mà ImageView đang ngang
+                // Bạn có thể chỉnh ImageView để hiển thị tốt nhất
+                imgPreview.setImage(img);
+                imgPreview.setPreserveRatio(true);
+
+                // Đảm bảo ImageView không bao giờ vượt quá khung chứa
+                imgPreview.setFitWidth(290); // Khớp với FXML của bạn
+                imgPreview.setFitHeight(210);
+              });
+            }
+          })
+          .exceptionally(ex -> {
+            System.err.println("Lỗi tải ảnh: " + ex.getMessage());
+            return null;
+          });
+    }
   }
 
   private void requestDataFromServer() {
@@ -135,7 +212,10 @@ public class AdminItemManagementController {
           .thenAccept(response -> {
             if ("APPROVE_SUCCESS".equals(response.getType())) {
               Platform.runLater(() -> {
-                pendingData.remove(selectedItem); // Chỉ xóa UI khi Server báo thành công
+                pendingData.remove(selectedItem);// Chỉ xóa UI khi Server báo thành công
+                // Làm sạch vùng Preview
+                imgPreview.setImage(null);
+                lblDetailInfo.setText("Chọn một sản phẩm để xem chi tiết...");
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã duyệt sản phẩm thành công!");
               });
             } else {
@@ -178,6 +258,9 @@ public class AdminItemManagementController {
             if ("REJECT_SUCCESS".equals(response.getType())) {
               Platform.runLater(() -> {
                 pendingData.remove(selectedItem); // Chỉ xóa UI khi Server báo thành công
+                // Làm sạch vùng Preview
+                imgPreview.setImage(null);
+                lblDetailInfo.setText("Chọn một sản phẩm để xem chi tiết...");
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã từ chối sản phẩm!");
               });
             } else {

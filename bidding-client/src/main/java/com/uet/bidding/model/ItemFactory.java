@@ -1,6 +1,13 @@
 package com.uet.bidding.model;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ItemFactory {
 
@@ -50,5 +57,58 @@ public class ItemFactory {
 
       default -> throw new IllegalArgumentException("Loại sản phẩm không xác định: " + type);
     };
+  }
+
+  public static List<Item> parseItemsFromJson(String json, Gson gson) {
+    List<Item> items = new ArrayList<>();
+    JsonArray arr = gson.fromJson(json, JsonArray.class);
+    if (arr == null) return items;
+    for (JsonElement el : arr) {
+      items.add(parseItemFromJsonObject(el.getAsJsonObject()));
+    }
+    return items;
+  }
+
+  private static Item parseItemFromJsonObject(JsonObject o) {
+    String type = detectItemType(o);
+    int id = o.get("id").getAsInt();
+    String name = o.get("name").getAsString();
+    String description = o.has("description") ? o.get("description").getAsString() : "";
+    BigDecimal price = o.get("startingPrice").getAsBigDecimal();
+    String image = o.has("imagePath") ? o.get("imagePath").getAsString() : "";
+    int sellerId = o.has("sellerId") ? o.get("sellerId").getAsInt() : 0;
+
+    Item item = switch (type.toUpperCase()) {
+      case "ELECTRONICS" -> createItemFromDb(type, id, name, description, price, image, sellerId,
+          o.has("brand") ? o.get("brand").getAsString() : "Unknown",
+          o.has("warrantyMonths") ? o.get("warrantyMonths").getAsInt() : 12);
+      case "ART" -> createItemFromDb(type, id, name, description, price, image, sellerId,
+          o.has("author") ? o.get("author").getAsString() : "Unknown",
+          o.has("creationYear") ? o.get("creationYear").getAsInt() : 2000,
+          o.has("material") ? o.get("material").getAsString() : "");
+      case "VEHICLE" -> createItemFromDb(type, id, name, description, price, image, sellerId,
+          o.has("brand") ? o.get("brand").getAsString() : "",
+          o.has("model") ? o.get("model").getAsString() : "",
+          o.has("manufacturingYear") ? o.get("manufacturingYear").getAsInt() : null,
+          o.has("mileage") && !o.get("mileage").isJsonNull() ? o.get("mileage").getAsDouble() : null,
+          o.has("engineType") ? o.get("engineType").getAsString() : "",
+          o.has("fuelType") ? o.get("fuelType").getAsString() : "");
+      default -> throw new IllegalArgumentException("Loại sản phẩm không xác định: " + type);
+    };
+    if (o.has("city") && !o.get("city").isJsonNull()) {
+      item.setCity(o.get("city").getAsString());
+    }
+    if (o.has("imageData") && !o.get("imageData").isJsonNull()) {
+      item.setImageData(o.get("imageData").getAsString());
+    }
+    return item;
+  }
+
+  private static String detectItemType(JsonObject o) {
+    if (o.has("itemType")) return o.get("itemType").getAsString();
+    if (o.has("warrantyMonths")) return "ELECTRONICS";
+    if (o.has("author")) return "ART";
+    if (o.has("manufacturingYear") || o.has("mileage")) return "VEHICLE";
+    throw new IllegalArgumentException("Không xác định được loại sản phẩm từ JSON");
   }
 }

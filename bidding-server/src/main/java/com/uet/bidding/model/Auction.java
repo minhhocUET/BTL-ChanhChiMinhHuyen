@@ -2,8 +2,6 @@ package com.uet.bidding.model;
 
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
-import javafx.beans.property.SimpleIntegerProperty;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,7 +16,7 @@ public class Auction {
   private LocalDateTime startTime;
   private LocalDateTime endTime;
   private String status;
-  private SimpleIntegerProperty interestedCount;
+  private int registeredCount;
   // Thêm các biến
   private BigDecimal bidIncrement;
   private int antiSnipeWindowMinutes;
@@ -122,8 +120,12 @@ public class Auction {
     this.status = status;
   }
 
-  public int getInterestedCount() {
-    return interestedCount.get();
+  public int getRegisteredCount() {
+    return registeredCount;
+  }
+
+  public void setRegisteredCount(int registeredCount) {
+    this.registeredCount = registeredCount;
   }
 
   public Customer getHighestBidder() {

@@ -2,12 +2,12 @@ package com.uet.bidding.service;
 
 import com.uet.bidding.model.*;
 import com.uet.bidding.network.ClientService;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class SellerService {
   private ClientService clientService = ClientService.getInstance();
@@ -15,31 +15,10 @@ public class SellerService {
   /**
    * CHỨC NĂNG 1: TẠO ĐẤU GIÁ (Giữ nguyên logic kiểm tra của bạn)
    */
-  public Auction createAndStartAuction(Seller seller, Item item, BigDecimal startPrice, int durationMins) {
-    // --- GIỮ NGUYÊN LOGIC CŨ CỦA BẠN ---
-    if (!seller.getInventory().contains(item)) {
-      System.err.println("Lỗi: Item không thuộc kho hàng!");
-      return null;
-    }
-
-    if (item.isInAuction()) {
-      System.err.println("Lỗi: Item đang trong một phiên khác!");
-      return null;
-    }
-
-    // --- THÊM PHẦN GIAO TIẾP MẠNG ---
-    // Gửi lệnh lên Server để mọi người cùng thấy phiên này
-    // Ta gửi: ID món hàng, giá khởi điểm, và thời gian
-    String requestData = item.getId() + " " + startPrice + " " + durationMins;
-    clientService.sendRequest("CREATE_AUCTION", requestData);
-
-    // Logic local: Khởi tạo tạm trên RAM Client để hiển thị ngay lập tức (Responsive UI)
-    Auction newAuction = new Auction(item, startPrice, durationMins);
-    newAuction.setStatus("RUNNING");
-    item.setInAuction(true);
-    seller.getActiveAuctions().add(newAuction);
-
-    return newAuction;
+  /** Gửi CREATE_AUCTION lên server: itemId startPrice durationMinutes */
+  public CompletableFuture<NetworkMessage> createAuctionAsync(int itemId, BigDecimal startPrice, int durationMins) {
+    String requestData = itemId + " " + startPrice.toPlainString() + " " + durationMins;
+    return clientService.sendRequest("CREATE_AUCTION", requestData);
   }
 
   /**
@@ -72,4 +51,5 @@ public class SellerService {
     payload.put("comment", comment);
     clientService.sendRequest("ADD_REVIEW", payload);
   }
+
 }

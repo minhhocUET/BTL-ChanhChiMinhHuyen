@@ -2,9 +2,9 @@ package com.uet.bidding.controller;
 
 import com.uet.bidding.model.*;
 import com.uet.bidding.network.ClientService;
-import com.uet.bidding.server.Server;
 import com.uet.bidding.service.AutoBidService;
 import com.uet.bidding.service.BidderService;
+import com.uet.bidding.util.ImageUtil;
 import com.uet.bidding.util.UserSession;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -30,7 +30,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
-import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 
 public class ProductDetailController {
@@ -59,6 +58,9 @@ public class ProductDetailController {
   @FXML private TableColumn<BidRow, String> colBidTime;
   @FXML private TableColumn<BidRow, String> colBidAmount;
   @FXML private LineChart<String, Number> bidLineChart;
+  @FXML private Button btnRegister;
+  @FXML private Label lblRegisterHint;
+  @FXML private Label lblRegisteredCount;
 
   private Auction currentAuction;
   private Timeline timeline;
@@ -90,9 +92,113 @@ public class ProductDetailController {
       lblHighestBidder.setText("Chưa có ai đặt giá");
     }
 
+    ImageUtil.loadItemImage(imgProduct, item);
+    if (lblRegisteredCount != null) {
+      lblRegisteredCount.setText("Đã đăng ký: " + auction.getRegisteredCount() + " người");
+    }
     startCountdown(auction.getEndTime());
     loadBidHistory();
+    refreshRegistrationUi();
+  }
 
+  private void refreshRegistrationUi() {
+    if (currentAuction == null || btnRegister == null) return;
+    Customer customer = UserSession.getLoggedInCustomer();
+    Item item = currentAuction.getItem();
+    boolean isSeller = customer != null && item != null && customer.getId() == item.getSellerId();
+
+    if (isSeller) {
+      btnRegister.setDisable(true);
+      btnRegister.setText("Bạn là người bán");
+      if (lblRegisterHint != null) {
+        lblRegisterHint.setText("Người bán không đăng ký phiên của chính mình.");
+      }
+      return;
+    }
+    if (customer == null) {
+      btnRegister.setDisable(true);
+      if (lblRegisterHint != null) {
+        lblRegisterHint.setText("Đăng nhập để đăng ký tham gia đấu giá.");
+      }
+      return;
+    }
+    if (!customer.hasCompleteProfile()) {
+      btnRegister.setDisable(true);
+      if (lblRegisterHint != null) {
+        lblRegisterHint.setText("Hoàn thiện hồ sơ trong Setting trước khi đăng ký.");
+      }
+      return;
+    }
+
+    new BidderService().checkRegistration(currentAuction.getId())
+        .thenAccept(res -> javafx.application.Platform.runLater(() -> {
+          if (!"SUCCESS".equals(res.getType())) return;
+          boolean registered = Boolean.TRUE.equals(res.getData())
+              || "true".equalsIgnoreCase(String.valueOf(res.getData()));
+          applyRegistrationButtonState(registered);
+        }));
+  }
+
+  private void applyRegistrationButtonState(boolean registered) {
+    if (btnRegister == null) return;
+    if (registered) {
+      btnRegister.setDisable(true);
+      btnRegister.setText("Đã đăng ký ✓");
+      if (lblRegisterHint != null) {
+        lblRegisterHint.setText("Bạn đã đăng ký tham gia phiên này.");
+      }
+    } else {
+      btnRegister.setDisable(false);
+      btnRegister.setText("Đăng ký");
+      if (lblRegisterHint != null) {
+        lblRegisterHint.setText("Đăng ký để tham gia phiên (bắt buộc trước khi đặt giá nếu server yêu cầu).");
+      }
+    }
+  }
+
+  @FXML
+  public void handleRegister(ActionEvent event) {
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null || !customer.hasCompleteProfile()) {
+      showAlert("Chú ý", "Hoàn thiện hồ sơ và đăng nhập trước!", Alert.AlertType.WARNING);
+      return;
+    }
+    if (currentAuction.getItem().getSellerId() == customer.getId()) {
+      showAlert("Chú ý", "Người bán không thể đăng ký phiên của mình.", Alert.AlertType.WARNING);
+      return;
+    }
+
+    new BidderService().registerForAuction(currentAuction.getId())
+        .thenAccept(res -> javafx.application.Platform.runLater(() -> {
+          if ("SUCCESS".equals(res.getType())) {
+            if ("ALREADY_REGISTERED".equals(res.getData())) {
+              applyRegistrationButtonState(true);
+              showAlert("Thông báo", "Bạn đã đăng ký phiên này rồi.", Alert.AlertType.INFORMATION);
+              return;
+            }
+            customer.getBidderProfile().registerForAuction(currentAuction.getId());
+            applyRegistrationButtonState(true);
+            try {
+              String json = GsonFactory.getInstance().toJson(res.getData());
+              Auction updated = GsonFactory.getInstance().fromJson(json, Auction.class);
+              if (updated != null) {
+                currentAuction.setRegisteredCount(updated.getRegisteredCount());
+                if (lblRegisteredCount != null) {
+                  lblRegisteredCount.setText("Đã đăng ký: " + updated.getRegisteredCount() + " người");
+                }
+                AuctionListController list = AuctionListController.getInstance();
+                if (list != null) list.refreshOneAuction(updated);
+              }
+            } catch (Exception ignored) {
+              if (lblRegisteredCount != null) {
+                lblRegisteredCount.setText("Đã đăng ký: " + (currentAuction.getRegisteredCount() + 1) + " người");
+              }
+            }
+            showAlert("Thành công", "Đã đăng ký tham gia phiên đấu giá!", Alert.AlertType.INFORMATION);
+          } else {
+            showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
+          }
+        }));
   }
   public void applyAuctionUpdate(Auction auction) {
     if (auction == null || currentAuction == null) return;
@@ -107,6 +213,9 @@ public class ProductDetailController {
 
     if (auction.getHighestBidder() != null) {
       lblHighestBidder.setText("bởi: " + auction.getHighestBidder().getUsername());
+    }
+    if (lblRegisteredCount != null) {
+      lblRegisteredCount.setText("Đã đăng ký: " + auction.getRegisteredCount() + " người");
     }
 
     // Anti-sniping: đổi giờ kết thúc → reset đồng hồ
@@ -183,7 +292,7 @@ public class ProductDetailController {
   public void handlePlaceBid(ActionEvent event) {
     Customer customer = UserSession.getLoggedInCustomer();
 
-    if (customer == null || !customer.isProfileComplete()) {
+    if (customer == null || !customer.hasCompleteProfile()) {
       showAlert("⚠️ Thông báo",
               customer == null ? "Vui lòng đăng nhập!" : "Hoàn thiện hồ sơ trước!",
               Alert.AlertType.WARNING);
@@ -229,7 +338,7 @@ public class ProductDetailController {
     // ✅ CHECK PROFILE TRƯỚC KHI MUA NGAY
     Customer customer = UserSession.getLoggedInCustomer();
 
-    if (customer == null || !customer.isProfileComplete()) {
+    if (customer == null || !customer.hasCompleteProfile()) {
       Alert alert = new Alert(Alert.AlertType.WARNING);
       alert.setTitle("⚠️ Thông báo hệ thống");
       alert.setHeaderText(customer == null ? "Yêu cầu đăng nhập" : "Hồ sơ chưa hoàn thiện");

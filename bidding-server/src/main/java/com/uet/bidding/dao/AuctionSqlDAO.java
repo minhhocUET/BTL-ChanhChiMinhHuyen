@@ -69,7 +69,7 @@ public class AuctionSqlDAO {
         if (!gk.next()) throw new UserException("Không thể tạo phiên đấu giá.");
         int newId = gk.getInt(1);
         itemDao.setInAuction(item.getId(), true);
-        return new Auction(newId, item, startPrice, startTime, endTime, "OPEN");
+        return new Auction(newId, item, startPrice, startTime, endTime, "RUNNING");
       }
     } catch (SQLException e) {
       throw new UserException("Lỗi tạo phiên: " + e.getMessage());
@@ -100,7 +100,11 @@ public class AuctionSqlDAO {
     try (Connection conn = DatabaseConnection.getConnection();
          Statement stmt = conn.createStatement();
          ResultSet rs = stmt.executeQuery(sql)) {
-      while (rs.next()) list.add(mapAuction(rs));
+      while (rs.next()) {
+        Auction auction = mapAuction(rs);
+        auction.setRegisteredCount(countRegistrations(auction.getId()));
+        list.add(auction);
+      }
     } catch (SQLException | UserException e) {
       System.err.println("Lỗi load auctions: " + e.getMessage());
     }
@@ -118,6 +122,29 @@ public class AuctionSqlDAO {
       }
     } catch (SQLException | UserException e) {
       System.err.println("Lỗi load auctions: " + e.getMessage());
+    }
+    return list;
+  }
+
+  /**
+   * Phiên đấu giá của một seller, lọc theo trạng thái (RUNNING, FINISHED, ...).
+   */
+  public List<Auction> getAuctionsBySeller(int sellerId, String status) {
+    List<Auction> list = new ArrayList<>();
+    String sql =
+        "SELECT a.* FROM auctions a " +
+            "INNER JOIN items i ON a.item_id = i.id " +
+            "WHERE i.seller_id = ? AND a.status = ? " +
+            "ORDER BY a.end_time DESC";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, sellerId);
+      stmt.setString(2, status);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) list.add(mapAuction(rs));
+      }
+    } catch (SQLException | UserException e) {
+      System.err.println("Lỗi load auctions by seller: " + e.getMessage());
     }
     return list;
   }
@@ -284,6 +311,36 @@ public class AuctionSqlDAO {
     }
   }
 
+  public boolean isBidderRegistered(int auctionId, int bidderId) {
+    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND bidder_id = ? LIMIT 1";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      stmt.setInt(2, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        return rs.next();
+      }
+    } catch (SQLException e) {
+      System.err.println("Lỗi kiểm tra đăng ký: " + e.getMessage());
+    }
+    return false;
+  }
+
+  public List<Integer> getRegisteredAuctionIdsForBidder(int bidderId) {
+    List<Integer> list = new ArrayList<>();
+    String sql = "SELECT auction_id FROM auction_registrations WHERE bidder_id = ? ORDER BY auction_id DESC";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) list.add(rs.getInt("auction_id"));
+      }
+    } catch (SQLException e) {
+      System.err.println("Lỗi lấy đăng ký của bidder: " + e.getMessage());
+    }
+    return list;
+  }
+
   public List<Integer> getRegisteredBidders(int auctionId) {
     List<Integer> list = new ArrayList<>();
     String sql = "SELECT bidder_id FROM auction_registrations WHERE auction_id = ?";
@@ -302,6 +359,24 @@ public class AuctionSqlDAO {
   // =========================================================
   //  PRIVATE HELPERS
   // =========================================================
+
+  public int getRegistrationCount(int auctionId) {
+    return countRegistrations(auctionId);
+  }
+
+  private int countRegistrations(int auctionId) {
+    String sql = "SELECT COUNT(*) AS cnt FROM auction_registrations WHERE auction_id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) return rs.getInt("cnt");
+      }
+    } catch (SQLException e) {
+      System.err.println("Lỗi đếm đăng ký phiên " + auctionId + ": " + e.getMessage());
+    }
+    return 0;
+  }
 
   private Auction mapAuction(ResultSet rs) throws SQLException, UserException {
     int id = rs.getInt("id");

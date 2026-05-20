@@ -132,11 +132,13 @@ public class ItemSqlDAO {
       default -> throw new SQLException("Loại item không hợp lệ trong DB: " + type);
     }
 
-    // Nạp các trường chung còn lại (không có trong constructor)
     item.setInAuction(rs.getBoolean("in_auction"));
-
-    // city không có setter trong model hiện tại – nếu cần thêm:
-    // item.setCity(rs.getString("city"));
+    item.setCity(rs.getString("city"));
+    try {
+      item.setImageData(rs.getString("image_data"));
+    } catch (SQLException ignored) {
+      // column may not exist until migration is applied
+    }
 
     return item;
   }
@@ -154,12 +156,12 @@ public class ItemSqlDAO {
   public void addItem(Item item) throws ItemException {
     String sql =
         "INSERT INTO items " +
-            "    (seller_id, name, description, starting_price, image_path, city, " +
+            "    (seller_id, name, description, starting_price, image_path, image_data, city, " +
             "     in_auction, item_type, " +
             "     author, creation_year, material, " +
             "     brand, warranty_months, " +
             "     model, manufacturing_year, mileage, engine_type, fuel_type) " +
-            "VALUES (?, ?, ?, ?, ?, ?, " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, " +
             "        FALSE, ?, " +
             "        ?, ?, ?, " +
             "        ?, ?, " +
@@ -173,46 +175,47 @@ public class ItemSqlDAO {
       stmt.setString(2, item.getName());
       setStringOrNull(stmt, 3, item.getDescription());
       stmt.setBigDecimal(4, item.getStartingPrice());
-      setStringOrNull(stmt, 5, item.getImagePath());
-      setStringOrNull(stmt, 6, item.getCity());
-      stmt.setString(7, item.getType()); // "ART" | "ELECTRONICS" | "VEHICLE"
+      setStringOrNull(stmt, 5, null); // image_path unused
+      setStringOrNull(stmt, 6, item.getImageData());
+      setStringOrNull(stmt, 7, item.getCity());
+      stmt.setString(8, item.getType()); // "ART" | "ELECTRONICS" | "VEHICLE"
 
       // ── Cột riêng từng loại ───────────────────────────────────
       if (item instanceof Art a) {
-        setStringOrNull(stmt, 8, a.getAuthor());
-        setIntOrNull(stmt, 9, a.getCreationYear() == 0 ? null : a.getCreationYear());
-        setStringOrNull(stmt, 10, a.getMaterial());
-        stmt.setNull(11, Types.VARCHAR); // brand
-        stmt.setNull(12, Types.INTEGER); // warranty_months
-        stmt.setNull(13, Types.VARCHAR); // model
-        stmt.setNull(14, Types.INTEGER); // manufacturing_year
-        stmt.setNull(15, Types.DOUBLE);  // mileage
-        stmt.setNull(16, Types.VARCHAR); // engine_type
-        stmt.setNull(17, Types.VARCHAR); // fuel_type
+        setStringOrNull(stmt, 9, a.getAuthor());
+        setIntOrNull(stmt, 10, a.getCreationYear() == 0 ? null : a.getCreationYear());
+        setStringOrNull(stmt, 11, a.getMaterial());
+        stmt.setNull(12, Types.VARCHAR); // brand
+        stmt.setNull(13, Types.INTEGER); // warranty_months
+        stmt.setNull(14, Types.VARCHAR); // model
+        stmt.setNull(15, Types.INTEGER); // manufacturing_year
+        stmt.setNull(16, Types.DOUBLE);  // mileage
+        stmt.setNull(17, Types.VARCHAR); // engine_type
+        stmt.setNull(18, Types.VARCHAR); // fuel_type
 
       } else if (item instanceof Electronics e) {
-        stmt.setNull(8, Types.VARCHAR);  // author
-        stmt.setNull(9, Types.INTEGER);  // creation_year
-        stmt.setNull(10, Types.VARCHAR); // material
-        setStringOrNull(stmt, 11, e.getBrand());
-        setIntOrNull(stmt, 12, e.getWarrantyMonths());
-        stmt.setNull(13, Types.VARCHAR); // model
-        stmt.setNull(14, Types.INTEGER); // manufacturing_year
-        stmt.setNull(15, Types.DOUBLE);  // mileage
-        stmt.setNull(16, Types.VARCHAR); // engine_type
-        stmt.setNull(17, Types.VARCHAR); // fuel_type
+        stmt.setNull(9, Types.VARCHAR);  // author
+        stmt.setNull(10, Types.INTEGER);  // creation_year
+        stmt.setNull(11, Types.VARCHAR); // material
+        setStringOrNull(stmt, 12, e.getBrand());
+        setIntOrNull(stmt, 13, e.getWarrantyMonths());
+        stmt.setNull(14, Types.VARCHAR); // model
+        stmt.setNull(15, Types.INTEGER); // manufacturing_year
+        stmt.setNull(16, Types.DOUBLE);  // mileage
+        stmt.setNull(17, Types.VARCHAR); // engine_type
+        stmt.setNull(18, Types.VARCHAR); // fuel_type
 
       } else if (item instanceof Vehicle v) {
-        stmt.setNull(8, Types.VARCHAR);  // author
-        stmt.setNull(9, Types.INTEGER);  // creation_year
-        stmt.setNull(10, Types.VARCHAR); // material
-        setStringOrNull(stmt, 11, v.getBrand());
-        stmt.setNull(12, Types.INTEGER); // warranty_months
-        setStringOrNull(stmt, 13, v.getModel());
-        setIntOrNull(stmt, 14, v.getManufacturingYear());
-        setDoubleOrNull(stmt, 15, v.getMileage());
-        setStringOrNull(stmt, 16, v.getEngineType());
-        setStringOrNull(stmt, 17, v.getFuelType());
+        stmt.setNull(9, Types.VARCHAR);  // author
+        stmt.setNull(10, Types.INTEGER);  // creation_year
+        stmt.setNull(11, Types.VARCHAR); // material
+        setStringOrNull(stmt, 12, v.getBrand());
+        stmt.setNull(13, Types.INTEGER); // warranty_months
+        setStringOrNull(stmt, 14, v.getModel());
+        setIntOrNull(stmt, 15, v.getManufacturingYear());
+        setDoubleOrNull(stmt, 16, v.getMileage());
+        setStringOrNull(stmt, 17, v.getEngineType());
+        setStringOrNull(stmt, 18, v.getFuelType());
 
       } else {
         throw new ItemException("Loại Item không được hỗ trợ: " + item.getClass().getSimpleName());
@@ -339,6 +342,7 @@ public class ItemSqlDAO {
             "    description       = ?, " +
             "    starting_price    = ?, " +
             "    image_path        = ?, " +
+            "    image_data        = ?, " +
             "    city              = ?, " +
             "    author            = ?, " +
             "    creation_year     = ?, " +
@@ -358,47 +362,48 @@ public class ItemSqlDAO {
       stmt.setString(1, item.getName());
       setStringOrNull(stmt, 2, item.getDescription());
       stmt.setBigDecimal(3, item.getStartingPrice());
-      setStringOrNull(stmt, 4, item.getImagePath());
-      setStringOrNull(stmt, 5, item.getCity());
+      setStringOrNull(stmt, 4, null);
+      setStringOrNull(stmt, 5, item.getImageData());
+      setStringOrNull(stmt, 6, item.getCity());
 
       if (item instanceof Art a) {
-        setStringOrNull(stmt, 6, a.getAuthor());
-        setIntOrNull(stmt, 7, a.getCreationYear() == 0 ? null : a.getCreationYear());
-        setStringOrNull(stmt, 8, a.getMaterial());
-        stmt.setNull(9, Types.VARCHAR);
-        stmt.setNull(10, Types.INTEGER);
-        stmt.setNull(11, Types.VARCHAR);
-        stmt.setNull(12, Types.INTEGER);
-        stmt.setNull(13, Types.DOUBLE);
-        stmt.setNull(14, Types.VARCHAR);
+        setStringOrNull(stmt, 7, a.getAuthor());
+        setIntOrNull(stmt, 8, a.getCreationYear() == 0 ? null : a.getCreationYear());
+        setStringOrNull(stmt, 9, a.getMaterial());
+        stmt.setNull(10, Types.VARCHAR);
+        stmt.setNull(11, Types.INTEGER);
+        stmt.setNull(12, Types.VARCHAR);
+        stmt.setNull(13, Types.INTEGER);
+        stmt.setNull(14, Types.DOUBLE);
         stmt.setNull(15, Types.VARCHAR);
+        stmt.setNull(16, Types.VARCHAR);
 
       } else if (item instanceof Electronics e) {
-        stmt.setNull(6, Types.VARCHAR);
-        stmt.setNull(7, Types.INTEGER);
-        stmt.setNull(8, Types.VARCHAR);
-        setStringOrNull(stmt, 9, e.getBrand());
-        setIntOrNull(stmt, 10, e.getWarrantyMonths());
-        stmt.setNull(11, Types.VARCHAR);
-        stmt.setNull(12, Types.INTEGER);
-        stmt.setNull(13, Types.DOUBLE);
-        stmt.setNull(14, Types.VARCHAR);
+        stmt.setNull(7, Types.VARCHAR);
+        stmt.setNull(8, Types.INTEGER);
+        stmt.setNull(9, Types.VARCHAR);
+        setStringOrNull(stmt, 10, e.getBrand());
+        setIntOrNull(stmt, 11, e.getWarrantyMonths());
+        stmt.setNull(12, Types.VARCHAR);
+        stmt.setNull(13, Types.INTEGER);
+        stmt.setNull(14, Types.DOUBLE);
         stmt.setNull(15, Types.VARCHAR);
+        stmt.setNull(16, Types.VARCHAR);
 
       } else if (item instanceof Vehicle v) {
-        stmt.setNull(6, Types.VARCHAR);
-        stmt.setNull(7, Types.INTEGER);
-        stmt.setNull(8, Types.VARCHAR);
-        setStringOrNull(stmt, 9, v.getBrand());
-        stmt.setNull(10, Types.INTEGER);
-        setStringOrNull(stmt, 11, v.getModel());
-        setIntOrNull(stmt, 12, v.getManufacturingYear());
-        setDoubleOrNull(stmt, 13, v.getMileage());
-        setStringOrNull(stmt, 14, v.getEngineType());
-        setStringOrNull(stmt, 15, v.getFuelType());
+        stmt.setNull(7, Types.VARCHAR);
+        stmt.setNull(8, Types.INTEGER);
+        stmt.setNull(9, Types.VARCHAR);
+        setStringOrNull(stmt, 10, v.getBrand());
+        stmt.setNull(11, Types.INTEGER);
+        setStringOrNull(stmt, 12, v.getModel());
+        setIntOrNull(stmt, 13, v.getManufacturingYear());
+        setDoubleOrNull(stmt, 14, v.getMileage());
+        setStringOrNull(stmt, 15, v.getEngineType());
+        setStringOrNull(stmt, 16, v.getFuelType());
       }
 
-      stmt.setInt(16, item.getId());
+      stmt.setInt(17, item.getId());
 
       if (stmt.executeUpdate() == 0)
         throw new ItemException("Cập nhật thất bại! Không tìm thấy Item ID: " + item.getId());

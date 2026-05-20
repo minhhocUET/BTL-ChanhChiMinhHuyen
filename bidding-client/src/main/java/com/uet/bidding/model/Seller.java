@@ -36,11 +36,11 @@ public class Seller {
 
   // Getter/Setter cho storeName và rating
   public String getDescription() {
-    return storeName;
+    return description;
   }
 
-  public void setDescription(String storeName) {
-    this.storeName = storeName;
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   public String getStoreName() {

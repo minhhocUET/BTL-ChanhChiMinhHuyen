@@ -2,10 +2,7 @@ package com.uet.bidding.server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.uet.bidding.dao.AuctionSqlDAO;
-import com.uet.bidding.dao.BidSqlDAO;
-import com.uet.bidding.dao.ReviewSqlDAO;
-import com.uet.bidding.dao.UserSqlDAO;
+import com.uet.bidding.dao.*;
 import com.uet.bidding.exception.AuthenticationException;
 import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.UserException;
@@ -48,6 +45,14 @@ public class RequestProcessor {
           handler.setLoggedInUser(null);
           handler.sendResponse("SUCCESS", "Đã đăng xuất khỏi hệ thống.", reqId);
         }
+        case "ADD_ITEM" -> handleAddItem(msg, handler);
+        case "GET_ITEMS_BY_SELLER" -> handleGetItemsBySeller(msg, handler);
+        case "GET_SELLER_ACTIVE_AUCTIONS" -> handleGetSellerAuctions(msg, handler, "RUNNING");
+        case "GET_SELLER_FINISHED_AUCTIONS" -> handleGetSellerAuctions(msg, handler, "FINISHED");
+        case "REGISTER_FOR_AUCTION" -> handleRegisterForAuction(msg, handler);
+        case "GET_MY_REGISTRATIONS" -> handleGetMyRegistrations(msg, handler);
+        case "IS_REGISTERED_FOR_AUCTION" -> handleIsRegisteredForAuction(msg, handler);
+
         default -> handler.sendResponse("ERROR", "Lệnh không hợp lệ hoặc chưa được hỗ trợ!", reqId);
       }
     } catch (Exception e) {
@@ -126,6 +131,24 @@ public class RequestProcessor {
       handler.sendResponse("ERROR", "Admin không có chức năng số dư!", msg.getRequestId());
     }
   }
+  private void handleAddItem(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer c)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      if (!c.hasCompleteProfile()) {
+        throw new UserException("Hoàn thiện hồ sơ trước khi đăng sản phẩm!");
+      }
+      String json = gson.toJson(msg.getData());
+      // Parse theo item_type: ELECTRONICS / ART / VEHICLE
+      Item item = parseItemFromJson(json); // dùng JsonObject + switch
+      item.setSellerId(c.getId());
+      new ItemSqlDAO().addItem(item);
+      handler.sendResponse("SUCCESS", item, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
 
   private void handleBid(NetworkMessage msg, ClientHandler handler) {
     try {
@@ -165,10 +188,99 @@ public class RequestProcessor {
   }
 
   private void handleCreateAuction(NetworkMessage msg, ClientHandler handler) {
-    // Logic tạo đấu giá của bạn
-    // ...
-    Server.broadcast(new NetworkMessage("NEW_AUCTION_ADDED", "Sản phẩm mới vừa lên sàn!"));
-    handler.sendResponse("SUCCESS", "Phiên đấu giá đã được kích hoạt!", msg.getRequestId());
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer seller)) {
+        throw new UserException("Phải đăng nhập bằng tài khoản người bán!");
+      }
+      String[] parts = String.valueOf(msg.getData()).trim().split("\\s+");
+      if (parts.length < 3) {
+        throw new UserException("Sai cú pháp! Gửi: itemId startPrice durationMinutes");
+      }
+      int itemId = Integer.parseInt(parts[0]);
+      BigDecimal startPrice = new BigDecimal(parts[1]);
+      int durationMinutes = Integer.parseInt(parts[2]);
+      if (durationMinutes <= 0) {
+        throw new UserException("Thời lượng phiên phải lớn hơn 0 phút!");
+      }
+      if (startPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        throw new UserException("Giá khởi điểm phải lớn hơn 0!");
+      }
+
+      Item item = new ItemSqlDAO().findById(itemId);
+      if (item.getSellerId() != seller.getId()) {
+        throw new UserException("Sản phẩm không thuộc kho hàng của bạn!");
+      }
+      if (item.isInAuction()) {
+        throw new UserException("Sản phẩm đang trong một phiên đấu giá khác!");
+      }
+
+      item.setStartingPrice(startPrice);
+      LocalDateTime endTime = LocalDateTime.now().plusMinutes(durationMinutes);
+      Auction created = AuctionManager.getInstance().createAuction(item, endTime);
+      created.setStatus("RUNNING");
+      created.setRegisteredCount(0);
+
+      Server.broadcast(new NetworkMessage("NEW_AUCTION_ADDED", created));
+      Server.broadcast(new NetworkMessage("AUCTION_UPDATED", created));
+      handler.sendResponse("SUCCESS", created, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleRegisterForAuction(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer customer)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      if (!customer.hasCompleteProfile()) {
+        throw new UserException("Hoàn thiện hồ sơ trước khi đăng ký tham gia!");
+      }
+      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      Auction auction = auctionSqlDAO.findById(auctionId);
+      if (!"RUNNING".equals(auction.getStatus())) {
+        throw new UserException("Phiên đấu giá không mở đăng ký!");
+      }
+      if (auction.getItem().getSellerId() == customer.getId()) {
+        throw new UserException("Người bán không thể đăng ký phiên của chính mình!");
+      }
+      if (auctionSqlDAO.isBidderRegistered(auctionId, customer.getId())) {
+        handler.sendResponse("SUCCESS", "ALREADY_REGISTERED", msg.getRequestId());
+        return;
+      }
+      auctionSqlDAO.registerBidderForAuction(auctionId, customer.getId());
+      Auction updated = auctionSqlDAO.findById(auctionId);
+      updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auctionId));
+      Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
+      handler.sendResponse("SUCCESS", updated, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleGetMyRegistrations(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer customer)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      List<Integer> ids = auctionSqlDAO.getRegisteredAuctionIdsForBidder(customer.getId());
+      handler.sendResponse("SUCCESS", ids, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleIsRegisteredForAuction(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer customer)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      boolean registered = auctionSqlDAO.isBidderRegistered(auctionId, customer.getId());
+      handler.sendResponse("SUCCESS", registered, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
   }
   private void handleGetBidHistory(NetworkMessage msg, ClientHandler handler) {
     try {
@@ -251,7 +363,101 @@ public class RequestProcessor {
     }
   }
 
-  // --- HÀM HELPER LOGIC ---
+  private void handleGetItemsBySeller(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer c)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      int sellerId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      if (sellerId != c.getId()) {
+        throw new UserException("Không được xem kho người khác!");
+      }
+      List<Item> items = new ItemSqlDAO().getItemsBySeller(sellerId);
+      handler.sendResponse("SUCCESS", items, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleGetSellerAuctions(NetworkMessage msg, ClientHandler handler, String status) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer c)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      int sellerId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      if (sellerId != c.getId()) {
+        throw new UserException("Không được xem phiên đấu giá của người khác!");
+      }
+      List<Auction> auctions = auctionSqlDAO.getAuctionsBySeller(sellerId, status);
+      handler.sendResponse("SUCCESS", auctions, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private Item parseItemFromJson(String json) throws UserException {
+    JsonObject o = gson.fromJson(json, JsonObject.class);
+    String type = o.get("itemType").getAsString().toUpperCase();
+    String name = o.get("name").getAsString();
+    String description = o.has("description") ? o.get("description").getAsString() : "";
+    BigDecimal price = readBigDecimal(o, "startingPrice");
+    String imageData = "";
+    if (o.has("imageBase64") && !o.get("imageBase64").isJsonNull()) {
+      imageData = o.get("imageBase64").getAsString();
+    }
+    String city = o.has("city") ? o.get("city").getAsString() : "";
+
+  switch (type) {
+    case "ELECTRONICS" -> {
+      String brand = o.has("brand") ? o.get("brand").getAsString() : "Unknown";
+      int warranty = o.has("warrantyMonths") ? o.get("warrantyMonths").getAsInt() : 12;
+      Electronics e = new Electronics(name, description, price, "", 0, brand, warranty);
+      e.setCity(city);
+      e.setImageData(imageData);
+      return e;
+    }
+    case "ART" -> {
+      String author = o.has("author") ? o.get("author").getAsString() : "Unknown";
+      int year = o.has("creationYear") ? o.get("creationYear").getAsInt() : 2000;
+      String material = o.has("material") ? o.get("material").getAsString() : "";
+      Art a = new Art(name, description, price, "", 0, author, year, material);
+      a.setCity(city);
+      a.setImageData(imageData);
+      return a;
+    }
+    case "VEHICLE" -> {
+      String brand = o.has("brand") ? o.get("brand").getAsString() : "";
+      String model = o.has("model") ? o.get("model").getAsString() : "";
+      int year = o.has("manufacturingYear") ? o.get("manufacturingYear").getAsInt() : 2020;
+      double mileage = o.has("mileage") ? o.get("mileage").getAsDouble() : 0.0;
+      String engine = o.has("engineType") ? o.get("engineType").getAsString() : "4 kỳ";
+      String fuel = o.has("fuelType") ? o.get("fuelType").getAsString() : "xăng";
+      Vehicle v = new Vehicle(name, description, price, "", 0,
+          brand, model, year, mileage, engine, fuel);
+      v.setCity(city);
+      v.setImageData(imageData);
+      return v;
+    }
+    default -> throw new UserException("Loại sản phẩm không hỗ trợ: " + type);
+  }
+}
+
+  private BigDecimal readBigDecimal(JsonObject o, String key) throws UserException {
+    if (!o.has(key)) {
+      throw new UserException("Thiếu trường: " + key);
+    }
+    var el = o.get(key);
+    if (el.isJsonPrimitive()) {
+      var p = el.getAsJsonPrimitive();
+      if (p.isNumber()) return p.getAsBigDecimal();
+      if (p.isString()) {
+        String s = p.getAsString().trim();
+        if (s.isEmpty()) throw new UserException("Giá không hợp lệ!");
+        return new BigDecimal(s);
+      }
+    }
+    throw new UserException("Giá không hợp lệ!");
+  }
 
   private void handleRegister(String regData) throws UserException {
     String[] regParts = regData.split(" ");

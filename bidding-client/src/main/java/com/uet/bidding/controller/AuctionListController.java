@@ -3,6 +3,7 @@ package com.uet.bidding.controller;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Electronics;
+import com.uet.bidding.model.Item;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
@@ -35,37 +36,50 @@ public class AuctionListController implements Initializable {
   private TableView<Auction> tableView;
 
   @FXML
-  private TableColumn<Auction, Integer> colStt;
-
-  @FXML
   private TableColumn<Auction, String> colCity;
 
   @FXML
-  private TableColumn<Auction, String> colProduct;
-
-  @FXML
-  private TableColumn<Auction, Integer> colInterested;
-
-  @FXML
-  private TableColumn<Auction, Void> colAction;
-
-  @FXML
   private ComboBox<String> cityComboBox;
+  @FXML private TableColumn<Auction, String> colItemType;
+  @FXML private TableColumn<Auction, String> colProductName;
+  @FXML private TableColumn<Auction, Integer> colRegistered;
+
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
     instance = this;
-    colStt.setCellValueFactory(cellData ->
-            new SimpleObjectProperty<>(cellData.getValue().getId()));
-    colProduct.setCellValueFactory(cellData ->
-            new SimpleStringProperty(cellData.getValue().getItem().getName()));
-    colCity.setCellValueFactory(cellData ->
-            new SimpleStringProperty("Hà Nội"));
-    colInterested.setCellValueFactory(cellData ->
-            new SimpleObjectProperty<>(new Random().nextInt(100) + 10));
-    setupActionColumn();
+    colCity.setCellValueFactory(cd -> {
+      Item item = cd.getValue().getItem();
+      String city = (item != null && item.getCity() != null) ? item.getCity() : "-";
+      return new SimpleStringProperty(city);
+    });
+
+    colItemType.setCellValueFactory(cd -> {
+      Item item = cd.getValue().getItem();
+      String type = (item != null) ? item.getType() : "-"; // ELECTRONICS, ART, VEHICLE
+      return new SimpleStringProperty(type);
+    });
+
+    colProductName.setCellValueFactory(cd -> {
+      Item item = cd.getValue().getItem();
+      String name = (item != null) ? item.getName() : "-";
+      return new SimpleStringProperty(name);
+    });
+
+    colRegistered.setCellValueFactory(cd ->
+            new SimpleObjectProperty<>(cd.getValue().getRegisteredCount()));
+
     loadAuctionsFromServer();
-    tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+    tableView.setRowFactory(tv -> {
+      TableRow<Auction> row = new TableRow<>();
+      row.setOnMouseClicked(e -> {
+        if (!row.isEmpty() && e.getClickCount() >= 2) {
+          openProductDetail(row.getItem(), row.getScene());
+        }
+      });
+      return row;
+    });
 
     cityComboBox.setItems(FXCollections.observableArrayList(
     // Danh sách tỉnh thành
@@ -210,8 +224,6 @@ public class AuctionListController implements Initializable {
             };
           }
         };
-
-    colAction.setCellFactory(cellFactory);
   }
 
   // =========================
@@ -333,8 +345,42 @@ public class AuctionListController implements Initializable {
     for (int i = 0; i < tableView.getItems().size(); i++) {
       if (tableView.getItems().get(i).getId() == updated.getId()) {
         tableView.getItems().set(i, updated);
-        break;
+        return;
       }
+    }
+  }
+
+  public void addOrRefreshAuction(Auction auction) {
+    if (tableView == null || auction == null) return;
+    for (int i = 0; i < tableView.getItems().size(); i++) {
+      if (tableView.getItems().get(i).getId() == auction.getId()) {
+        tableView.getItems().set(i, auction);
+        return;
+      }
+    }
+    tableView.getItems().add(0, auction);
+  }
+
+  private void openProductDetail(Auction auction, javafx.scene.Scene scene) {
+    if (auction == null || scene == null) return;
+    Customer currentUser = UserSession.getLoggedInCustomer();
+    if (currentUser != null && (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty())) {
+      Alert alert = new Alert(Alert.AlertType.WARNING);
+      alert.setContentText("Hoàn thiện hồ sơ trong Setting trước khi xem chi tiết.");
+      alert.showAndWait();
+      return;
+    }
+    try {
+      FXMLLoader loader = new FXMLLoader(getClass().getResource("/ProductDetail.fxml"));
+      Parent root = loader.load();
+      ProductDetailController detailController = loader.getController();
+      detailController.setAuctionData(auction);
+      Stage stage = (Stage) scene.getWindow();
+      stage.setScene(new Scene(root));
+      stage.setTitle("Chi tiết - " + auction.getItem().getName());
+      stage.show();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 

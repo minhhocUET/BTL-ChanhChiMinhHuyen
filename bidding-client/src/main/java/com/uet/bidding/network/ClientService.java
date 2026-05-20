@@ -18,6 +18,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -154,6 +155,7 @@ public class  ClientService {
         }
         break;
       case "AUCTION_UPDATED":
+      case "NEW_AUCTION_ADDED":
         try {
           String auctionJson = gson.toJson(msg.getData());
           Auction updated = gson.fromJson(auctionJson, Auction.class);
@@ -162,11 +164,16 @@ public class  ClientService {
               ProductDetailController.getInstance().applyAuctionUpdate(updated);
             }
             if (AuctionListController.getInstance() != null) {
-              AuctionListController.getInstance().refreshOneAuction(updated);
+              AuctionListController list = AuctionListController.getInstance();
+              if ("NEW_AUCTION_ADDED".equals(msg.getType())) {
+                list.addOrRefreshAuction(updated);
+              } else {
+                list.refreshOneAuction(updated);
+              }
             }
           });
         } catch (Exception e) {
-          System.err.println("Lỗi parse AUCTION_UPDATED: " + e.getMessage());
+          System.err.println("Lỗi parse auction broadcast: " + e.getMessage());
         }
         break;
 
@@ -220,7 +227,6 @@ public class  ClientService {
       });
     }
   }
-
   /**
    * HÀM HELPER: Xác định đúng loại User từ JSON
    */

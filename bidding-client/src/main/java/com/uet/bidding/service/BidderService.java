@@ -26,4 +26,28 @@ public class BidderService {
     String data = auctionId + " " + amount.toPlainString();
     return clientService.sendRequest("BID", data);
   }
+
+  public CompletableFuture<NetworkMessage> registerForAuction(int auctionId) {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    if (!current.isProfileComplete()) {
+      return CompletableFuture.failedFuture(
+          new RuntimeException("Hoàn thiện hồ sơ trước khi đăng ký!"));
+    }
+    return clientService.sendRequest("REGISTER_FOR_AUCTION", auctionId);
+  }
+
+  public CompletableFuture<NetworkMessage> checkRegistration(int auctionId) {
+    return clientService.sendRequest("IS_REGISTERED_FOR_AUCTION", auctionId);
+  }
+
+  public CompletableFuture<NetworkMessage> loadMyRegistrations() {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    return clientService.sendRequest("GET_MY_REGISTRATIONS", current.getId());
+  }
 }

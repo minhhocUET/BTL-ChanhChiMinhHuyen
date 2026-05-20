@@ -11,6 +11,7 @@ public class Bid {
 
   public Bid() {
   }
+
   // Cập nhật Constructor khớp với lời gọi bên Auction.java
   public Bid(Bidder bidder, BigDecimal amount, LocalDateTime time) {
     this.bidder = bidder;

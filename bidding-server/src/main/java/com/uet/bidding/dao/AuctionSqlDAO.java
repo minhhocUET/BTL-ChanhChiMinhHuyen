@@ -579,4 +579,24 @@ public class AuctionSqlDAO {
       throw new UserException("Lỗi kết nối cơ sở dữ liệu: " + e.getMessage());
     }
   }
+  // =========================================================
+  //  THỐNG KÊ (Cho Admin Dashboard)
+  // =========================================================
+
+  /**
+   * Đếm số lượng phiên đấu giá đang trong trạng thái hoạt động (RUNNING)
+   */
+  public int getActiveAuctionsCount() {
+    String sql = "SELECT COUNT(*) FROM auctions WHERE status = 'RUNNING'";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+      if (rs.next()) {
+        return rs.getInt(1);
+      }
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi đếm số phiên đấu giá đang chạy: " + e.getMessage());
+    }
+    return 0;
+  }
 }

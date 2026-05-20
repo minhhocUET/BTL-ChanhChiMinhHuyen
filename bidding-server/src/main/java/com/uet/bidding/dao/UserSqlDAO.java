@@ -528,6 +528,21 @@ public class UserSqlDAO {
   // =========================================================
 
   /**
+   * HÀM ĐƯỢC THÊM MỚI: Cập nhật trạng thái khóa/mở khóa tài khoản.
+   * Trả về true nếu cập nhật thành công, false nếu xảy ra lỗi hoặc không tìm thấy ID.
+   * Cần thiết để tương thích trực tiếp với RequestProcessor.
+   */
+  public boolean updateBanStatus(int userId, boolean banned) {
+    try {
+      setBanned(userId, banned);
+      return true;
+    } catch (UserException e) {
+      System.err.println("❌ Lỗi khi cập nhật trạng thái Ban cho User ID " + userId + ": " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
    * Khóa hoặc mở khóa tài khoản.
    * Logic Admin.banUser() / unbanUser() cập nhật object trong memory;
    * method này đồng bộ trạng thái đó xuống DB.

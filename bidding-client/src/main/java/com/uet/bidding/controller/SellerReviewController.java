@@ -1,6 +1,10 @@
 package com.uet.bidding.controller;
 
+import com.google.gson.reflect.TypeToken;
 import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.GsonFactory;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.Review;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.ReviewContext;
 import com.uet.bidding.util.UserSession;
@@ -12,12 +16,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
@@ -25,13 +26,9 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import com.google.gson.reflect.TypeToken;
-import com.uet.bidding.model.GsonFactory;
-import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.Review;
-import javafx.scene.control.Alert;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 public class SellerReviewController {
 
   @FXML
@@ -45,8 +42,8 @@ public class SellerReviewController {
     }
 
     String storeName = customer.getSellerProfile() != null
-            ? customer.getSellerProfile().getStoreName()
-            : "Cửa hàng";
+        ? customer.getSellerProfile().getStoreName()
+        : "Cửa hàng";
 
     // auctionId = 0 vì màn này chỉ XEM review, không gửi mới
     ReviewContext.set(0, customer.getId(), storeName, false);
@@ -59,12 +56,12 @@ public class SellerReviewController {
     reviewsContainer.getChildren().clear();
 
     ClientService.getInstance()
-            .sendRequest("GET_REVIEWS_BY_SELLER", ReviewContext.sellerId)
-            .thenAccept(this::onReviewsLoaded)
-            .exceptionally(ex -> {
-              Platform.runLater(() -> showAlert("Lỗi", ex.getMessage()));
-              return null;
-            });
+        .sendRequest("GET_REVIEWS_BY_SELLER", ReviewContext.sellerId)
+        .thenAccept(this::onReviewsLoaded)
+        .exceptionally(ex -> {
+          Platform.runLater(() -> showAlert("Lỗi", ex.getMessage()));
+          return null;
+        });
   }
 
   private void onReviewsLoaded(NetworkMessage response) {
@@ -76,12 +73,13 @@ public class SellerReviewController {
 
       String json = GsonFactory.getInstance().toJson(response.getData());
       List<Review> reviews = GsonFactory.getInstance().fromJson(json,
-              new TypeToken<List<Review>>() {}.getType());
+          new TypeToken<List<Review>>() {
+          }.getType());
 
       for (Review r : reviews) {
         String date = r.getCreatedAt() != null
-                ? r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                : "";
+            ? r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+            : "";
         String stars = "⭐".repeat(Math.max(0, r.getStars()));
         addReviewCard(r.getReviewerName(), date, stars, r.getComment());
       }

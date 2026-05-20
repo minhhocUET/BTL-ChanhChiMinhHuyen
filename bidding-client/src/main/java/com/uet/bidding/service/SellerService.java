@@ -1,6 +1,9 @@
 package com.uet.bidding.service;
 
-import com.uet.bidding.model.*;
+import com.uet.bidding.model.Auction;
+import com.uet.bidding.model.Item;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.Seller;
 import com.uet.bidding.network.ClientService;
 import java.math.BigDecimal;
 import java.util.ArrayList;

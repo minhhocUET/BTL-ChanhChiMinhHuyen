@@ -72,7 +72,7 @@ public class UserProfileController implements Initializable {
       txtEmail.setPromptText("Bắt buộc nhập email");
       txtPhone.setPromptText("Bắt buộc nhập số điện thoại");
       txtAddress.setPromptText("Bắt buộc nhập địa chỉ");
-      }
+    }
 
     // 2. Đổ dữ liệu cũ lên giao diện (nếu là null thì set thành chuỗi rỗng để tránh lỗi)
     txtName.setText(user.getFullName() != null ? user.getFullName() : "");

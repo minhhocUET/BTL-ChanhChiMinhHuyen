@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="710.0" spacing="25.0"
+      style="-fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.uet.bidding.controller.admin.AdminOverviewController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+    </padding>
+    <children>
+        <Label text="TỔNG QUAN HỆ THỐNG" textFill="#1b3394">
+            <font>
+                <Font name="Segoe UI Bold" size="24.0"/>
+            </font>
+        </Label>
+
+        <HBox alignment="CENTER_LEFT" prefHeight="110.0" prefWidth="650.0"
+              style="-fx-background-radius: 6; -fx-background-color: #1b3394;">
+            <children>
+                <VBox alignment="CENTER_LEFT" spacing="6.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label text="Chào mừng quay trở lại, Admin!" textFill="WHITE">
+                            <font>
+                                <Font name="Segoe UI Bold" size="20.0"/>
+                            </font>
+                        </Label>
+                        <Label text="Hệ thống quản trị đấu giá trực tuyến UET Bidding System" textFill="#e2e8f0">
+                            <font>
+                                <Font name="Segoe UI" size="13.0"/>
+                            </font>
+                        </Label>
+                    </children>
+                    <padding>
+                        <Insets left="25.0"/>
+                    </padding>
+                </VBox>
+            </children>
+        </HBox>
+
+        <GridPane hgap="20.0" prefHeight="130.0" VBox.vgrow="NEVER">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="33.3"/>
+                <ColumnConstraints percentWidth="33.3"/>
+                <ColumnConstraints percentWidth="33.3"/>
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+            </rowConstraints>
+            <children>
+                <VBox alignment="CENTER" spacing="15.0"
+                      style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #e2e8f0; -fx-border-radius: 6;"
+                      GridPane.columnIndex="0">
+                    <children>
+                        <Label text="Tổng số Người dùng" textFill="#7f8c8d">
+                            <font>
+                                <Font name="Segoe UI Bold" size="14.0"/>
+                            </font>
+                        </Label>
+                        <Label fx:id="txtTotalUsers" text="..." textFill="#1b3394">
+                            <font>
+                                <Font name="Segoe UI Bold" size="36.0"/>
+                            </font>
+                        </Label>
+                    </children>
+                </VBox>
+                <VBox alignment="CENTER" spacing="15.0"
+                      style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #e2e8f0; -fx-border-radius: 6;"
+                      GridPane.columnIndex="1">
+                    <children>
+                        <Label text="Số phiên Đấu giá" textFill="#7f8c8d">
+                            <font>
+                                <Font name="Segoe UI Bold" size="14.0"/>
+                            </font>
+                        </Label>
+                        <Label fx:id="txtActiveAuctions" text="..." textFill="#1b3394">
+                            <font>
+                                <Font name="Segoe UI Bold" size="36.0"/>
+                            </font>
+                        </Label>
+                    </children>
+                </VBox>
+                <VBox alignment="CENTER" spacing="15.0"
+                      style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #e2e8f0; -fx-border-radius: 6;"
+                      GridPane.columnIndex="2">
+                    <children>
+                        <Label text="Sản phẩm Chờ duyệt" textFill="#7f8c8d">
+                            <font>
+                                <Font name="Segoe UI Bold" size="14.0"/>
+                            </font>
+                        </Label>
+                        <Label fx:id="txtPendingItems" text="..." textFill="#1b3394">
+                            <font>
+                                <Font name="Segoe UI Bold" size="36.0"/>
+                            </font>
+                        </Label>
+                    </children>
+                </VBox>
+            </children>
+        </GridPane>
+    </children>
+</VBox>

@@ -7,6 +7,7 @@ import com.uet.bidding.controller.Main;
 import com.uet.bidding.controller.ProductDetailController;
 import com.uet.bidding.controller.SellerProductDetailController;
 import com.uet.bidding.controller.admin.AdminUserManagementController;
+import com.uet.bidding.controller.admin.AdminItemManagementController; // 🚀 ĐÃ BỔ SUNG IMPORT NÀY
 import com.uet.bidding.model.*;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
@@ -95,28 +96,7 @@ public class ClientService {
    * HÀM QUAN TRỌNG: Biến Map thành Object thật (Admin hoặc Customer)
    */
   public User parseUser(Object data) {
-    if (data == null) return null;
-    try {
-      Gson gson = GsonFactory.getInstance();
-      String json = gson.toJson(data);
-
-      // 1. Chuyển thành JsonObject để soi trường "role"
-      JsonObject obj = gson.fromJson(json, JsonObject.class);
-
-      if (obj.has("role")) {
-        String role = obj.get("role").getAsString();
-
-        if ("admin".equalsIgnoreCase(role)) {
-          return gson.fromJson(json, Admin.class); // Trả về đối tượng Admin
-        }
-      }
-
-      // Mặc định là Customer nếu không phải admin
-      return gson.fromJson(json, Customer.class);
-    } catch (Exception e) {
-      System.err.println("❌ Lỗi parse User: " + e.getMessage());
-      return null;
-    }
+    return parseUserFromJson(data);
   }
 
   private void handleResponse(NetworkMessage msg) {
@@ -152,6 +132,46 @@ public class ClientService {
             AdminUserManagementController.getInstance().loadUsersFromServer();
             System.out.println("🔄 Auto-refresh: Đã tải lại danh sách vì có User mới!");
           });
+        }
+        break;
+
+      // 💡 ĐÃ CẬP NHẬT: Tự động bắt sự kiện Server thông báo có sản phẩm mới chờ duyệt
+      case "SERVER_BROADCAST_NEW_ITEM":
+        try {
+          System.out.println("📥 [Real-time] Đã nhận tín hiệu SERVER_BROADCAST_NEW_ITEM từ Server!");
+
+          // 1. Chuyển đổi dữ liệu mạng thành JsonObject để bóc tách trường định danh "itemType"
+          String itemJson = gson.toJson(msg.getData());
+          JsonObject jsonObject = gson.fromJson(itemJson, JsonObject.class);
+
+          if (jsonObject != null && jsonObject.has("itemType")) {
+            String type = jsonObject.get("itemType").getAsString().toUpperCase();
+            Item newItem;
+
+            // 2. Ép kiểu chuẩn xác theo mô hình Đa hình (Polymorphism) để không mất thuộc tính lớp con
+            switch (type) {
+              case "ELECTRONICS" -> newItem = gson.fromJson(itemJson, Electronics.class);
+              case "ART" -> newItem = gson.fromJson(itemJson, Art.class);
+              case "VEHICLE" -> newItem = gson.fromJson(itemJson, Vehicle.class);
+              default -> newItem = gson.fromJson(itemJson, Item.class);
+            }
+
+            System.out.println("📦 -> Định dạng lớp con thành công: " + newItem.getName() + " (Loại: " + type + ")");
+
+            // 3. Đồng bộ hóa luồng mạng về luồng giao diện JavaFX Main Thread thông qua Platform.runLater
+            Platform.runLater(() -> {
+              AdminItemManagementController adminController = AdminItemManagementController.getInstance();
+              if (adminController != null) {
+                adminController.addPendingItemRealtime(newItem);
+                System.out.println("🔄 -> Đã chuyển sản phẩm thực tế sang bảng duyệt của Admin.");
+              } else {
+                System.err.println("❌ -> Thất bại: Màn hình duyệt của Admin chưa được kích hoạt (Instance bị null)!");
+              }
+            });
+          }
+        } catch (Exception e) {
+          System.err.println("❌ Lỗi giải mã dữ liệu sản phẩm truyền hình trực tiếp: " + e.getMessage());
+          e.printStackTrace();
         }
         break;
 

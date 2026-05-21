@@ -84,6 +84,7 @@
                                         <TableColumn fx:id="invColCity" prefWidth="200.0" text="Thành phố" />
                                         <TableColumn fx:id="invColPrice" prefWidth="120.0" text="Giá khởi điểm" />
                                         <TableColumn fx:id="invColStatus" prefWidth="150.0" text="Trạng thái" />
+                                        <TableColumn fx:id="invColAction" prefWidth="100.0" text="Hành động" style="-fx-alignment: CENTER;" />
                                     </columns>
                                     <columnResizePolicy>
                                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

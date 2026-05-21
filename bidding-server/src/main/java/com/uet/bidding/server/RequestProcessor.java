@@ -37,6 +37,7 @@ public class RequestProcessor {
         case "LOGIN" -> handleLogin(msg, handler);
         case "REGISTER" -> handleRegisterRequest(msg, handler);
         case "UPDATE_PROFILE" -> handleUpdateProfile(msg, handler);
+        case "CHANGE_PASSWORD" -> handleChangePassword(msg, handler); // 🚀 ĐÃ BỔ SUNG CASE NÀY
         case "ADD_BALANCE" -> handleAddBalance(msg, handler);
         case "BID" -> handleBid(msg, handler);
         case "GET_BID_HISTORY" -> handleGetBidHistory(msg, handler);
@@ -78,6 +79,29 @@ public class RequestProcessor {
           }
         }
 
+        case "DELETE_ITEM" -> {
+          try {
+            // 1. Ép kiểu dữ liệu ID lấy từ gói tin Gson
+            int deleteItemId = ((Double) msg.getData()).intValue();
+            System.out.println("⚙️ [Server] Seller yêu cầu xóa sản phẩm ID: " + deleteItemId);
+
+            // 2. Thực hiện xóa dữ liệu và dọn dẹp file vật lý trên Cloud
+            boolean deleteSuccess = itemSqlDAO.deleteItemCompletely(deleteItemId);
+
+            // 3. 🎯 SỬA CHỖ NÀY: Dùng sendResponse để truyền trả reqId về cho Client nhận diện
+            if (deleteSuccess) {
+              handler.sendResponse("DELETE_ITEM_SUCCESS", "Xóa sản phẩm thành công!", reqId);
+              System.out.println("✅ [Server] Đã dọn dẹp sạch sẽ DB và ảnh của sản phẩm #" + deleteItemId);
+            } else {
+              handler.sendResponse("DELETE_ITEM_FAILED", "Không tìm thấy sản phẩm hoặc sản phẩm không hợp lệ!", reqId);
+              System.out.println("⚠️ [Server] Xóa thất bại, sản phẩm #" + deleteItemId + " không tồn tại.");
+            }
+          } catch (Exception e) {
+            System.err.println("❌ [Server] Lỗi Server khi xóa Item: " + e.getMessage());
+            handler.sendResponse("DELETE_ITEM_FAILED", "Lỗi Server: " + e.getMessage(), reqId);
+          }
+        }
+
         case "BAN_USER" -> {
           int userId = ((Number) msg.getData()).intValue();
           // Gọi lệnh cập nhật trườngis_banned = TRUE trong Database
@@ -110,6 +134,61 @@ public class RequestProcessor {
   }
 
   // --- CÁC HÀM XỬ LÝ CHI TIẾT ĐƯỢC VIẾT THÊM VÀO PHÍA DƯỚI ---
+  // --- CÁC HÀM XỬ LÝ CHI TIẾT ĐƯỢC VIẾT THÊM VÀO PHÍA DƯỚI ---
+
+  /**
+   * 🚀 HÀM MỚI: Xử lý đổi mật khẩu
+   */
+  private void handleChangePassword(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (handler.getLoggedInUser() == null) {
+        handler.sendResponse("ERROR", "Bạn chưa đăng nhập!", msg.getRequestId());
+        return;
+      }
+
+      int userId = handler.getLoggedInUser().getId();
+
+      String payload = String.valueOf(msg.getData());
+      String[] parts = payload.split("\\|", -1);
+
+      String oldPass = parts.length > 0 ? parts[0] : "";
+      String newPass = parts.length > 1 ? parts[1] : "";
+      String confirmPass = parts.length > 2 ? parts[2] : "";
+
+      // 🔥 ƯU TIÊN TUYỆT ĐỐI SỐ 1: Kiểm tra mật khẩu cũ trước tiên
+      User currentUser = userSqlDAO.findById(userId);
+      String storedHash = currentUser.getPassword();
+
+      if (!org.mindrot.jbcrypt.BCrypt.checkpw(oldPass, storedHash)) {
+        handler.sendResponse("ERROR", "Mật khẩu cũ không chính xác!", msg.getRequestId());
+        return; // Cắt đuôi tại đây, sai mật khẩu cũ là dừng luôn, không quan tâm các ô khác nhập gì!
+      }
+
+      // 🎯 CHỈ KHI MẬT KHẨU CŨ CHÍNH XÁC - MỚI TÍNH TIẾP CÁC BƯỚC DƯỚI ĐÂY:
+
+      // Kiểm tra không trùng khớp
+      if (!newPass.equals(confirmPass)) {
+        handler.sendResponse("ERROR", "Mật khẩu mới và nhập lại mật khẩu không khớp!", msg.getRequestId());
+        return;
+      }
+
+      // Kiểm tra mật khẩu mới trùng mật khẩu cũ
+      if (oldPass.equals(newPass)) {
+        handler.sendResponse("ERROR", "Mật khẩu mới phải khác với mật khẩu hiện tại!", msg.getRequestId());
+        return;
+      }
+
+      // Tiến hành cập nhật
+      userSqlDAO.updatePassword(userId, oldPass, newPass);
+      handler.sendResponse("SUCCESS", "Đổi mật khẩu thành công!", msg.getRequestId());
+
+    } catch (com.uet.bidding.exception.UserException e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", "Lỗi Server: " + e.getMessage(), msg.getRequestId());
+      e.printStackTrace();
+    }
+  }
 
   /**
    * Xử lý gom số liệu đếm từ database TiDB Cloud gửi về cho màn hình Admin Thống kê
@@ -317,6 +396,11 @@ public class RequestProcessor {
       System.out.println("👉 [DEBUG 3] imagePath chuẩn bị đẩy vào DAO: " + item.getImagePath());
 
       itemSqlDAO.addItem(item); // Giả sử bạn đã đổi DAO để nhận image_path
+
+      // 🚀 BỔ SUNG DÒNG NÀY: Phát tín hiệu Real-time cho toàn hệ thống (Admin sẽ bắt được case này)
+      Server.broadcast(new NetworkMessage("SERVER_BROADCAST_NEW_ITEM", item));
+      System.out.println("📢 [Server] Đã phát tín hiệu sản phẩm mới: " + item.getName());
+
       handler.sendResponse("SUCCESS", "Đã gửi yêu cầu phê duyệt!", msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());

@@ -36,6 +36,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class SellerDashboardController {
 
@@ -54,6 +55,7 @@ public class SellerDashboardController {
   @FXML private TableColumn<Item, String> invColCity;
   @FXML private TableColumn<Item, BigDecimal> invColPrice;
   @FXML private TableColumn<Item, String> invColStatus;
+  @FXML private TableColumn<Item, Void> invColAction; // 🔥 Thêm dòng này để tạo cột Xóa
 
   @FXML private TableView<Auction> activeAuctionsTable;
   @FXML private TableColumn<Auction, String> activeColCity;
@@ -111,19 +113,62 @@ public class SellerDashboardController {
       });
     }
 
+    // 🔥 CẤU HÌNH CỘT NÚT XÓA SẢN PHẨM 🔥
+    if (invColAction != null) {
+      invColAction.setCellFactory(param -> new TableCell<Item, Void>() {
+        private final Button deleteBtn = new Button("🗑 Xóa");
+        {
+          // Style màu đỏ hồng hợp với theme fce4ec của bạn
+          deleteBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 4 10 4 10;");
+          deleteBtn.setOnAction(event -> {
+            Item currentItem = getTableView().getItems().get(getIndex());
+            handleDeleteProductAction(currentItem); // Gọi hàm xử lý xóa
+          });
+        }
+
+        @Override
+        protected void updateItem(Void item, boolean empty) {
+          super.updateItem(item, empty);
+          if (empty) {
+            setGraphic(null);
+          } else {
+            setGraphic(deleteBtn);
+          }
+        }
+      });
+    }
+
     inventoryTable.setItems(inventoryItems);
     inventoryTable.setRowFactory(tv -> {
       TableRow<Item> row = new TableRow<>();
       row.setOnMouseClicked(event -> {
         if (!row.isEmpty() && event.getClickCount() == 2) {
           Item selected = row.getItem();
-          // Chỉ cho phép tạo đấu giá nếu đã APPROVED và chưa tham gia đấu giá nào
-          if ("APPROVED".equals(selected.getStatus()) && !selected.isInAuction()) {
+          if (selected == null) return;
+
+          String status = selected.getStatus();
+
+          // 1. Nếu đã duyệt (APPROVED) và chưa lên sàn -> Cho phép tạo đấu giá
+          if ("APPROVED".equals(status) && !selected.isInAuction()) {
             openCreateAuctionPage(selected);
-          } else if (selected.isInAuction()) {
+          }
+          // 2. Nếu đang trong phiên đấu giá (inAuction = true)
+          else if (selected.isInAuction()) {
             showAlert(Alert.AlertType.WARNING, "Chú ý", "Sản phẩm đang trong phiên đấu giá!");
-          } else {
-            showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Sản phẩm cần được Admin phê duyệt trước.");
+          }
+          // 3. 🎯 THÊM CASE NÀY: Nếu sản phẩm bị Admin từ chối (REJECTED)
+          else if ("REJECTED".equals(status)) {
+            showAlert(Alert.AlertType.ERROR, "Từ chối duyệt",
+                "Sản phẩm này đã bị Admin từ chối phê duyệt.\nBạn có thể bấm nút XÓA để đăng lại sản phẩm mới.");
+          }
+          // 4. Nếu sản phẩm vẫn đang chờ duyệt (PENDING)
+          else if ("PENDING".equals(status)) {
+            showAlert(Alert.AlertType.INFORMATION, "Đang chờ duyệt",
+                "Sản phẩm đang trong danh sách chờ Admin phê duyệt.");
+          }
+          // 5. Dự phòng trường hợp trạng thái khác bất thường
+          else {
+            showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Sản phẩm không đủ điều kiện lên sàn đấu giá.");
           }
         }
       });
@@ -155,7 +200,7 @@ public class SellerDashboardController {
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource("/SellerProductDetail.fxml"));
       Parent root = loader.load();
-      SellerProductDetailController ctrl = loader.getController();
+      ProductDetailController ctrl = loader.getController();
       ctrl.setAuctionData(auction);
       Stage stage = (Stage) sellerTabPane.getScene().getWindow();
       stage.setScene(new Scene(root));
@@ -414,8 +459,18 @@ public class SellerDashboardController {
         }
 
       } catch (NumberFormatException ex) {
-        showAlert(Alert.AlertType.ERROR, "Lỗi định dạng", "Các ô Giá tiền, Năm, Tháng bảo hành, Số KM (nếu có nhập) phải là số hợp lệ!");
-        event.consume();
+        // 💡 ĐÃ CẬP NHẬT: Bắt bệnh thông báo theo từng loại sản phẩm được chọn
+        String selectedType = typeBox.getValue();
+        String errorMessage;
+
+        if ("VEHICLE".equals(selectedType)) {
+          errorMessage = "Các ô Giá tiền, Năm, Tháng bảo hành, Số KM phải là số hợp lệ!";
+        } else {
+          errorMessage = "Vui lòng nhập thông tin hợp lệ!";
+        }
+
+        showAlert(Alert.AlertType.ERROR, "Lỗi định dạng", errorMessage);
+        event.consume(); // Chặn không cho đóng Dialog
       }
     });
 
@@ -558,6 +613,53 @@ public class SellerDashboardController {
     } catch (IOException e) {
       e.printStackTrace();
       showAlert(Alert.AlertType.ERROR, "Lỗi", "Không mở được trang tạo phiên đấu giá.");
+    }
+  }
+
+  /**
+   * 🚀 HÀM XỬ LÝ XÓA SẢN PHẨM PHÍA SELLER
+   */
+  private void handleDeleteProductAction(Item item) {
+    if (item == null) return;
+
+    // 1. Chặn không cho xóa nếu sản phẩm đang trong phiên đấu giá
+    if (item.isInAuction() || "APPROVED".equals(item.getStatus())) {
+      showAlert(Alert.AlertType.WARNING, "Không thể xóa",
+          "Sản phẩm đã được duyệt hoặc đang trong phiên đấu giá, không thể xóa bỏ!");
+      return;
+    }
+
+    // 2. Tạo Dialog hỏi xác nhận "Bạn có chắc..." theo đúng yêu cầu
+    Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+    confirmAlert.setTitle("Xác nhận xóa");
+    confirmAlert.setHeaderText("Bạn có chắc chắn muốn xóa sản phẩm này không?");
+    confirmAlert.setContentText("Sản phẩm: " + item.getName() + " (Mã #" + item.getId() + ")\nHành động này không thể hoàn tác!");
+
+    Optional<ButtonType> result = confirmAlert.showAndWait();
+
+    // 3. Admin/Seller bấm OK thì bắn Request lên Server
+    if (result.isPresent() && result.get() == ButtonType.OK) {
+      System.out.println("[Seller] Gửi yêu cầu xóa sản phẩm #" + item.getId());
+
+      ClientService.getInstance().sendRequest("DELETE_ITEM", item.getId())
+          .thenAccept(res -> Platform.runLater(() -> {
+            // 🎯 Sửa 1: So sánh chính xác chuỗi Server trả về
+            if (res.getType() != null && "DELETE_ITEM_SUCCESS".equals(res.getType())) {
+              // Xóa thành công -> Tải lại danh sách kho hàng lập tức
+              reloadInventoryFromServer();
+              showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã gỡ bỏ sản phẩm khỏi hệ thống!");
+            } else {
+              showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể xóa sản phẩm: " + res.getData());
+            }
+          }))
+          .exceptionally(ex -> {
+            System.err.println("Lỗi kết nối khi xóa: " + ex.getMessage());
+            // 🎯 Sửa 2: Hiển thị popup báo lỗi rớt mạng cho người bán biết
+            Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Lỗi mạng", "Mất kết nối tới Server: " + ex.getMessage()));
+            return null;
+          });
+    } else {
+      System.out.println("[Seller] Đã hủy lệnh xóa sản phẩm #" + item.getId());
     }
   }
 

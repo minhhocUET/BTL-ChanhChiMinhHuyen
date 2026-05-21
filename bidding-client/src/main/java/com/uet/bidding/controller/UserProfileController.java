@@ -5,6 +5,7 @@ import com.uet.bidding.model.Customer;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;
 import com.uet.bidding.util.UserSession;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -33,6 +34,11 @@ public class UserProfileController implements Initializable {
   private Label lblBalance;
   @FXML
   private Label lblBankStatus;
+
+  // --- CÁC FIELD MỚI CHO MẬT KHẨU ---
+  @FXML private PasswordField txtOldPassword;
+  @FXML private PasswordField txtNewPassword;
+  @FXML private PasswordField txtConfirmPassword;
 
   private Customer currentUser;
   private UserService userService = new UserService();
@@ -150,6 +156,48 @@ public class UserProfileController implements Initializable {
       } catch (UserException e) {
         showAlert(Alert.AlertType.ERROR, "Lỗi nạp tiền", e.getMessage());
       }
+    });
+  }
+
+  // ==========================================
+  // 🔐 XỬ LÝ ĐỔI MẬT KHẨU
+  // ==========================================
+  @FXML
+  public void handleChangePassword(ActionEvent event) {
+    String oldPass = txtOldPassword.getText();
+    String newPass = txtNewPassword.getText();
+    String confirmPass = txtConfirmPassword.getText();
+
+    // 1. Chỉ kiểm tra rỗng cơ bản tại Client để tránh gửi chuỗi trống bừa bãi
+    if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
+      showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng nhập đầy đủ các trường mật khẩu!");
+      return;
+    }
+
+    // 2. Kiểm tra độ dài cơ bản
+    if (newPass.length() < 6) {
+      showAlert(Alert.AlertType.WARNING, "Mật khẩu yếu", "Mật khẩu mới phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    // 🎯 QUAN TRỌNG: Ghép ĐẦY ĐỦ cả 3 trường gửi lên Server: oldPass|newPass|confirmPass
+    String payload = oldPass + "|" + newPass + "|" + confirmPass;
+
+    ClientService.getInstance().sendRequest("CHANGE_PASSWORD", payload).thenAccept(response -> {
+      Platform.runLater(() -> {
+        if ("SUCCESS".equals(response.getType())) {
+          showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đổi mật khẩu thành công!");
+          txtOldPassword.clear();
+          txtNewPassword.clear();
+          txtConfirmPassword.clear();
+        } else {
+          // Nếu Server trả về lỗi (Ví dụ: "Mật khẩu cũ không chính xác!"), nó sẽ hiển thị ở đây
+          showAlert(Alert.AlertType.ERROR, "Đổi mật khẩu thất bại", String.valueOf(response.getData()));
+        }
+      });
+    }).exceptionally(ex -> {
+      Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Lỗi mạng", "Không thể kết nối đến máy chủ!"));
+      return null;
     });
   }
 

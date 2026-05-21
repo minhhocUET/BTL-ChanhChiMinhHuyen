@@ -167,6 +167,26 @@ public class AdminItemManagementController {
   }
 
   /**
+   * 🚀 HÀM BỔ SUNG: Tự động đẩy sản phẩm mới vừa tạo lên đầu bảng duyệt trong thời gian thực
+   */
+  public void addPendingItemRealtime(Item newItem) {
+    if (newItem == null) return;
+
+    // Đẩy tác vụ chỉnh sửa danh sách về luồng UI chính của JavaFX để tránh lỗi crash app
+    Platform.runLater(() -> {
+      // Bảo vệ: Kiểm tra xem sản phẩm này đã vô tình có trong bảng chưa (tránh trùng lặp)
+      boolean isDuplicate = pendingData.stream().anyMatch(item -> item.getId() == newItem.getId());
+
+      if (!isDuplicate) {
+        // Thêm sản phẩm mới vào vị trí đầu tiên (vị trí số 0) để Admin thấy ngay lập tức
+        pendingData.add(0, newItem);
+        tablePendingItems.refresh();
+        System.out.println("[Real-time] Đã tự động đẩy sản phẩm mới #" + newItem.getId() + " lên màn hình duyệt.");
+      }
+    });
+  }
+
+  /**
    * Xử lý sự kiện khi bấm nút "Phê duyệt" bài đăng
    */
   @FXML

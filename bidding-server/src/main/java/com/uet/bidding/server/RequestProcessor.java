@@ -1,8 +1,5 @@
 package com.uet.bidding.server;
 
-import com.drew.imaging.ImageMetadataReader;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.exif.ExifIFD0Directory; // Quan trọng nhất
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.uet.bidding.dao.*;
@@ -11,7 +8,6 @@ import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.*;
 import com.uet.bidding.service.AuctionManager;
-import org.imgscalr.Scalr;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -67,8 +63,6 @@ public class RequestProcessor {
         case "REGISTER_FOR_AUCTION" -> handleRegisterForAuction(msg, handler);
         case "GET_MY_REGISTRATIONS" -> handleGetMyRegistrations(msg, handler);
         case "IS_REGISTERED_FOR_AUCTION" -> handleIsRegisteredForAuction(msg, handler);
-        // 1. Thêm vào switch-case trong processRequest
-        case "GET_ITEM_IMAGE" -> handleGetItemImage(msg, handler);
 
         // Thêm 3 case này vào switch-case trong RequestProcessor.java của Server
         case "GET_ALL_USERS" -> {
@@ -115,32 +109,6 @@ public class RequestProcessor {
   }
 
   // --- CÁC HÀM XỬ LÝ CHI TIẾT ĐƯỢC VIẾT THÊM VÀO PHÍA DƯỚI ---
-
-  private void handleGetItemImage(NetworkMessage msg, ClientHandler handler) {
-    try {
-      int itemId = ((Number) msg.getData()).intValue();
-      String path = itemSqlDAO.getImagePath(itemId);
-
-      if (path == null || path.isEmpty()) {
-        handler.sendResponse("ERROR", "Sản phẩm không có ảnh.", msg.getRequestId());
-        return;
-      }
-
-      java.io.File file = new java.io.File(path);
-      if (!file.exists()) {
-        handler.sendResponse("ERROR", "File ảnh không tồn tại trên Server.", msg.getRequestId());
-        return;
-      }
-
-      // Đọc file và chuyển sang Base64 để gửi qua mạng
-      byte[] fileContent = java.nio.file.Files.readAllBytes(file.toPath());
-      String base64 = java.util.Base64.getEncoder().encodeToString(fileContent);
-
-      handler.sendResponse("GET_IMAGE_SUCCESS", base64, msg.getRequestId());
-    } catch (Exception e) {
-      handler.sendResponse("ERROR", "Lỗi đọc ảnh: " + e.getMessage(), msg.getRequestId());
-    }
-  }
 
   /**
    * Xử lý gom số liệu đếm từ database TiDB Cloud gửi về cho màn hình Admin Thống kê
@@ -210,19 +178,11 @@ public class RequestProcessor {
       boolean success = itemDAO.updateItemStatus(approveId, "APPROVED");
 
       if (success) {
-        // 3. TỰ ĐỘNG TẠO PHIÊN ĐẤU GIÁ (AUCTION)
-        auctionSqlDAO.createAuction(
-            item,
-            item.getStartingPrice(), // Giá khởi điểm
-            LocalDateTime.now(),     // Bắt đầu ngay
-            LocalDateTime.now().plusDays(1), // Kết thúc sau 24h
-            BigDecimal.valueOf(10000) // Bước giá mặc định
-        );
+        handler.sendResponse("APPROVE_SUCCESS", "Đã duyệt sản phẩm thành công!", msg.getRequestId());
 
-        handler.sendResponse("APPROVE_SUCCESS", "Sản phẩm đã lên sàn!", msg.getRequestId());
-        // Broadcast cho tất cả người dùng thấy sản phẩm mới
+        // Thông báo cho Seller biết hàng của họ đã được duyệt (Tùy chọn)
         Server.broadcast(new NetworkMessage("BROADCAST",
-            "🔥 SÀN MỚI: '" + item.getName() + "' vừa lên kệ. Tham gia ngay!"));
+            "Sản phẩm #" + approveId + " đã được Admin phê duyệt. Có thể đem đấu giá!"));
       }
     } catch (Exception e) {
       handler.sendResponse("ERROR", "Lỗi xử lý: " + e.getMessage(), msg.getRequestId());
@@ -335,16 +295,25 @@ public class RequestProcessor {
       JsonObject itemJson = gson.toJsonTree(msg.getData()).getAsJsonObject();
       String imagePath = null;
 
-      // 1. Lưu file xuống ổ cứng ngay và lấy path
+      // 1. Lấy Base64 từ Client gửi lên và đẩy thẳng lên Cloudinary
       if (itemJson.has("imageBase64") && !itemJson.get("imageBase64").isJsonNull()) {
-        imagePath = saveImageToFile(itemJson.get("imageBase64").getAsString());
+        String base64Data = itemJson.get("imageBase64").getAsString();
+        System.out.println("👉 [DEBUG 1] Đã nhận Base64, độ dài: " + base64Data.length());
+
+        // --- BẮT BỆNH 2: Cloudinary có upload thành công và trả về Link không? ---
+        imagePath = com.uet.bidding.util.CloudinaryUtil.uploadFromBase64(base64Data);
+        System.out.println("👉 [DEBUG 2] Link Cloudinary trả về: " + imagePath);
+      } else {
+      System.out.println("❌ [DEBUG 1] THẤT BẠI: Server KHÔNG tìm thấy trường 'imageBase64'!");
       }
 
       // 2. Parse Item nhưng KHÔNG gán Base64 vào object Item
       Item item = parseItemFromJson(itemJson.toString());
       item.setSellerId(c.getId());
-      item.setImagePath(imagePath); // Chỉ lưu đường dẫn này vào DB
-      item.setImageData(null);      // Luôn để null để DB nhẹ tênh
+      // 3. Gán link mạng (https://...) vào Database thay vì đường dẫn vật lý
+      item.setImagePath(imagePath);
+      item.setImageData(null);
+      System.out.println("👉 [DEBUG 3] imagePath chuẩn bị đẩy vào DAO: " + item.getImagePath());
 
       itemSqlDAO.addItem(item); // Giả sử bạn đã đổi DAO để nhận image_path
       handler.sendResponse("SUCCESS", "Đã gửi yêu cầu phê duyệt!", msg.getRequestId());
@@ -353,49 +322,12 @@ public class RequestProcessor {
     }
   }
 
-  // Hàm phụ lưu file ảnh vào thư mục storage của Server, ĐÃ SỬA ĐỂ XỬ LÝ XOAY ẢNH
-  private String saveImageToFile(String base64Data) throws IOException {
-    // 1. Giải mã Base64 sang Byte array
-    byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+  private String saveImageToCloud(String base64Data) throws IOException {
+    if (base64Data == null || base64Data.isEmpty()) return null;
 
-    // 2. Tạo file đích
-    String fileName = "item_" + System.currentTimeMillis() + ".jpg";
-    File dir = new File("server_storage/items");
-    if (!dir.exists()) dir.mkdirs();
-    File targetFile = new File(dir, fileName);
-
-    try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes)) {
-      // 3. Đọc hướng ảnh (Orientation) từ Metadata
-      int orientation = 1; // Mặc định là bình thường
-      try {
-        Metadata metadata = ImageMetadataReader.readMetadata(new ByteArrayInputStream(imageBytes));
-        // Sử dụng getFirstDirectoryOfType với Class chính xác
-        ExifIFD0Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-
-        if (directory != null && directory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)) {
-          orientation = directory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
-        }
-      } catch (Exception e) {
-        System.out.println("Không tìm thấy metadata EXIF, giữ nguyên hướng gốc.");
-      }
-
-      // 4. Đọc ảnh vào BufferedImage để xử lý
-      BufferedImage originalImage = ImageIO.read(bais);
-      if (originalImage == null) throw new IOException("Định dạng ảnh không hỗ trợ.");
-
-      // 5. Xoay ảnh dựa trên Orientation
-      BufferedImage finalImage = originalImage;
-      switch (orientation) {
-        case 6 -> finalImage = Scalr.rotate(originalImage, Scalr.Rotation.CW_90);
-        case 3 -> finalImage = Scalr.rotate(originalImage, Scalr.Rotation.CW_180);
-        case 8 -> finalImage = Scalr.rotate(originalImage, Scalr.Rotation.CW_270);
-      }
-
-      // 6. Lưu ảnh đã xử lý xuống ổ cứng
-      ImageIO.write(finalImage, "jpg", targetFile);
-    }
-
-    return targetFile.getPath();
+    // Gọi đến Utility Cloudinary chúng ta đã viết
+    // Nó sẽ trả về link https://res.cloudinary.com/...
+    return com.uet.bidding.util.CloudinaryUtil.uploadFromBase64(base64Data);
   }
 
   private void handleBid(NetworkMessage msg, ClientHandler handler) {
@@ -447,6 +379,8 @@ public class RequestProcessor {
       int itemId = Integer.parseInt(parts[0]);
       BigDecimal startPrice = new BigDecimal(parts[1]);
       int durationMinutes = Integer.parseInt(parts[2]);
+      // Lấy Bước giá (tham số thứ 4). Nếu Client dùng code cũ không gửi thì mặc định là 10.000
+      BigDecimal bidIncrement = (parts.length >= 4) ? new BigDecimal(parts[3]) : new BigDecimal("10000");
       if (durationMinutes <= 0) {
         throw new UserException("Thời lượng phiên phải lớn hơn 0 phút!");
       }
@@ -465,6 +399,7 @@ public class RequestProcessor {
       item.setStartingPrice(startPrice);
       LocalDateTime endTime = LocalDateTime.now().plusMinutes(durationMinutes);
       Auction created = AuctionManager.getInstance().createAuction(item, endTime);
+      created.setBidIncrement(bidIncrement); // Hãy đảm bảo class Auction của bạn có hàm setBidIncrement()
       created.setStatus("RUNNING");
       created.setRegisteredCount(0);
 

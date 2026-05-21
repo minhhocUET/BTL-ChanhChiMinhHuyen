@@ -431,6 +431,39 @@ public class SellerDashboardController {
   }
 
   @FXML
+  private void handleGoToCreateAuction() {
+    // 1. Kiểm tra sản phẩm được chọn
+    Item selectedItem = inventoryTable.getSelectionModel().getSelectedItem();
+    if (selectedItem == null) {
+      showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một sản phẩm từ kho hàng!");
+      return;
+    }
+
+    if (!"APPROVED".equals(selectedItem.getStatus())) {
+      showAlert(Alert.AlertType.WARNING, "Chưa đủ điều kiện", "Chỉ những sản phẩm đã được Admin duyệt (APPROVED) mới có thể đưa lên sàn!");
+      return;
+    }
+
+    try {
+      // 2. Lưu sản phẩm được chọn vào Context ĐỂ TRUYỀN SANG MÀN HÌNH KIA
+      CreateAuctionContext.set(selectedItem);
+
+      // 3. Load file FXML tạo phiên đấu giá
+      FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/uet/bidding/view/CreateAuctionFromItem.fxml"));
+      Parent root = loader.load();
+
+      // 4. Chuyển cảnh (Lấy Window trực tiếp từ inventoryTable thay vì event)
+      Stage stage = (Stage) inventoryTable.getScene().getWindow();
+      stage.setScene(new Scene(root));
+      stage.show();
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tải giao diện: " + e.getMessage());
+    }
+  }
+
+  @FXML
   public void handleViewReview(ActionEvent event) {
     try {
       Parent reviewRoot = FXMLLoader.load(getClass().getResource("/SellerReview.fxml"));

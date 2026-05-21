@@ -112,36 +112,18 @@ public class AdminItemManagementController {
 
     lblDetailInfo.setText(sb.toString());
 
-    // 2. Xử lý tải ảnh từ Server (Tối ưu: Chỉ tải khi được click)
+    // 2. Xử lý tải ảnh (Tối ưu: Chỉ tải khi được click)
     // Xóa ảnh cũ đang hiện để tránh Admin nhìn nhầm ảnh sản phẩm trước đó
     imgPreview.setImage(null);
 
-    if (item.getImagePath() != null && !item.getImagePath().isEmpty()) {
-      ClientService.getInstance().sendRequest("GET_ITEM_IMAGE", item.getId())
-          .thenAccept(response -> {
-            if ("GET_IMAGE_SUCCESS".equals(response.getType())) {
-              String base64 = (String) response.getData();
-              byte[] imageBytes = java.util.Base64.getDecoder().decode(base64);
+    if (item != null) {
+      // Đảm bảo bạn đã import com.uet.bidding.util.ImageUtils;
+      com.uet.bidding.util.ImageUtils.loadItemImage(imgPreview, item);
 
-              Platform.runLater(() -> {
-                Image img = new Image(new java.io.ByteArrayInputStream(imageBytes));
-                imgPreview.setImage(img);
-
-                // Nếu chiều cao lớn hơn chiều rộng (ảnh đứng) mà ImageView đang ngang
-                // Bạn có thể chỉnh ImageView để hiển thị tốt nhất
-                imgPreview.setImage(img);
-                imgPreview.setPreserveRatio(true);
-
-                // Đảm bảo ImageView không bao giờ vượt quá khung chứa
-                imgPreview.setFitWidth(290); // Khớp với FXML của bạn
-                imgPreview.setFitHeight(210);
-              });
-            }
-          })
-          .exceptionally(ex -> {
-            System.err.println("Lỗi tải ảnh: " + ex.getMessage());
-            return null;
-          });
+      // Chỉnh lại kích thước hiển thị cho đẹp
+      imgPreview.setPreserveRatio(true);
+      imgPreview.setFitWidth(290);
+      imgPreview.setFitHeight(210);
     }
   }
 

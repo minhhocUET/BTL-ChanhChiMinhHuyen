@@ -19,8 +19,8 @@ public class SellerService {
    * CHỨC NĂNG 1: TẠO ĐẤU GIÁ (Giữ nguyên logic kiểm tra của bạn)
    */
   /** Gửi CREATE_AUCTION lên server: itemId startPrice durationMinutes */
-  public CompletableFuture<NetworkMessage> createAuctionAsync(int itemId, BigDecimal startPrice, int durationMins) {
-    String requestData = itemId + " " + startPrice.toPlainString() + " " + durationMins;
+  public CompletableFuture<NetworkMessage> createAuctionAsync(int itemId, BigDecimal startPrice, int durationMins, BigDecimal bidIncrement) {
+    String requestData = itemId + " " + startPrice.toPlainString() + " " + durationMins + " " + bidIncrement;
     return clientService.sendRequest("CREATE_AUCTION", requestData);
   }
 

@@ -42,6 +42,7 @@ public class RequestProcessor {
         case "GET_BID_HISTORY" -> handleGetBidHistory(msg, handler);
         case "GET_ALL_AUCTIONS" -> handler.sendResponse("SUCCESS", auctionSqlDAO.getAllAuctions(), reqId);
         case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
+        case "SELLER_END_AUCTION" -> handleSellerEndAuction(msg, handler);
         case "SET_AUTO_BID" -> handleSetAutoBid(msg, handler);
         case "REMOVE_AUTO_BID" -> handleRemoveAutoBid(msg, handler);
         case "ADD_REVIEW" -> handleAddReview(msg, handler);
@@ -406,6 +407,30 @@ public class RequestProcessor {
       Server.broadcast(new NetworkMessage("NEW_AUCTION_ADDED", created));
       Server.broadcast(new NetworkMessage("AUCTION_UPDATED", created));
       handler.sendResponse("SUCCESS", created, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleSellerEndAuction(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer seller)) {
+        throw new UserException("Phải đăng nhập bằng tài khoản người bán!");
+      }
+      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      Auction auction = auctionSqlDAO.findById(auctionId);
+      if (auction.getItem() == null || auction.getItem().getSellerId() != seller.getId()) {
+        throw new UserException("Bạn chỉ được dừng phiên do chính mình tạo!");
+      }
+      if ("FINISHED".equals(auction.getStatus()) || "CANCELED".equals(auction.getStatus())) {
+        throw new UserException("Phiên đã kết thúc hoặc đã hủy!");
+      }
+      auctionSqlDAO.finishAuction(auctionId);
+      AuctionManager.getInstance().refreshAuctionFromDb(auctionId);
+      Auction updated = auctionSqlDAO.findById(auctionId);
+      updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auctionId));
+      Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
+      handler.sendResponse("SUCCESS", updated, msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }

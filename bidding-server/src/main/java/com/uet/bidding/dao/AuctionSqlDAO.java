@@ -400,7 +400,11 @@ public class AuctionSqlDAO {
   }
 
   private void updateAuctionInTransaction(Connection conn, Auction auction) throws SQLException {
-    String sql = "UPDATE auctions SET current_price = ?, highest_bidder_id = ?, end_time = ? WHERE id = ?";
+    String sql = """
+        UPDATE auctions
+        SET current_price = ?, highest_bidder_id = ?, end_time = ?, status = ?
+        WHERE id = ?
+        """;
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setBigDecimal(1, auction.getCurrentPrice());
       if (auction.getHighestBidder() != null)
@@ -408,7 +412,8 @@ public class AuctionSqlDAO {
       else
         stmt.setNull(2, Types.INTEGER);
       stmt.setTimestamp(3, Timestamp.valueOf(auction.getEndTime()));
-      stmt.setInt(4, auction.getId());
+      stmt.setString(4, auction.getStatus());
+      stmt.setInt(5, auction.getId());
       stmt.executeUpdate();
     }
   }

@@ -11,6 +11,7 @@ import com.uet.bidding.model.Seller;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.CreateAuctionContext;
 import com.uet.bidding.util.ImageUtils;
+import com.uet.bidding.util.SellerAuctionContext;
 import com.uet.bidding.util.UserSession;
 
 import javafx.application.Platform;
@@ -132,16 +133,55 @@ public class SellerDashboardController {
     // Setup các bảng đấu giá khác
     setupAuctionColumns(activeColCity, activeColType, activeColName, activeColPrice);
     activeAuctionsTable.setItems(activeAuctions);
+    activeAuctionsTable.setRowFactory(this::createAuctionRow);
+
     setupAuctionColumns(finishedColCity, finishedColType, finishedColName, finishedColPrice);
     finishedAuctionsTable.setItems(finishedAuctions);
+    finishedAuctionsTable.setRowFactory(this::createAuctionRow);
+  }
+
+  private TableRow<Auction> createAuctionRow(TableView<Auction> table) {
+    TableRow<Auction> row = new TableRow<>();
+    row.setOnMouseClicked(event -> {
+      if (row.isEmpty() || event.getClickCount() < 2) return;
+      openSellerProductDetail(row.getItem());
+    });
+    return row;
+  }
+
+  private void openSellerProductDetail(Auction auction) {
+    if (auction == null) return;
+    SellerAuctionContext.set(auction);
+    try {
+      FXMLLoader loader = new FXMLLoader(getClass().getResource("/SellerProductDetail.fxml"));
+      Parent root = loader.load();
+      SellerProductDetailController ctrl = loader.getController();
+      ctrl.setAuctionData(auction);
+      Stage stage = (Stage) sellerTabPane.getScene().getWindow();
+      stage.setScene(new Scene(root));
+      stage.setTitle("Quản lý phiên - " + (auction.getItem() != null ? auction.getItem().getName() : "#" + auction.getId()));
+      stage.show();
+    } catch (IOException e) {
+      e.printStackTrace();
+      showAlert(Alert.AlertType.ERROR, "Lỗi", "Không mở được trang chi tiết phiên đấu giá.");
+    }
   }
 
   private void setupAuctionColumns(TableColumn<Auction, String> colCity, TableColumn<Auction, String> colType,
                                    TableColumn<Auction, String> colName, TableColumn<Auction, BigDecimal> colPrice) {
     if (colCity == null) return;
-    colCity.setCellValueFactory(cd -> new SimpleStringProperty(nullSafeCity(cd.getValue().getItem())));
-    colType.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getItem().getType()));
-    colName.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getItem().getName()));
+    colCity.setCellValueFactory(cd -> {
+      Item item = cd.getValue() != null ? cd.getValue().getItem() : null;
+      return new SimpleStringProperty(nullSafeCity(item));
+    });
+    colType.setCellValueFactory(cd -> {
+      Item item = cd.getValue() != null ? cd.getValue().getItem() : null;
+      return new SimpleStringProperty(item != null ? item.getType() : "-");
+    });
+    colName.setCellValueFactory(cd -> {
+      Item item = cd.getValue() != null ? cd.getValue().getItem() : null;
+      return new SimpleStringProperty(item != null ? item.getName() : "-");
+    });
     colPrice.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().getCurrentPrice()));
   }
 

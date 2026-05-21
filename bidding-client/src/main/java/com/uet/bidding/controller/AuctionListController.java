@@ -5,6 +5,7 @@ import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Electronics;
 import com.uet.bidding.model.Item;
 import com.uet.bidding.network.ClientService;
+import com.uet.bidding.util.SellerAuctionContext;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -150,60 +151,10 @@ public class AuctionListController implements Initializable {
                           .getItems()
                           .get(getIndex());
 
-                  try {
-
-                    FXMLLoader loader =
-                        new FXMLLoader(
-                            getClass().getResource(
-                                "/ProductDetail.fxml"
-                            )
-                        );
-
-                    Parent root = loader.load();
-
-                    ProductDetailController detailController =
-                        loader.getController();
-
-                    detailController.setAuctionData(
-                        selectedAuction
-                    );
-
-                    Stage stage =
-                        (Stage) ((Node) event.getSource())
-                            .getScene()
-                            .getWindow();
-
-                    stage.setScene(new Scene(root));
-
-                    stage.setTitle(
-                        "Chi tiết sản phẩm - "
-                            + selectedAuction
-                            .getItem()
-                            .getName()
-                    );
-
-                    stage.show();
-
-                  } catch (Exception e) {
-
-                    e.printStackTrace();
-
-                    Alert alert =
-                        new Alert(Alert.AlertType.ERROR);
-
-                    alert.setTitle("Lỗi");
-
-                    alert.setHeaderText(
-                        "Không thể mở trang chi tiết"
-                    );
-
-                    alert.setContentText(
-                        "Chi tiết lỗi: "
-                            + e.getMessage()
-                    );
-
-                    alert.showAndWait();
-                  }
+                  openAuctionDetail(
+                      selectedAuction,
+                      (Stage) ((Node) event.getSource()).getScene().getWindow()
+                  );
                 });
               }
 
@@ -363,6 +314,19 @@ public class AuctionListController implements Initializable {
 
   private void openProductDetail(Auction auction, javafx.scene.Scene scene) {
     if (auction == null || scene == null) return;
+    openAuctionDetail(auction, (Stage) scene.getWindow());
+  }
+
+  private boolean isOwnAuction(Auction auction) {
+    Customer currentUser = UserSession.getLoggedInCustomer();
+    if (currentUser == null || auction == null || auction.getItem() == null) {
+      return false;
+    }
+    return currentUser.getId() == auction.getItem().getSellerId();
+  }
+
+  private void openAuctionDetail(Auction auction, Stage stage) {
+    if (auction == null || stage == null) return;
     Customer currentUser = UserSession.getLoggedInCustomer();
     if (currentUser != null && (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty())) {
       Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -371,16 +335,31 @@ public class AuctionListController implements Initializable {
       return;
     }
     try {
-      FXMLLoader loader = new FXMLLoader(getClass().getResource("/ProductDetail.fxml"));
-      Parent root = loader.load();
-      ProductDetailController detailController = loader.getController();
-      detailController.setAuctionData(auction);
-      Stage stage = (Stage) scene.getWindow();
+      String itemName = auction.getItem() != null ? auction.getItem().getName() : ("#" + auction.getId());
+      Parent root;
+      if (isOwnAuction(auction)) {
+        SellerAuctionContext.set(auction);
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/SellerProductDetail.fxml"));
+        root = loader.load();
+        SellerProductDetailController sellerCtrl = loader.getController();
+        sellerCtrl.setAuctionData(auction);
+        stage.setTitle("Quản lý phiên - " + itemName);
+      } else {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/ProductDetail.fxml"));
+        root = loader.load();
+        ProductDetailController detailController = loader.getController();
+        detailController.setAuctionData(auction);
+        stage.setTitle("Chi tiết - " + itemName);
+      }
       stage.setScene(new Scene(root));
-      stage.setTitle("Chi tiết - " + auction.getItem().getName());
       stage.show();
     } catch (Exception e) {
       e.printStackTrace();
+      Alert alert = new Alert(Alert.AlertType.ERROR);
+      alert.setTitle("Lỗi");
+      alert.setHeaderText("Không thể mở trang chi tiết");
+      alert.setContentText("Chi tiết lỗi: " + e.getMessage());
+      alert.showAndWait();
     }
   }
 

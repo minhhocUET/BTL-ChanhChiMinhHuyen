@@ -150,4 +150,12 @@ public class AuctionManager {
   public Auction getAuction(int id) {
     return auctions.get(id);
   }
+
+  /** Reload auction from DB into in-memory cache (e.g. after seller ends early). */
+  public void refreshAuctionFromDb(int auctionId) throws UserException {
+    if (auctionSqlDAO == null) return;
+    Auction updated = auctionSqlDAO.findById(auctionId);
+    auctions.put(auctionId, updated);
+    locks.computeIfAbsent(auctionId, k -> new ReentrantLock());
+  }
 }

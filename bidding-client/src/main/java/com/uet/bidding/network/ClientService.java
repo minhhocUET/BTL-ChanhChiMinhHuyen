@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.uet.bidding.controller.AuctionListController;
 import com.uet.bidding.controller.Main;
 import com.uet.bidding.controller.ProductDetailController;
+import com.uet.bidding.controller.SellerProductDetailController;
 import com.uet.bidding.controller.admin.AdminUserManagementController;
 import com.uet.bidding.model.*;
 import com.uet.bidding.util.UserSession;
@@ -162,6 +163,9 @@ public class ClientService {
           Platform.runLater(() -> {
             if (ProductDetailController.getInstance() != null) {
               ProductDetailController.getInstance().applyAuctionUpdate(updated);
+            }
+            if (SellerProductDetailController.getInstance() != null) {
+              SellerProductDetailController.getInstance().applyAuctionUpdate(updated);
             }
             if (AuctionListController.getInstance() != null) {
               AuctionListController list = AuctionListController.getInstance();

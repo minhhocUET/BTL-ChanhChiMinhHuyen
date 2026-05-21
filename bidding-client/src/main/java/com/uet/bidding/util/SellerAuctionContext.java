@@ -16,7 +16,6 @@ public final class SellerAuctionContext {
     return selectedAuction;
   }
 
-  public static void clear() {
-    selectedAuction = null;
+  public static void clear() {selectedAuction = null;
   }
 }

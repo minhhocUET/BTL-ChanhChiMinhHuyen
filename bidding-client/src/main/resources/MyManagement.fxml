@@ -53,12 +53,12 @@
                                                    AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0"
                                                    AnchorPane.topAnchor="10.0">
                                             <columns>
-                                                <TableColumn fx:id="colBidStt" prefWidth="50.0" text="STT"/>
-                                                <TableColumn fx:id="colBidName" prefWidth="250.0" text="Tên sản phẩm"/>
-                                                <TableColumn fx:id="colBidCurrentPrice" prefWidth="150.0"
+                                                <TableColumn fx:id="colBidEndTime" prefWidth="160.0" text="Thời gian kết thúc"/>
+                                                <TableColumn fx:id="colBidCity" prefWidth="120.0" text="Thành phố"/>
+                                                <TableColumn fx:id="colBidName" prefWidth="220.0" text="Tên sản phẩm"/>
+                                                <TableColumn fx:id="colBidCurrentPrice" prefWidth="130.0"
                                                              text="Giá hiện tại"/>
-                                                <TableColumn fx:id="colBidMyPrice" prefWidth="150.0" text="Giá đã đặt"/>
-                                                <TableColumn fx:id="colBidStatus" prefWidth="150.0" text="Trạng thái"/>
+                                                <TableColumn fx:id="colBidMyPrice" prefWidth="130.0" text="Giá đã đặt"/>
                                             </columns>
                                         </TableView>
                                     </children>
@@ -74,7 +74,7 @@
                                                    AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0"
                                                    AnchorPane.topAnchor="10.0">
                                             <columns>
-                                                <TableColumn fx:id="colSellStt" prefWidth="50.0" text="STT"/>
+                                                <TableColumn fx:id="colSellCity" prefWidth="120.0" text="Thành phố"/>
                                                 <TableColumn fx:id="colSellName" prefWidth="250.0" text="Tên sản phẩm"/>
                                                 <TableColumn fx:id="colSellStartPrice" prefWidth="150.0"
                                                              text="Giá khởi điểm"/>

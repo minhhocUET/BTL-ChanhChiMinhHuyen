@@ -126,6 +126,26 @@ public class BidSqlDAO {
   /**
    * Lấy số lượt bid của một phiên.
    */
+  /**
+   * Giá cao nhất mà một bidder đã đặt trong phiên (null nếu chưa đặt).
+   */
+  public BigDecimal getMaxBidByBidder(int auctionId, int bidderId) {
+    String sql = "SELECT MAX(bid_amount) AS max_bid FROM bids WHERE auction_id = ? AND bidder_id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      stmt.setInt(2, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return rs.getBigDecimal("max_bid");
+        }
+      }
+    } catch (SQLException e) {
+      System.err.println("Lỗi lấy giá bid của bidder: " + e.getMessage());
+    }
+    return null;
+  }
+
   public int getBidCount(int auctionId) {
     String sql = "SELECT COUNT(*) FROM bids WHERE auction_id = ?";
     try (Connection conn = DatabaseConnection.getConnection();

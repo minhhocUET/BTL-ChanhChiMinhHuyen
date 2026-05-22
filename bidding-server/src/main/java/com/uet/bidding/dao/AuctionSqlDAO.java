@@ -95,15 +95,26 @@ public class AuctionSqlDAO {
   }
 
   public List<Auction> getAllAuctions() {
+    return getAuctionsByStatusEnriched("RUNNING");
+  }
+
+  /** Phiên đang chạy cho sảnh đấu giá (không hiển thị FINISHED). */
+  public List<Auction> getRunningAuctionsForHall() {
+    return getAuctionsByStatusEnriched("RUNNING");
+  }
+
+  private List<Auction> getAuctionsByStatusEnriched(String status) {
     List<Auction> list = new ArrayList<>();
-    String sql = "SELECT * FROM auctions ORDER BY start_time DESC";
+    String sql = "SELECT * FROM auctions WHERE status = ? ORDER BY start_time DESC";
     try (Connection conn = DatabaseConnection.getConnection();
-         Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery(sql)) {
-      while (rs.next()) {
-        Auction auction = mapAuction(rs);
-        auction.setRegisteredCount(countRegistrations(auction.getId()));
-        list.add(auction);
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, status);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          Auction auction = mapAuction(rs);
+          enrichAuction(auction);
+          list.add(auction);
+        }
       }
     } catch (SQLException | UserException e) {
       System.err.println("Lỗi load auctions: " + e.getMessage());
@@ -141,12 +152,76 @@ public class AuctionSqlDAO {
       stmt.setInt(1, sellerId);
       stmt.setString(2, status);
       try (ResultSet rs = stmt.executeQuery()) {
-        while (rs.next()) list.add(mapAuction(rs));
+        while (rs.next()) {
+          Auction auction = mapAuction(rs);
+          enrichAuction(auction);
+          list.add(auction);
+        }
       }
     } catch (SQLException | UserException e) {
       System.err.println("Lỗi load auctions by seller: " + e.getMessage());
     }
     return list;
+  }
+
+  /**
+   * Phiên RUNNING mà bidder đã đăng ký tham gia.
+   */
+  public List<Auction> getActiveAuctionsForBidder(int bidderId) {
+    List<Auction> list = new ArrayList<>();
+    String sql =
+        "SELECT a.* FROM auctions a "
+            + "INNER JOIN auction_registrations ar ON a.id = ar.auction_id "
+            + "WHERE ar.bidder_id = ? AND a.status = 'RUNNING' "
+            + "ORDER BY a.end_time ASC";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          Auction auction = mapAuction(rs);
+          enrichAuction(auction);
+          list.add(auction);
+        }
+      }
+    } catch (SQLException | UserException e) {
+      System.err.println("Lỗi load active auctions for bidder: " + e.getMessage());
+    }
+    return list;
+  }
+
+  /**
+   * Phiên FINISHED mà bidder đã tham gia (đăng ký, đặt giá hoặc thắng).
+   */
+  public List<Auction> getFinishedAuctionsForBidder(int bidderId) {
+    List<Auction> list = new ArrayList<>();
+    String sql =
+        "SELECT DISTINCT a.* FROM auctions a "
+            + "WHERE a.status = 'FINISHED' AND ("
+            + "  EXISTS (SELECT 1 FROM auction_registrations r WHERE r.auction_id = a.id AND r.bidder_id = ?) "
+            + "  OR EXISTS (SELECT 1 FROM bids b WHERE b.auction_id = a.id AND b.bidder_id = ?) "
+            + "  OR EXISTS (SELECT 1 FROM auction_results ar WHERE ar.auction_id = a.id AND ar.winner_id = ?)"
+            + ") ORDER BY a.end_time DESC";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, bidderId);
+      stmt.setInt(2, bidderId);
+      stmt.setInt(3, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          Auction auction = mapAuction(rs);
+          enrichAuction(auction);
+          list.add(auction);
+        }
+      }
+    } catch (SQLException | UserException e) {
+      System.err.println("Lỗi load finished auctions for bidder: " + e.getMessage());
+    }
+    return list;
+  }
+
+  private void enrichAuction(Auction auction) {
+    auction.setRegisteredCount(countRegistrations(auction.getId()));
   }
 
   // =========================================================

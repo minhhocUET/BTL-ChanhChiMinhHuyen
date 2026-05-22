@@ -45,6 +45,9 @@ public class Customer extends User {
 
   // --- GETTER CHO CÁC VAI TRÒ ---
   public Bidder getBidderProfile() {
+    if (bidderProfile == null) {
+      bidderProfile = new Bidder();
+    }
     return bidderProfile;
   }
 

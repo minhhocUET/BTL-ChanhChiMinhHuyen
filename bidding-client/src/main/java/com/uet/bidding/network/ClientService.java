@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.uet.bidding.controller.AuctionListController;
 import com.uet.bidding.controller.Main;
+import com.uet.bidding.controller.MyManagementController;
 import com.uet.bidding.controller.ProductDetailController;
+import com.uet.bidding.controller.SellerDashboardController;
 import com.uet.bidding.controller.SellerProductDetailController;
 import com.uet.bidding.controller.admin.AdminUserManagementController;
 import com.uet.bidding.controller.admin.AdminItemManagementController; // 🚀 ĐÃ BỔ SUNG IMPORT NÀY
@@ -192,8 +194,14 @@ public class ClientService {
               if ("NEW_AUCTION_ADDED".equals(msg.getType())) {
                 list.addOrRefreshAuction(updated);
               } else {
-                list.refreshOneAuction(updated);
+                list.handleAuctionBroadcast(updated);
               }
+            }
+            if (MyManagementController.getInstance() != null) {
+              MyManagementController.getInstance().applyAuctionUpdate(updated);
+            }
+            if (SellerDashboardController.getInstance() != null) {
+              SellerDashboardController.getInstance().applyAuctionUpdate(updated);
             }
           });
         } catch (Exception e) {

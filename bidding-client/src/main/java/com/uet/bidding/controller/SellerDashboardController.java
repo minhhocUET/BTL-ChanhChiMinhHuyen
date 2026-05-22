@@ -62,20 +62,29 @@ public class SellerDashboardController {
   @FXML private TableColumn<Auction, String> activeColType;
   @FXML private TableColumn<Auction, String> activeColName;
   @FXML private TableColumn<Auction, BigDecimal> activeColPrice;
+  @FXML private TableColumn<Auction, Integer> activeColRegistered;
 
   @FXML private TableView<Auction> finishedAuctionsTable;
   @FXML private TableColumn<Auction, String> finishedColCity;
   @FXML private TableColumn<Auction, String> finishedColType;
   @FXML private TableColumn<Auction, String> finishedColName;
   @FXML private TableColumn<Auction, BigDecimal> finishedColPrice;
+  @FXML private TableColumn<Auction, Integer> finishedColRegistered;
+
+  private static SellerDashboardController instance;
 
   private Seller seller;
   private final ObservableList<Item> inventoryItems = FXCollections.observableArrayList();
   private final ObservableList<Auction> activeAuctions = FXCollections.observableArrayList();
   private final ObservableList<Auction> finishedAuctions = FXCollections.observableArrayList();
 
+  public static SellerDashboardController getInstance() {
+    return instance;
+  }
+
   @FXML
   public void initialize() {
+    instance = this;
     Customer c = UserSession.getLoggedInCustomer();
     if (c == null) {
       showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng đăng nhập lại!");
@@ -176,13 +185,46 @@ public class SellerDashboardController {
     });
 
     // Setup các bảng đấu giá khác
-    setupAuctionColumns(activeColCity, activeColType, activeColName, activeColPrice);
+    setupAuctionColumns(activeColCity, activeColType, activeColName, activeColPrice, activeColRegistered);
     activeAuctionsTable.setItems(activeAuctions);
     activeAuctionsTable.setRowFactory(this::createAuctionRow);
 
-    setupAuctionColumns(finishedColCity, finishedColType, finishedColName, finishedColPrice);
+    setupAuctionColumns(finishedColCity, finishedColType, finishedColName, finishedColPrice, finishedColRegistered);
     finishedAuctionsTable.setItems(finishedAuctions);
     finishedAuctionsTable.setRowFactory(this::createAuctionRow);
+  }
+
+  public void applyAuctionUpdate(Auction updated) {
+    if (updated == null) return;
+    Platform.runLater(() -> {
+      if ("FINISHED".equals(updated.getStatus())) {
+        activeAuctions.removeIf(a -> a.getId() == updated.getId());
+        boolean found = false;
+        for (int i = 0; i < finishedAuctions.size(); i++) {
+          if (finishedAuctions.get(i).getId() == updated.getId()) {
+            finishedAuctions.set(i, updated);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          finishedAuctions.add(0, updated);
+        }
+      } else if ("RUNNING".equals(updated.getStatus())) {
+        finishedAuctions.removeIf(a -> a.getId() == updated.getId());
+        boolean found = false;
+        for (int i = 0; i < activeAuctions.size(); i++) {
+          if (activeAuctions.get(i).getId() == updated.getId()) {
+            activeAuctions.set(i, updated);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          activeAuctions.add(0, updated);
+        }
+      }
+    });
   }
 
   private TableRow<Auction> createAuctionRow(TableView<Auction> table) {
@@ -213,7 +255,8 @@ public class SellerDashboardController {
   }
 
   private void setupAuctionColumns(TableColumn<Auction, String> colCity, TableColumn<Auction, String> colType,
-                                   TableColumn<Auction, String> colName, TableColumn<Auction, BigDecimal> colPrice) {
+                                   TableColumn<Auction, String> colName, TableColumn<Auction, BigDecimal> colPrice,
+                                   TableColumn<Auction, Integer> colRegistered) {
     if (colCity == null) return;
     colCity.setCellValueFactory(cd -> {
       Item item = cd.getValue() != null ? cd.getValue().getItem() : null;
@@ -228,6 +271,10 @@ public class SellerDashboardController {
       return new SimpleStringProperty(item != null ? item.getName() : "-");
     });
     colPrice.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().getCurrentPrice()));
+    if (colRegistered != null) {
+      colRegistered.setCellValueFactory(cd ->
+          new SimpleObjectProperty<>(cd.getValue().getRegisteredCount()));
+    }
   }
 
   private String nullSafeCity(Item item) {

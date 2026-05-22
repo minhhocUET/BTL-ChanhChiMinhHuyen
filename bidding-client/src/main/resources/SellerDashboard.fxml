@@ -100,6 +100,7 @@
                                         <TableColumn fx:id="activeColType" prefWidth="150.0" text="Loại" />
                                         <TableColumn fx:id="activeColName" prefWidth="280.0" text="Tên sản phẩm" />
                                         <TableColumn fx:id="activeColPrice" prefWidth="120.0" text="Giá hiện tại" />
+                                        <TableColumn fx:id="activeColRegistered" prefWidth="130.0" text="Số người đăng ký" />
                                     </columns>
                                 </TableView>
                             </content>
@@ -112,6 +113,7 @@
                                         <TableColumn fx:id="finishedColType" prefWidth="150.0" text="Loại" />
                                         <TableColumn fx:id="finishedColName" prefWidth="280.0" text="Tên sản phẩm" />
                                         <TableColumn fx:id="finishedColPrice" prefWidth="120.0" text="Giá cuối" />
+                                        <TableColumn fx:id="finishedColRegistered" prefWidth="130.0" text="Số người đăng ký" />
                                     </columns>
                                 </TableView>
                             </content>

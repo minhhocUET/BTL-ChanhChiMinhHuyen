@@ -187,12 +187,17 @@ public class ProductDetailController {
                   lblRegisteredCount.setText("Đã đăng ký: " + updated.getRegisteredCount() + " người");
                 }
                 AuctionListController list = AuctionListController.getInstance();
-                if (list != null) list.refreshOneAuction(updated);
+                if (list != null) {
+                  list.refreshOneAuction(updated);
+                }
               }
             } catch (Exception ignored) {
               if (lblRegisteredCount != null) {
                 lblRegisteredCount.setText("Đã đăng ký: " + (currentAuction.getRegisteredCount() + 1) + " người");
               }
+            }
+            if (MyManagementController.getInstance() != null) {
+              MyManagementController.getInstance().reloadAfterRegistration();
             }
             showAlert("Thành công", "Đã đăng ký tham gia phiên đấu giá!", Alert.AlertType.INFORMATION);
           } else {

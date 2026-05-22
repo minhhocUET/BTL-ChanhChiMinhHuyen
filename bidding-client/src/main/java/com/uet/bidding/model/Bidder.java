@@ -8,7 +8,7 @@ public class Bidder {
   // 1. Danh sách các phiên đang đăng ký tham gia (Đang diễn ra)
   private List<Integer> registeredAuctionIds;
 
-  // 2. Danh sách các phiên đã từng tham gia (Đã kết thúc)
+  // 2. Danh sách hàng đã mua (Đã kết thúc)
   private List<Integer> auctionHistoryIds;
 
   public Bidder() {

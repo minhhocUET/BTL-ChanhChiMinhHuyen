@@ -90,6 +90,21 @@ public class ReviewSqlDAO {
     return list;
   }
 
+  public boolean hasReviewForAuction(int auctionId, int reviewerId) {
+    String sql = "SELECT 1 FROM reviews WHERE auction_id = ? AND reviewer_id = ? LIMIT 1";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      stmt.setInt(2, reviewerId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        return rs.next();
+      }
+    } catch (SQLException e) {
+      System.err.println("Lỗi kiểm tra review: " + e.getMessage());
+    }
+    return false;
+  }
+
   /**
    * Xóa đánh giá (dùng cho Admin nếu cần). Sau khi xóa, tự động cập nhật lại rating.
    */

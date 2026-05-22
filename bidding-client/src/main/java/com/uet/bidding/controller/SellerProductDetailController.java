@@ -185,7 +185,15 @@ public class SellerProductDetailController implements Initializable {
             }
             showAlert("Thành công", "Đã dừng sớm phiên đấu giá.", Alert.AlertType.INFORMATION);
             AuctionListController list = AuctionListController.getInstance();
-            if (list != null) list.refreshOneAuction(currentAuction);
+            if (list != null) {
+              list.handleAuctionBroadcast(currentAuction);
+            }
+            if (SellerDashboardController.getInstance() != null) {
+              SellerDashboardController.getInstance().applyAuctionUpdate(currentAuction);
+            }
+            if (MyManagementController.getInstance() != null) {
+              MyManagementController.getInstance().applyAuctionUpdate(currentAuction);
+            }
           } else {
             btnEndEarly.setDisable(false);
             showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);

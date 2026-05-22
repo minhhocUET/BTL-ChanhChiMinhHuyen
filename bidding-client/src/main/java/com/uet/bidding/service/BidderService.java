@@ -18,7 +18,7 @@ public class BidderService {
       return CompletableFuture.failedFuture(
           new RuntimeException("Vui lòng đăng nhập!"));
     }
-    if (!current.isProfileComplete()) {
+    if (!current.hasCompleteProfile()) {
       return CompletableFuture.failedFuture(
           new RuntimeException("Hoàn thiện hồ sơ trước khi đặt giá!"));
     }
@@ -32,7 +32,7 @@ public class BidderService {
     if (current == null) {
       return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
     }
-    if (!current.isProfileComplete()) {
+    if (!current.hasCompleteProfile()) {
       return CompletableFuture.failedFuture(
           new RuntimeException("Hoàn thiện hồ sơ trước khi đăng ký!"));
     }
@@ -49,5 +49,21 @@ public class BidderService {
       return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
     }
     return clientService.sendRequest("GET_MY_REGISTRATIONS", current.getId());
+  }
+
+  public CompletableFuture<NetworkMessage> loadActiveAuctions() {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    return clientService.sendRequest("GET_BIDDER_ACTIVE_AUCTIONS", current.getId());
+  }
+
+  public CompletableFuture<NetworkMessage> loadBidderHistory() {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    return clientService.sendRequest("GET_BIDDER_HISTORY", current.getId());
   }
 }

@@ -291,8 +291,24 @@ public class AuctionListController implements Initializable {
   }
 
 
+  public void handleAuctionBroadcast(Auction updated) {
+    if (tableView == null || updated == null) return;
+    if ("FINISHED".equals(updated.getStatus())) {
+      tableView.getItems().removeIf(a -> a.getId() == updated.getId());
+      return;
+    }
+    if (!"RUNNING".equals(updated.getStatus())) {
+      return;
+    }
+    refreshOneAuction(updated);
+  }
+
   public void refreshOneAuction(Auction updated) {
     if (tableView == null || updated == null) return;
+    if ("FINISHED".equals(updated.getStatus())) {
+      tableView.getItems().removeIf(a -> a.getId() == updated.getId());
+      return;
+    }
     for (int i = 0; i < tableView.getItems().size(); i++) {
       if (tableView.getItems().get(i).getId() == updated.getId()) {
         tableView.getItems().set(i, updated);
@@ -303,6 +319,9 @@ public class AuctionListController implements Initializable {
 
   public void addOrRefreshAuction(Auction auction) {
     if (tableView == null || auction == null) return;
+    if (!"RUNNING".equals(auction.getStatus())) {
+      return;
+    }
     for (int i = 0; i < tableView.getItems().size(); i++) {
       if (tableView.getItems().get(i).getId() == auction.getId()) {
         tableView.getItems().set(i, auction);
@@ -370,6 +389,11 @@ public class AuctionListController implements Initializable {
                 String json = ClientService.getInstance().getGson().toJson(response.getData());
                 List<Auction> list = ClientService.getInstance().getGson()
                         .fromJson(json, new com.google.gson.reflect.TypeToken<List<Auction>>(){}.getType());
+                if (list != null) {
+                  list.removeIf(a -> a == null || !"RUNNING".equals(a.getStatus()));
+                } else {
+                  list = List.of();
+                }
                 tableView.setItems(FXCollections.observableArrayList(list));
               }
             }));

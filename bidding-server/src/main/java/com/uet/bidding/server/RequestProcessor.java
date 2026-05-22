@@ -41,7 +41,8 @@ public class RequestProcessor {
         case "ADD_BALANCE" -> handleAddBalance(msg, handler);
         case "BID" -> handleBid(msg, handler);
         case "GET_BID_HISTORY" -> handleGetBidHistory(msg, handler);
-        case "GET_ALL_AUCTIONS" -> handler.sendResponse("SUCCESS", auctionSqlDAO.getAllAuctions(), reqId);
+        case "GET_ALL_AUCTIONS" ->
+            handler.sendResponse("SUCCESS", auctionSqlDAO.getRunningAuctionsForHall(), reqId);
         case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
         case "SELLER_END_AUCTION" -> handleSellerEndAuction(msg, handler);
         case "SET_AUTO_BID" -> handleSetAutoBid(msg, handler);
@@ -64,6 +65,8 @@ public class RequestProcessor {
         case "GET_SELLER_FINISHED_AUCTIONS" -> handleGetSellerAuctions(msg, handler, "FINISHED");
         case "REGISTER_FOR_AUCTION" -> handleRegisterForAuction(msg, handler);
         case "GET_MY_REGISTRATIONS" -> handleGetMyRegistrations(msg, handler);
+        case "GET_BIDDER_ACTIVE_AUCTIONS" -> handleGetBidderActiveAuctions(msg, handler);
+        case "GET_BIDDER_HISTORY" -> handleGetBidderHistory(msg, handler);
         case "IS_REGISTERED_FOR_AUCTION" -> handleIsRegisteredForAuction(msg, handler);
 
         // Thêm 3 case này vào switch-case trong RequestProcessor.java của Server
@@ -432,6 +435,7 @@ public class RequestProcessor {
       boolean success = AuctionManager.getInstance().placeBid(auctionId, bidder, bidAmount);
       if (success) {
         Auction updated = auctionSqlDAO.findById(auctionId);
+        updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auctionId));
 
         boolean extended = updated.getEndTime().isAfter(endBefore);
         if (extended) {
@@ -555,8 +559,61 @@ public class RequestProcessor {
       if (!(handler.getLoggedInUser() instanceof Customer customer)) {
         throw new UserException("Phải đăng nhập!");
       }
-      List<Integer> ids = auctionSqlDAO.getRegisteredAuctionIdsForBidder(customer.getId());
-      handler.sendResponse("SUCCESS", ids, msg.getRequestId());
+      List<Auction> auctions = auctionSqlDAO.getActiveAuctionsForBidder(customer.getId());
+      handler.sendResponse("SUCCESS", auctions, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleGetBidderActiveAuctions(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer customer)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      int bidderId = ((Number) msg.getData()).intValue();
+      if (bidderId != customer.getId()) {
+        throw new UserException("Không được xem danh sách của người khác!");
+      }
+      BidSqlDAO bidDao = new BidSqlDAO();
+      List<Auction> auctions = auctionSqlDAO.getActiveAuctionsForBidder(bidderId);
+      List<java.util.Map<String, Object>> payload = new java.util.ArrayList<>();
+      for (Auction a : auctions) {
+        a.setRegisteredCount(auctionSqlDAO.getRegistrationCount(a.getId()));
+        java.util.Map<String, Object> row = new java.util.HashMap<>();
+        row.put("auction", a);
+        row.put("myHighestBid", bidDao.getMaxBidByBidder(a.getId(), bidderId));
+        payload.add(row);
+      }
+      handler.sendResponse("SUCCESS", payload, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleGetBidderHistory(NetworkMessage msg, ClientHandler handler) {
+    try {
+      if (!(handler.getLoggedInUser() instanceof Customer customer)) {
+        throw new UserException("Phải đăng nhập!");
+      }
+      int bidderId = ((Number) msg.getData()).intValue();
+      if (bidderId != customer.getId()) {
+        throw new UserException("Không được xem lịch sử của người khác!");
+      }
+      ReviewSqlDAO reviewDao = new ReviewSqlDAO();
+      BidSqlDAO bidDao = new BidSqlDAO();
+      List<Auction> auctions = auctionSqlDAO.getFinishedAuctionsForBidder(bidderId);
+      List<java.util.Map<String, Object>> payload = new java.util.ArrayList<>();
+      for (Auction a : auctions) {
+        a.setRegisteredCount(auctionSqlDAO.getRegistrationCount(a.getId()));
+        java.util.Map<String, Object> row = new java.util.HashMap<>();
+        row.put("auction", a);
+        row.put("reviewed", reviewDao.hasReviewForAuction(a.getId(), bidderId));
+        BigDecimal myBid = bidDao.getMaxBidByBidder(a.getId(), bidderId);
+        row.put("myHighestBid", myBid);
+        payload.add(row);
+      }
+      handler.sendResponse("SUCCESS", payload, msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }

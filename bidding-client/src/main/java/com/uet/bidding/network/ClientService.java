@@ -185,7 +185,26 @@ public class ClientService {
       case "AUCTION_UPDATED":
       case "NEW_AUCTION_ADDED":
         try {
+          // 🌟 GIẢI PHÁP PHÒNG THỦ: Chuyển dữ liệu mạng thành JsonObject để xử lý đuôi .0
           String auctionJson = gson.toJson(msg.getData());
+          JsonObject jsonObject = gson.fromJson(auctionJson, JsonObject.class);
+
+          if (jsonObject != null) {
+            // Sửa lỗi ID bị biến thành dạng "930003.0"
+            if (jsonObject.has("id")) {
+              double rawId = jsonObject.get("id").getAsDouble();
+              jsonObject.addProperty("id", (int) rawId); // Ép về int và ghi đè lại vào JSON
+            }
+            // Sửa lỗi số lượng người đăng ký nếu bị biến thành "2.0"
+            if (jsonObject.has("registeredCount")) {
+              double rawCount = jsonObject.get("registeredCount").getAsDouble();
+              jsonObject.addProperty("registeredCount", (int) rawCount);
+            }
+
+            // Sau khi JSON đã được dọn dẹp sạch sẽ, tiến hành parse sang Model Auction một cách an toàn
+            auctionJson = gson.toJson(jsonObject);
+          }
+
           Auction updated = gson.fromJson(auctionJson, Auction.class);
           Platform.runLater(() -> {
             if (ProductDetailController.getInstance() != null) {

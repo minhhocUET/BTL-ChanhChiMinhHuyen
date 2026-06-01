@@ -23,7 +23,7 @@ public class Server { // Đây là file chạy chính của SERVER
   // ==============================================================
   // 1. CÁC BIẾN QUẢN LÝ MẠNG
   // ==============================================================
-  // Danh sách lưu trữ các Client đang kết nối (Dùng CopyOnWriteArraySet để chống lỗi đa luồng)
+  // Danh sách lưu trữ các Client đang kết nối (Dùng CopyOnWriteArraySet để chống lỗi đa luồng)v
   public static Set<ClientHandler> activeClients = new CopyOnWriteArraySet<>();
 
   // Hàm gửi tin nhắn Broadcast cho tất cả Client đang online

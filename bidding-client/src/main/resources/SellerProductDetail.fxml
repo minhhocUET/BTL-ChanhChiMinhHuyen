@@ -74,8 +74,9 @@
                     <Label text="Lịch sử đặt giá" style="-fx-font-weight: bold; -fx-text-fill: #880e4f;"/>
                     <TableView fx:id="bidHistoryTable" prefHeight="140.0">
                         <columns>
-                            <TableColumn fx:id="colBidTime" prefWidth="180.0" text="Thời gian"/>
-                            <TableColumn fx:id="colBidAmount" prefWidth="150.0" text="Số tiền (VNĐ)"/>
+                            <TableColumn fx:id="colBidTime" prefWidth="150.0" text="Thời gian"/>
+                            <TableColumn fx:id="colBidderName" prefWidth="120.0" text="Người đặt"/>
+                            <TableColumn fx:id="colBidAmount" prefWidth="130.0" text="Số tiền (VNĐ)"/>
                         </columns>
                     </TableView>
                     <LineChart fx:id="bidLineChart" prefHeight="180.0" legendVisible="false">

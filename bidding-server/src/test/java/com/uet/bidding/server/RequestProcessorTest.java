@@ -282,12 +282,12 @@ public class RequestProcessorTest {
     finishedAuction.setStatus("FINISHED");
     fakeAuctions.add(finishedAuction);
 
-    when(auctionSqlDAO.getFinishedAuctionsForBidder(10)).thenReturn(fakeAuctions);
+    when(auctionSqlDAO.getFastFinishedAuctionsForBidder(10)).thenReturn(fakeAuctions);
 
     requestProcessor.processRequest(msg, clientHandler);
 
     // Xác minh Server đã truy vấn DB và trả kết quả thành công cho người dùng
-    verify(auctionSqlDAO, times(1)).getFinishedAuctionsForBidder(10);
+    verify(auctionSqlDAO, times(1)).getFastFinishedAuctionsForBidder(10);
     verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), any(), eq(reqId));
   }
 

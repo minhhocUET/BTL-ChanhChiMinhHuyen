@@ -139,6 +139,35 @@ public class RequestProcessor {
             handler.sendResponse("ERROR", "Không thể mở khóa tài khoản.", reqId);
           }
         }
+
+        // 🎯 ĐOẠN CODE ĐÃ ĐƯỢC FIX HẾT LỖI BÁO ĐỎ:
+        case "CHECK_AUTO_BID" -> {
+          try {
+            // 1. Ép kiểu an toàn bằng Number (tránh lỗi xung đột giữa Double/Integer của Gson)
+            int auctionId = ((Number) msg.getData()).intValue();
+
+            // 2. Kiểm tra xem user hiện tại đã đăng nhập ở handler chưa
+            if (handler.getLoggedInUser() != null) {
+              int bidderId = handler.getLoggedInUser().getId();
+
+              // 3. Gọi DAO lấy giá trần đang active dưới database
+              BigDecimal maxBid = auctionSqlDAO.getActiveAutoBidMaxPrice(auctionId, bidderId);
+
+              if (maxBid != null) {
+                // Trả về SUCCESS kèm số tiền trần và reqId cho Client khớp luồng
+                handler.sendResponse("SUCCESS", maxBid.toString(), reqId);
+              } else {
+                // Nếu chưa bật thì data trả về là null
+                handler.sendResponse("SUCCESS", null, reqId);
+              }
+            } else {
+              handler.sendResponse("ERROR", "Yêu cầu đăng nhập trước!", reqId);
+            }
+          } catch (Exception e) {
+            handler.sendResponse("ERROR", "Lỗi kiểm tra AutoBid: " + e.getMessage(), reqId);
+          }
+        }
+
         default -> handler.sendResponse("ERROR", "Lệnh không hợp lệ hoặc chưa được hỗ trợ!", reqId);
       }
 

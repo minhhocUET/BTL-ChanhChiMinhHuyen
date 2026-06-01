@@ -21,8 +21,22 @@ public class AuctionManager {
   private final ConcurrentHashMap<Integer, Auction> auctions = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();
 
-  // Xóa bỏ AtomicInteger auctionIdCounter vì Database sẽ tự lo việc sinh ID (AUTO_INCREMENT)
+  // Cache lưu cấu hình Auto-Bid ngay trên RAM để Bot quét với tốc độ cao
+  private final ConcurrentHashMap<Integer, List<RemoteAutoBid>> autoBidCache = new ConcurrentHashMap<>();
+
   private AuctionSqlDAO auctionSqlDAO;
+
+  // DTO gọn nhẹ nằm ngay trong Manager để không làm bẩn package model
+  public static class RemoteAutoBid {
+    public int id;
+    public int bidderId;
+    public BigDecimal maxBid;
+    public RemoteAutoBid(int id, int bidderId, BigDecimal maxBid) {
+      this.id = id;
+      this.bidderId = bidderId;
+      this.maxBid = maxBid;
+    }
+  }
 
   private AuctionManager() {
     System.out.println("Hệ thống quản lý đấu giá UET đã được khởi động!");
@@ -43,11 +57,16 @@ public class AuctionManager {
 
     for (Auction a : savedAuctions) {
       addAuctionInternal(a);
+
+      // Nạp cấu hình Auto-Bid từ DB lên RAM khi hệ thống khởi động
+      List<RemoteAutoBid> activeBids = dao.getAutoBidsByAuctionId(a.getId());
+      if (!activeBids.isEmpty()) {
+        autoBidCache.put(a.getId(), activeBids);
+      }
     }
-    System.out.println("Đã nạp " + auctions.size() + " phiên đấu giá từ dữ liệu.");
+    System.out.println("Đã nạp " + auctions.size() + " phiên đấu giá và cấu hình Auto-Bid từ dữ liệu.");
   }
 
-  // Hàm phụ dùng nội bộ để đăng ký auction và lock vào RAM
   private void addAuctionInternal(Auction auction) {
     auctions.put(auction.getId(), auction);
     locks.put(auction.getId(), new ReentrantLock());
@@ -55,16 +74,10 @@ public class AuctionManager {
 
   // ================== QUẢN LÝ PHIÊN ĐẤU GIÁ ==================
 
-  // Trong file AuctionManager.java
   public Auction createAuction(Item item, BigDecimal startPrice, LocalDateTime endTime, BigDecimal bidIncrement) throws UserException {
     LocalDateTime startTime = LocalDateTime.now();
-
-    // 🎯 Gọi DAO với giá trị thực tế từ người dùng, KHÔNG dùng default 5.00 nữa
     Auction newAuction = auctionSqlDAO.createAuction(item, startPrice, startTime, endTime, bidIncrement);
-
-    // Lưu vào cache RAM của Server
     addAuctionInternal(newAuction);
-
     return newAuction;
   }
 
@@ -76,18 +89,15 @@ public class AuctionManager {
     try {
       if ("FINISHED".equals(status)) {
         try {
-          // Dùng hàm chuyên dụng của DAO để kết thúc phiên, chia tiền, lưu kết quả
           auctionSqlDAO.finishAuction(auctionId);
-
-          // Đồng bộ lại RAM sau khi DB đã xử lý xong
           Auction updatedAuction = auctionSqlDAO.findById(auctionId);
           auctions.put(auctionId, updatedAuction);
+          autoBidCache.remove(auctionId); // Phiên đóng thì dọn cache AutoBid luôn
           System.out.println("Phiên #" + auctionId + " đã KẾT THÚC và xử lý giao dịch thành công.");
         } catch (UserException e) {
           System.err.println("Lỗi khi kết thúc phiên đấu giá: " + e.getMessage());
         }
       } else {
-        // Nếu chỉ là đổi trạng thái thông thường (OPEN/CANCELED) trên RAM
         Auction auction = auctions.get(auctionId);
         if (auction != null) {
           auction.setStatus(status);
@@ -104,45 +114,112 @@ public class AuctionManager {
   public boolean placeBid(int auctionId, Customer customer, BigDecimal amount)
       throws AuctionClosedException, InvalidBidException, UserException {
 
-    // 1. Kiểm tra tồn tại và trạng thái sơ bộ trên RAM (Fast-fail)
     Auction auction = auctions.get(auctionId);
     if (auction == null) {
       throw new InvalidBidException("Không tìm thấy phiên đấu giá trên hệ thống!");
     }
 
-
-    // Chấp nhận cả việc kiểm tra RUNNING để chặt chẽ hơn
     if (!"RUNNING".equals(auction.getStatus())) {
       throw new AuctionClosedException("Phiên đấu giá không ở trạng thái sẵn sàng (Đã đóng hoặc chưa mở)!");
     }
-    // 🎯 2. BỔ SUNG: Kiểm tra người dùng đã đăng ký tham gia chưa (Chặn đứng từ vòng gửi xe)
-    // Lưu ý: customer.getId() lấy ra ID của người dùng đang thực hiện đặt giá
+
+    // Kiểm tra đăng ký (Khớp với hàm check của bạn dưới DB)
     boolean isRegistered = auctionSqlDAO.isUserRegistered(auctionId, customer.getId());
     if (!isRegistered) {
       throw new InvalidBidException("Bạn chưa đăng ký tham gia phiên đấu giá này! Vui lòng ấn nút đăng ký trước.");
     }
 
-    // 2. Lấy hoặc tạo Lock an toàn
     ReentrantLock lock = locks.computeIfAbsent(auctionId, k -> new ReentrantLock());
-
-    // 3. Bắt đầu khóa luồng
     lock.lock();
     try {
-      // Kiểm tra lại trạng thái một lần nữa sau khi đã có lock để đảm bảo tính nhất quán (Double-check)
-      // (Optional nhưng nên có nếu hệ thống yêu cầu độ chính xác tuyệt đối)
-
+      // Thực hiện đặt giá xuống DB (Đã bao gồm bọc Transaction cô lập)
       boolean success = auctionSqlDAO.placeBid(auctionId, customer, amount);
 
       if (success) {
-        Auction updatedAuction = auctionSqlDAO.findById(auctionId);
+        Auction updatedAuction = auctionSqlDAO.createFastAuctionRefresh(auctionId);
         if (updatedAuction != null) {
           auctions.put(auctionId, updatedAuction);
         }
         System.out.println("[Server] " + customer.getUsername() + " đặt giá thành công: " + amount);
+
+        // Kích hoạt bot Auto-Bid chạy trên luồng RAM phẳng an toàn
+        processAutoBids(auctionId);
       }
       return success;
     } finally {
       lock.unlock();
+    }
+  }
+
+  // Đăng ký/Cập nhật cấu hình Auto-Bid từ UI Controller
+  public void enableAutoBid(int auctionId, int bidderId, BigDecimal maxBid) throws UserException {
+    auctionSqlDAO.setAutoBid(auctionId, bidderId, maxBid); // Ghi xuống DB trước
+
+    autoBidCache.computeIfAbsent(auctionId, k -> new ArrayList<>());
+    List<RemoteAutoBid> list = autoBidCache.get(auctionId);
+    list.removeIf(config -> config.bidderId == bidderId);
+
+    // Tìm ID vừa sinh hoặc nạp lại list từ DB để đồng bộ hoàn hảo
+    List<RemoteAutoBid> updatedList = auctionSqlDAO.getAutoBidsByAuctionId(auctionId);
+    autoBidCache.put(auctionId, updatedList);
+    System.out.println("[Server Sync] Đã đồng bộ cấu hình Auto-bid lên bộ nhớ RAM.");
+  }
+
+  private void processAutoBids(int auctionId) {
+    Auction auction = auctions.get(auctionId);
+    List<RemoteAutoBid> configs = autoBidCache.get(auctionId);
+    if (auction == null || configs == null || configs.isEmpty()) return;
+
+    boolean botFired = true;
+
+    // Sử dụng vòng lặp phẳng (Flat-loop), loại bỏ đệ quy sâu gây StackOverflowError
+    while (botFired) {
+      botFired = false;
+
+      BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(10000);
+      BigDecimal minNextBid = auction.getCurrentPrice().add(increment);
+      int currentWinnerId = (auction.getHighestBidder() != null) ? auction.getHighestBidder().getId() : -1;
+
+      RemoteAutoBid bestBot = null;
+      for (RemoteAutoBid config : configs) {
+        // Điều kiện: Không tự đè giá của chính mình và Trần giá cài đặt phải >= Bước giá tiếp theo
+        if (config.bidderId != currentWinnerId && config.maxBid.compareTo(minNextBid) >= 0) {
+          if (bestBot == null || config.maxBid.compareTo(bestBot.maxBid) > 0) {
+            bestBot = config;
+          }
+        }
+      }
+
+      if (bestBot != null) {
+        Customer botCustomer = auctionSqlDAO.getCustomerById(bestBot.bidderId);
+        if (botCustomer != null) {
+          try {
+            // Kiểm tra số dư của ví người dùng qua Bot trước khi ném vào DB
+            BigDecimal botBalance = auctionSqlDAO.getUserBalanceBridge(botCustomer.getId());
+            if (minNextBid.compareTo(botBalance) > 0) {
+              // Hết tiền -> Hủy trạng thái kích hoạt bot của người này
+              auctionSqlDAO.removeAutoBid(auctionId, bestBot.bidderId);
+              configs.remove(bestBot);
+              continue;
+            }
+
+            boolean success = auctionSqlDAO.placeBid(auctionId, botCustomer, minNextBid);
+            if (success) {
+              // Log hành vi bot đặt giá thành công vào bảng logs
+              auctionSqlDAO.logAutoBidAction(bestBot.id, minNextBid);
+
+              // Cập nhật lại giá tạm trên RAM để vòng lặp sau tính toán tiếp
+              auction = auctionSqlDAO.createFastAuctionRefresh(auctionId);
+              auctions.put(auctionId, auction);
+
+              System.out.println("[BOT FLAT LOOP] Bot của " + botCustomer.getUsername() + " đã nâng giá lên: " + minNextBid);
+              botFired = true;
+            }
+          } catch (Exception e) {
+            System.err.println("[Lỗi Thực Thi Bot] " + e.getMessage());
+          }
+        }
+      }
     }
   }
 
@@ -156,7 +233,6 @@ public class AuctionManager {
     return auctions.get(id);
   }
 
-  /** Reload auction from DB into in-memory cache (e.g. after seller ends early). */
   public void refreshAuctionFromDb(int auctionId) throws UserException {
     if (auctionSqlDAO == null) return;
     Auction updated = auctionSqlDAO.findById(auctionId);

@@ -54,6 +54,8 @@ public class ProductDetailController {
   private Label lblMinBid;
   @FXML private Label lblAntiSnipeInfo;
   @FXML private TextField txtMaxAutoBid;
+  @FXML private Button btnEnableAutoBid;
+  @FXML private Button btnDisableAutoBid;
   @FXML private TableView<BidRow> bidHistoryTable;
   @FXML private TableColumn<BidRow, String> colBidTime;
   @FXML private TableColumn<BidRow, String> colBidAmount;
@@ -67,6 +69,11 @@ public class ProductDetailController {
 
   private static ProductDetailController instance;
   private LocalDateTime countdownEndTime;
+  // 🌟 ĐỊNH NGHĨA MÃ MÀU UI/UX
+  private final String STYLE_PINK = "-fx-background-color: #df4492; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;";
+  private final String STYLE_RED  = "-fx-background-color: #f04b5a; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;";
+  private final String STYLE_GREY = "-fx-background-color: #8fa0b5; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: default;";
+
   public static ProductDetailController getInstance() {
     return instance;
   }
@@ -268,7 +275,7 @@ public class ProductDetailController {
       BigDecimal maxLimit = new BigDecimal(clean);
       BigDecimal userBalance = customer.getBalance();
 
-      // ✅ KIỂM TRA: Trần giá tự động không được lớn hơn số dư hiện có
+      // 🛡️ LỚP KHIÊN 1: Trần giá không được vượt quá số dư ví
       if (maxLimit.compareTo(userBalance) > 0) {
         NumberFormat fmt = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
         showAlert("Vượt quá hạn mức tài chính",
@@ -277,10 +284,27 @@ public class ProductDetailController {
         return;
       }
 
+      // 🛡️ LỚP KHIÊN 2: Trần giá phải lớn hơn hoặc bằng (Giá hiện tại + Bước giá)
+      if (currentAuction != null) {
+        BigDecimal currentPrice = currentAuction.getCurrentPrice();
+        BigDecimal bidIncrement = currentAuction.getBidIncrement();
+        BigDecimal minRequired = currentPrice.add(bidIncrement);
+
+        if (maxLimit.compareTo(minRequired) < 0) {
+          NumberFormat fmt = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+          showAlert("Lỗi nhập liệu",
+              "Trần giá phải lớn hơn hoặc bằng mức tối thiểu tiếp theo (" + fmt.format(minRequired) + " VNĐ)!",
+              Alert.AlertType.ERROR);
+          return;
+        }
+      }
+
+      // Gửi lệnh lên Server (Backend)
       new AutoBidService().enable(currentAuction.getId(), maxLimit)
           .thenAccept(res -> javafx.application.Platform.runLater(() -> {
             if ("SUCCESS".equals(res.getType())) {
-              showAlert("OK", "Đã bật auto-bid!", Alert.AlertType.INFORMATION);
+              showAlert("Thành công", "Đã bật Auto-bid!", Alert.AlertType.INFORMATION);
+              // Có thể thêm code để update UI ở đây (ví dụ: đổi màu nút, khóa ô text)
             } else {
               showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
             }
@@ -509,5 +533,36 @@ public class ProductDetailController {
                 e.printStackTrace();
               }
             }));
+  }
+  private void loadAutoBidStatus() {
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null || currentAuction == null) return;
+
+    // 1. Mặc định khởi tạo giao diện lúc mới vào là trạng thái CHƯA BẬT
+    btnEnableAutoBid.setStyle(STYLE_PINK);
+    btnEnableAutoBid.setDisable(false);
+    btnDisableAutoBid.setStyle(STYLE_GREY);
+    btnDisableAutoBid.setDisable(true);
+    txtMaxAutoBid.clear();
+    txtMaxAutoBid.setDisable(false);
+
+    // 2. Gửi request hỏi Server (Bạn sẽ cần thêm case "CHECK_AUTO_BID" bên phía Server)
+    ClientService.getInstance().sendRequest("CHECK_AUTO_BID", currentAuction.getId())
+        .thenAccept(res -> javafx.application.Platform.runLater(() -> {
+          // Nếu Server báo về là ĐÃ BẬT và trả về số tiền (res.getData() chứa giá trần)
+          if ("SUCCESS".equals(res.getType()) && res.getData() != null) {
+            String savedMaxBid = String.valueOf(res.getData());
+
+            // Khôi phục lại giao diện ĐÃ BẬT
+            txtMaxAutoBid.setText(savedMaxBid);
+            txtMaxAutoBid.setDisable(true); // Khóa ô nhập tiền lại không cho sửa bậy
+
+            btnEnableAutoBid.setStyle(STYLE_GREY);
+            btnEnableAutoBid.setDisable(true); // Khóa nút Bật
+
+            btnDisableAutoBid.setStyle(STYLE_RED);
+            btnDisableAutoBid.setDisable(false); // Mở nút Tắt
+          }
+        }));
   }
 }

@@ -102,10 +102,11 @@
                         <TextField fx:id="txtMaxAutoBid" promptText="VD: 5000000" HBox.hgrow="ALWAYS"/>
                     </HBox>
                     <HBox spacing="10.0">
-                        <Button onAction="#handleEnableAutoBid" text="Bật Auto-Bid" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"
+                        <Button fx:id="btnEnableAutoBid" onAction="#handleEnableAutoBid" text="Bật Auto-Bid" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"
                                 style="-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
-                        <Button onAction="#handleDisableAutoBid" text="Tắt Auto-Bid" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"
-                                style="-fx-background-color: #94a3b8; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
+
+                        <Button fx:id="btnDisableAutoBid" onAction="#handleDisableAutoBid" text="Tắt Auto-Bid" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"
+                                style="-fx-background-color: #f31313; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"/>
                     </HBox>
                 </VBox>
 

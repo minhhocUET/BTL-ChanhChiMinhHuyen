@@ -505,7 +505,7 @@ public class RequestProcessor {
       if (!(handler.getLoggedInUser() instanceof Customer seller)) {
         throw new UserException("Phải đăng nhập bằng tài khoản người bán!");
       }
-      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      int auctionId = ((Number) msg.getData()).intValue();
       Auction auction = auctionSqlDAO.findById(auctionId);
       if (auction.getItem() == null || auction.getItem().getSellerId() != seller.getId()) {
         throw new UserException("Bạn chỉ được dừng phiên do chính mình tạo!");

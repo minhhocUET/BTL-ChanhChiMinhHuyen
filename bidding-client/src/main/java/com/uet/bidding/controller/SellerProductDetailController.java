@@ -147,55 +147,41 @@ public class SellerProductDetailController implements Initializable {
   @FXML
   public void handleEndEarly(ActionEvent event) {
     if (currentAuction == null) return;
-    Customer customer = UserSession.getLoggedInCustomer();
-    if (customer == null) {
-      showAlert("Lỗi", "Vui lòng đăng nhập lại.", Alert.AlertType.ERROR);
-      return;
-    }
 
     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
     confirm.setTitle("Xác nhận");
     confirm.setHeaderText("Dừng sớm phiên đấu giá?");
-    confirm.setContentText("Phiên #" + currentAuction.getId() + " sẽ kết thúc ngay. Hành động không hoàn tác.");
+    confirm.setContentText("Phiên #" + currentAuction.getId() + " sẽ kết thúc ngay lập tức. Hành động này không thể hoàn tác.");
     if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
       return;
     }
 
-    btnEndEarly.setDisable(true);
+    btnEndEarly.setDisable(true); // Tạm khóa nút tránh bấm 2 lần
+
     ClientService.getInstance()
         .sendRequest("SELLER_END_AUCTION", currentAuction.getId())
         .thenAccept(res -> Platform.runLater(() -> {
           if ("SUCCESS".equals(res.getType())) {
-            try {
-              String json = ClientService.getInstance().getGson().toJson(res.getData());
-              Auction updated = ClientService.getInstance().getGson().fromJson(json, Auction.class);
-              if (updated != null) {
-                currentAuction = updated;
-                SellerAuctionContext.set(updated);
-                setAuctionData(updated);
-              } else {
-                currentAuction.setStatus("FINISHED");
-                updateStatusUi(currentAuction);
-                if (lblCountdown != null) lblCountdown.setText("ĐÃ KẾT THÚC");
-                if (timeline != null) timeline.stop();
-              }
-            } catch (Exception e) {
-              currentAuction.setStatus("FINISHED");
-              updateStatusUi(currentAuction);
-            }
+
+            // 1. ÉP BUỘC ĐỔI TRẠNG THÁI GIAO DIỆN NGAY LẬP TỨC
+            currentAuction.setStatus("FINISHED");
+            updateStatusUi(currentAuction); // Hàm này của bạn sẽ tự động ẩn nút "Dừng sớm" đi
+
+            if (lblCountdown != null) lblCountdown.setText("ĐÃ KẾT THÚC");
+            if (timeline != null) timeline.stop(); // Dừng đồng hồ
+
             showAlert("Thành công", "Đã dừng sớm phiên đấu giá.", Alert.AlertType.INFORMATION);
-            AuctionListController list = AuctionListController.getInstance();
-            if (list != null) {
-              list.handleAuctionBroadcast(currentAuction);
-            }
+
+            // 2. GỌI BROADCAST ĐỂ BẢNG DANH SÁCH BÊN NGOÀI TỰ CẬP NHẬT
             if (SellerDashboardController.getInstance() != null) {
               SellerDashboardController.getInstance().applyAuctionUpdate(currentAuction);
             }
-            if (MyManagementController.getInstance() != null) {
-              MyManagementController.getInstance().applyAuctionUpdate(currentAuction);
+            if (AuctionListController.getInstance() != null) {
+              AuctionListController.getInstance().handleAuctionBroadcast(currentAuction);
             }
+
           } else {
-            btnEndEarly.setDisable(false);
+            btnEndEarly.setDisable(false); // Nếu lỗi thì mở lại nút cho người dùng bấm lại
             showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
           }
         }));

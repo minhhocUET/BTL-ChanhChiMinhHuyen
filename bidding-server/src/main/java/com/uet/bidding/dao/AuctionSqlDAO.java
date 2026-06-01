@@ -4,6 +4,7 @@ import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.*;
+import com.uet.bidding.service.AuctionManager;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -828,5 +829,104 @@ public class AuctionSqlDAO {
       e.printStackTrace();
     }
     return list;
+  }
+  // =========================================================
+  //  CÁC HÀM CẦU NỐI ĐỒNG BỘ HOÀN HẢO VỚI AUCTION_MANAGER
+  // =========================================================
+
+  /**
+   * Lấy cấu hình Auto-Bid phục vụ nạp RAM-Cache lúc khởi động Server
+   */
+  public List<AuctionManager.RemoteAutoBid> getAutoBidsByAuctionId(int auctionId) {
+    List<AuctionManager.RemoteAutoBid> list = new ArrayList<>();
+    String sql = "SELECT id, bidder_id, max_bid FROM auto_bids WHERE auction_id = ? AND is_active = TRUE";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          list.add(new AuctionManager.RemoteAutoBid(
+              rs.getInt("id"),
+              rs.getInt("bidder_id"),
+              rs.getBigDecimal("max_bid")
+          ));
+        }
+      }
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi lấy danh sách AutoBid cho RAM Cache: " + e.getMessage());
+    }
+    return list;
+  }
+
+  /**
+   * Cầu nối lấy thực thể Customer qua tầng bảo vệ UserDao của bạn
+   */
+  public Customer getCustomerById(int customerId) {
+    try {
+      User u = userDao.findById(customerId);
+      if (u instanceof Customer) {
+        return (Customer) u;
+      }
+    } catch (UserException e) {
+      System.err.println("❌ Không tìm thấy thông tin khách hàng ID: " + customerId);
+    }
+    return null;
+  }
+
+  /**
+   * Cầu nối lấy số dư mới nhất phục vụ điều kiện chặn ví rỗng của Bot
+   */
+  public BigDecimal getUserBalanceBridge(int userId) throws UserException {
+    return userDao.getBalance(userId);
+  }
+
+  /**
+   * Ghi nhận lịch sử nhảy giá của Bot vào bảng liên kết
+   */
+  public void logAutoBidAction(int autoBidId, BigDecimal amount) {
+    String sql = "INSERT INTO auto_bid_logs (auto_bid_id, bid_amount) VALUES (?, ?)";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, autoBidId);
+      stmt.setBigDecimal(2, amount);
+      stmt.executeUpdate();
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi log lịch sử hoạt động của Bot: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Hàm đọc nhanh trạng thái phiên để nạp tức thời vào RAM sau khi đặt giá thành công
+   */
+  public Auction createFastAuctionRefresh(int auctionId) {
+    String sql = "SELECT * FROM auctions WHERE id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return mapAuction(rs);
+        }
+      }
+    } catch (Exception e) {
+      System.err.println("❌ Lỗi refresh nhanh phiên đấu giá: " + e.getMessage());
+    }
+    return null;
+  }
+  public BigDecimal getActiveAutoBidMaxPrice(int auctionId, int bidderId) {
+    String sql = "SELECT max_bid FROM auto_bids WHERE auction_id = ? AND bidder_id = ? AND is_active = TRUE";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      stmt.setInt(2, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return rs.getBigDecimal("max_bid"); // Trả về giá trần nếu đang hoạt động
+        }
+      }
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi kiểm tra trạng thái AutoBid: " + e.getMessage());
+    }
+    return null; // Trả về null nếu chưa từng bật hoặc đã tắt
   }
 }

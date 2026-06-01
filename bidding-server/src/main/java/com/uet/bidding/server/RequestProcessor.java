@@ -591,7 +591,7 @@ public class RequestProcessor {
       if (!(handler.getLoggedInUser() instanceof Customer customer)) {
         throw new UserException("Phải đăng nhập!");
       }
-      List<Auction> auctions = auctionSqlDAO.getActiveAuctionsForBidder(customer.getId());
+      List<Auction> auctions = auctionSqlDAO.getFastActiveAuctionsForBidder(customer.getId());
       handler.sendResponse("SUCCESS", auctions, msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
@@ -607,11 +607,14 @@ public class RequestProcessor {
       if (bidderId != customer.getId()) {
         throw new UserException("Không được xem danh sách của người khác!");
       }
+
       BidSqlDAO bidDao = new BidSqlDAO();
-      List<Auction> auctions = auctionSqlDAO.getActiveAuctionsForBidder(bidderId);
+      // 🌟 GỌI ĐÚNG: Sử dụng hàm lấy siêu tốc đã gom nhóm dữ liệu
+      List<Auction> auctions = auctionSqlDAO.getFastActiveAuctionsForBidder(bidderId);
+
       List<java.util.Map<String, Object>> payload = new java.util.ArrayList<>();
       for (Auction a : auctions) {
-        a.setRegisteredCount(auctionSqlDAO.getRegistrationCount(a.getId()));
+        // ✅ ĐÃ XÓA dòng N+1 Query (getRegistrationCount) cũ vì SQL Fast đã lo việc này
         java.util.Map<String, Object> row = new java.util.HashMap<>();
         row.put("auction", a);
         row.put("myHighestBid", bidDao.getMaxBidByBidder(a.getId(), bidderId));
@@ -632,15 +635,22 @@ public class RequestProcessor {
       if (bidderId != customer.getId()) {
         throw new UserException("Không được xem lịch sử của người khác!");
       }
+
+      // 🌟 THÊM DÒNG NÀY: Giả lập mạng chậm 1.2 giây để quan sát chữ "Đang tải dữ liệu..." trên UI
+      try { Thread.sleep(1200); } catch (InterruptedException ignored) {}
+
       ReviewSqlDAO reviewDao = new ReviewSqlDAO();
       BidSqlDAO bidDao = new BidSqlDAO();
-      List<Auction> auctions = auctionSqlDAO.getFinishedAuctionsForBidder(bidderId);
+      // 🌟 GỌI ĐÚNG: Sử dụng hàm lấy siêu tốc đã gom nhóm dữ liệu
+      List<Auction> auctions = auctionSqlDAO.getFastFinishedAuctionsForBidder(bidderId);
+
       List<java.util.Map<String, Object>> payload = new java.util.ArrayList<>();
       for (Auction a : auctions) {
-        a.setRegisteredCount(auctionSqlDAO.getRegistrationCount(a.getId()));
+        // ✅ ĐÃ XÓA dòng N+1 Query (getRegistrationCount) cũ giúp tối ưu tốc độ tuyệt đối
         java.util.Map<String, Object> row = new java.util.HashMap<>();
         row.put("auction", a);
         row.put("reviewed", reviewDao.hasReviewForAuction(a.getId(), bidderId));
+
         BigDecimal myBid = bidDao.getMaxBidByBidder(a.getId(), bidderId);
         row.put("myHighestBid", myBid);
         payload.add(row);
@@ -719,7 +729,12 @@ public class RequestProcessor {
 
       if (stars < 1 || stars > 5) throw new UserException("Số sao phải từ 1 đến 5!");
 
+      // 1. Kiểm tra phiên đấu giá có tồn tại không (BỔ SUNG)
       Auction auction = auctionSqlDAO.findById(auctionId);
+      if (auction == null) {
+        throw new UserException("Phiên đấu giá không tồn tại hoặc đã bị xóa!");
+      }
+
       if (!"FINISHED".equals(auction.getStatus())) {
         throw new UserException("Chỉ được đánh giá sau khi phiên đã kết thúc!");
       }
@@ -728,7 +743,14 @@ public class RequestProcessor {
         throw new UserException("Chỉ người thắng đấu giá mới được đánh giá!");
       }
 
-      new ReviewSqlDAO().addReview(auctionId, sellerId, customer.getId(), stars, comment);
+      // 2. Kiểm tra xem đã từng đánh giá phiên này chưa (BỔ SUNG)
+      ReviewSqlDAO reviewSqlDAO = new ReviewSqlDAO();
+      if (reviewSqlDAO.hasReviewForAuction(auctionId, customer.getId())) {
+        throw new UserException("Bạn đã đánh giá phiên đấu giá này rồi!");
+      }
+
+      // Tiến hành thêm mới sau khi mọi điều kiện đã thỏa mãn hoàn toàn
+      reviewSqlDAO.addReview(auctionId, sellerId, customer.getId(), stars, comment);
       handler.sendResponse("SUCCESS", "Cảm ơn bạn đã đánh giá!", msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
@@ -738,9 +760,88 @@ public class RequestProcessor {
   private void handleGetReviewsBySeller(NetworkMessage msg, ClientHandler handler) {
     try {
       int sellerId = ((Number) msg.getData()).intValue();
+
+      // 1. Lấy danh sách review từ DB (đã nạp đủ thông tin reviewer và ngày giờ nhờ ReviewSqlDAO)
       List<Review> reviews = new ReviewSqlDAO().getReviewsBySeller(sellerId);
-      handler.sendResponse("SUCCESS", reviews, msg.getRequestId());
+
+      // 2. Khởi tạo các DAO để truy vấn thông tin Shop và Sản phẩm
+      com.uet.bidding.dao.UserSqlDAO userDAO = new com.uet.bidding.dao.UserSqlDAO();
+      com.uet.bidding.dao.AuctionSqlDAO auctionDAO = new com.uet.bidding.dao.AuctionSqlDAO(); // 🌟 Thêm DAO này để lấy tên sản phẩm
+
+      // 3. 🌟 GIẢI QUYẾT VẤN ĐỀ 1: Tìm thông tin Tên Shop và Mô tả Shop thực tế
+      String storeName = "Cửa hàng #" + sellerId; // Tên mặc định nếu không tìm thấy
+      String storeDescription = "Chưa có mô tả cho cửa hàng này.";
+
+      try {
+        com.uet.bidding.model.User sellerUser = userDAO.findById(sellerId);
+        if (sellerUser instanceof com.uet.bidding.model.Customer seller) {
+          if (seller.getSellerProfile() != null) {
+            String dbStoreName = seller.getSellerProfile().getStoreName();
+            String dbDesc = seller.getSellerProfile().getDescription();
+
+            if (dbStoreName != null && !dbStoreName.trim().isEmpty() && !"-".equals(dbStoreName)) {
+              storeName = dbStoreName;
+            }
+            if (dbDesc != null && !dbDesc.trim().isEmpty() && !"-".equals(dbDesc)) {
+              storeDescription = dbDesc;
+            }
+          }
+        }
+      } catch (Exception ex) {
+        System.err.println("❌ Lỗi lấy thông tin Shop từ UserSqlDAO: " + ex.getMessage());
+      }
+
+      // 4. Tạo JsonObject tổng thể để bọc tất cả dữ liệu gửi về Client
+      com.google.gson.JsonObject responseData = new com.google.gson.JsonObject();
+      responseData.addProperty("storeName", storeName);
+      responseData.addProperty("storeDescription", storeDescription);
+
+      // 5. Duyệt danh sách review và đóng gói dữ liệu phẳng
+      com.google.gson.JsonArray richReviewsArray = new com.google.gson.JsonArray();
+
+      for (Review r : reviews) {
+        com.google.gson.JsonObject reviewJson = new com.google.gson.JsonObject();
+        reviewJson.addProperty("id", r.getId());
+        reviewJson.addProperty("stars", r.getStars());
+        reviewJson.addProperty("comment", r.getComment());
+        reviewJson.addProperty("createdAt", r.getCreatedAt() != null ? r.getCreatedAt().toString() : "");
+
+        // Lấy tên người đánh giá thật từ Object Reviewer
+        String reviewerName = "Người dùng ẩn danh";
+        if (r.getReviewer() != null) {
+          if (r.getReviewer().getFullName() != null && !r.getReviewer().getFullName().trim().isEmpty() && !"-".equals(r.getReviewer().getFullName())) {
+            reviewerName = r.getReviewer().getFullName();
+          } else {
+            reviewerName = r.getReviewer().getUsername();
+          }
+        }
+        reviewJson.addProperty("reviewerName", reviewerName);
+
+        // 🌟 GIẢI QUYẾT VẤN ĐỀ 2: Lấy TÊN SẢN PHẨM THẬT từ Database
+        String realProductName = "Sản phẩm đấu giá #" + r.getAuctionId(); // Tên phòng hờ
+        try {
+          // Gọi lên AuctionSqlDAO để lấy thông tin phiên và mặt hàng
+          com.uet.bidding.model.Auction auction = auctionDAO.findById(r.getAuctionId());          if (auction != null && auction.getItem() != null) {
+            if (auction != null && auction.getItem() != null) {
+              realProductName = auction.getItem().getName(); // 📦 Lấy chính xác tên sản phẩm thực tế từ DB!
+            }
+          }
+        } catch (Exception ex) {
+          System.err.println("❌ Lỗi lấy tên sản phẩm thực tế cho phiên #" + r.getAuctionId() + ": " + ex.getMessage());
+        }
+        reviewJson.addProperty("productName", realProductName);
+
+        richReviewsArray.add(reviewJson);
+      }
+
+      // Đút mảng reviews vào Object tổng thể
+      responseData.add("reviews", richReviewsArray);
+
+      // Gửi Object lớn chứa đầy đủ (storeName, storeDescription, reviews) về Client
+      handler.sendResponse("SUCCESS", responseData, msg.getRequestId());
+
     } catch (Exception e) {
+      e.printStackTrace();
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }
   }

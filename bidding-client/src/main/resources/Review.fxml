@@ -55,7 +55,7 @@
                                 </Label>
                                 <HBox alignment="CENTER" spacing="2.0">
                                     <children>
-                                        <Label text="4.8" textFill="#c2185b">
+                                        <Label fx:id="lblBigAvgRating" text="0.0" textFill="#c2185b">
                                             <font>
                                                 <Font name="System Bold" size="26.0"/>
                                             </font>
@@ -100,13 +100,13 @@
 
                 <HBox alignment="CENTER" spacing="25.0" style="-fx-padding: 10 0 0 0;">
                     <children>
-                        <Button mnemonicParsing="false" onAction="#handleBackToAuctionList" prefHeight="40.0"
-                                prefWidth="220.0"
+                        <Button mnemonicParsing="false" onAction="#handleBackToAuctionList" prefHeight="40.0" prefWidth="220.0"
                                 style="-fx-background-color: #fdf2f4; -fx-text-fill: #e91e63; -fx-border-color: #e91e63; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;"
                                 text="📋 Danh sách đấu giá"/>
 
-                        <Button fx:id="btnAddReview" mnemonicParsing="false" onAction="#handleOpenAddReview"
-                                prefHeight="40.0" prefWidth="220.0" text="📝 Thêm đánh giá"/>
+                        <Button fx:id="btnAddReview" mnemonicParsing="false" onAction="#handleOpenAddReview" prefHeight="40.0" prefWidth="220.0"
+                                style="-fx-background-color: #ffffff; -fx-text-fill: #e91e63; -fx-border-color: #e91e63; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;"
+                                text="📝 Thêm đánh giá" />
                     </children>
                 </HBox>
             </children>

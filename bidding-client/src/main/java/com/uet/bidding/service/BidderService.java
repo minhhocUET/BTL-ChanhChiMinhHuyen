@@ -66,4 +66,11 @@ public class BidderService {
     }
     return clientService.sendRequest("GET_BIDDER_HISTORY", current.getId());
   }
+
+  /**
+   * 🌟 ĐÃ BỔ SUNG: Lấy danh sách toàn bộ bài đánh giá của một Shop dựa trên sellerId
+   */
+  public CompletableFuture<NetworkMessage> loadReviewsForSeller(int sellerId) {
+    return clientService.sendRequest("GET_REVIEWS_BY_SELLER", sellerId);
+  }
 }

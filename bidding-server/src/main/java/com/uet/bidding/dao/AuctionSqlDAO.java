@@ -169,62 +169,6 @@ public class AuctionSqlDAO {
     return list;
   }
 
-  /**
-   * Phiên RUNNING mà bidder đã đăng ký tham gia.
-   */
-  public List<Auction> getActiveAuctionsForBidder(int bidderId) {
-    List<Auction> list = new ArrayList<>();
-    String sql =
-        "SELECT a.* FROM auctions a "
-            + "INNER JOIN auction_registrations ar ON a.id = ar.auction_id "
-            + "WHERE ar.bidder_id = ? AND a.status = 'RUNNING' "
-            + "ORDER BY a.end_time ASC";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, bidderId);
-      try (ResultSet rs = stmt.executeQuery()) {
-        while (rs.next()) {
-          Auction auction = mapAuction(rs);
-          enrichAuction(auction);
-          list.add(auction);
-        }
-      }
-    } catch (SQLException | UserException e) {
-      System.err.println("Lỗi load active auctions for bidder: " + e.getMessage());
-    }
-    return list;
-  }
-
-  /**
-   * Phiên FINISHED mà bidder đã tham gia (đăng ký, đặt giá hoặc thắng).
-   */
-  public List<Auction> getFinishedAuctionsForBidder(int bidderId) {
-    List<Auction> list = new ArrayList<>();
-    String sql =
-        "SELECT DISTINCT a.* FROM auctions a "
-            + "WHERE a.status = 'FINISHED' AND ("
-            + "  EXISTS (SELECT 1 FROM auction_registrations r WHERE r.auction_id = a.id AND r.bidder_id = ?) "
-            + "  OR EXISTS (SELECT 1 FROM bids b WHERE b.auction_id = a.id AND b.bidder_id = ?) "
-            + "  OR EXISTS (SELECT 1 FROM auction_results ar WHERE ar.auction_id = a.id AND ar.winner_id = ?)"
-            + ") ORDER BY a.end_time DESC";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, bidderId);
-      stmt.setInt(2, bidderId);
-      stmt.setInt(3, bidderId);
-      try (ResultSet rs = stmt.executeQuery()) {
-        while (rs.next()) {
-          Auction auction = mapAuction(rs);
-          enrichAuction(auction);
-          list.add(auction);
-        }
-      }
-    } catch (SQLException | UserException e) {
-      System.err.println("Lỗi load finished auctions for bidder: " + e.getMessage());
-    }
-    return list;
-  }
-
   private void enrichAuction(Auction auction) {
     auction.setRegisteredCount(countRegistrations(auction.getId()));
   }
@@ -803,4 +747,86 @@ public class AuctionSqlDAO {
     }
   }
 
+  /**
+   * TỐI ƯU HÓA: Phiên RUNNING mà bidder đã đăng ký tham gia (Đã sửa lỗi Unknown column 'i.type')
+   */
+  public List<Auction> getFastActiveAuctionsForBidder(int bidderId) {
+    List<Auction> list = new ArrayList<>();
+    String sql = """
+      SELECT a.*, i.name AS item_name, i.city AS item_city,
+             (SELECT COUNT(*) FROM auction_registrations ar2 WHERE ar2.auction_id = a.id) AS reg_count
+      FROM auctions a
+      INNER JOIN items i ON a.item_id = i.id
+      INNER JOIN auction_registrations ar ON a.id = ar.auction_id
+      WHERE ar.bidder_id = ? AND a.status = 'RUNNING'
+      ORDER BY a.end_time ASC
+      """;
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          // 🌟 Gọi hàm map gốc của bạn để nhận diện chuẩn Class con (Electronics, Fashion, v.v.)
+          Auction auction = mapAuction(rs);
+
+          // Bổ sung thông tin thành phố từ bảng items vừa JOIN được vào đối tượng
+          if (auction != null && auction.getItem() != null) {
+            auction.getItem().setCity(rs.getString("item_city"));
+          }
+
+          if (auction != null) {
+            auction.setRegisteredCount(rs.getInt("reg_count"));
+            list.add(auction);
+          }
+        }
+      }
+    } catch (Exception e) {
+      System.err.println("❌ Lỗi truy vấn FastActiveAuctions: " + e.getMessage());
+      e.printStackTrace();
+    }
+    return list;
+  }
+
+  /**
+   * TỐI ƯU HÓA: Phiên FINISHED mà bidder đã tham gia (Đã sửa lỗi Unknown column 'i.type')
+   */
+  public List<Auction> getFastFinishedAuctionsForBidder(int bidderId) {
+    List<Auction> list = new ArrayList<>();
+    String sql = """
+      SELECT DISTINCT a.*, i.name AS item_name, i.city AS item_city,
+             (SELECT COUNT(*) FROM auction_registrations ar2 WHERE ar2.auction_id = a.id) AS reg_count
+      FROM auctions a
+      INNER JOIN items i ON a.item_id = i.id
+      WHERE a.status = 'FINISHED' AND (
+        EXISTS (SELECT 1 FROM auction_registrations r WHERE r.auction_id = a.id AND r.bidder_id = ?)
+        OR EXISTS (SELECT 1 FROM bids b WHERE b.auction_id = a.id AND b.bidder_id = ?)
+        OR EXISTS (SELECT 1 FROM auction_results ar WHERE ar.auction_id = a.id AND ar.winner_id = ?)
+      ) ORDER BY a.end_time DESC
+      """;
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, bidderId);
+      stmt.setInt(2, bidderId);
+      stmt.setInt(3, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          // 🌟 Gọi hàm map gốc của bạn
+          Auction auction = mapAuction(rs);
+
+          if (auction != null && auction.getItem() != null) {
+            auction.getItem().setCity(rs.getString("item_city"));
+          }
+
+          if (auction != null) {
+            auction.setRegisteredCount(rs.getInt("reg_count"));
+            list.add(auction);
+          }
+        }
+      }
+    } catch (Exception e) {
+      System.err.println("❌ Lỗi truy vấn FastFinishedAuctions: " + e.getMessage());
+      e.printStackTrace();
+    }
+    return list;
+  }
 }

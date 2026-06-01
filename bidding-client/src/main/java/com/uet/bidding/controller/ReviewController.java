@@ -56,8 +56,8 @@ public class ReviewController {
   @FXML
   private TextArea txtReviewComment;
   @FXML
-  private Button btnAddReview;
-  // Khai báo thêm ở đầu Class ReviewController
+  private Button btnBackToManagement;
+
   private final BidderService bidderService = new BidderService();
 
   @FXML
@@ -77,9 +77,12 @@ public class ReviewController {
     addReviewBox.setVisible(ReviewContext.showAddForm);
     addReviewBox.setManaged(ReviewContext.showAddForm);
 
-    // Nút "Viết đánh giá" (btnAddReview) cũng ẩn đi nếu dòng này đã được đánh giá rồi
-    btnAddReview.setVisible(ReviewContext.showAddForm);
-    btnAddReview.setManaged(ReviewContext.showAddForm);
+    // 🌟 ĐÃ SỬA: Nút "Quay lại" (btnBackToManagement) LÚC NÀO CŨNG PHẢI HIỂN THỊ
+    // Dù người dùng có được phép viết đánh giá hay không, họ vẫn phải thấy nút này để bấm quay về
+    if (btnBackToManagement != null) {
+      btnBackToManagement.setVisible(true);
+      btnBackToManagement.setManaged(true);
+    }
 
     // 4. Tự động tải danh sách cũ từ Server lên màn hình để đọc
     loadReviews();
@@ -100,23 +103,20 @@ public class ReviewController {
 
         Gson gson = com.uet.bidding.network.ClientService.getInstance().getGson();
 
-        // 🌟 ĐÃ SỬA: Chuyển dữ liệu nhận về thành JsonObject tổng thể (thành phần bọc ngoài)
+        // Chuyển dữ liệu nhận về thành JsonObject tổng thể (thành phần bọc ngoài)
         JsonObject dataObj = gson.toJsonTree(res.getData()).getAsJsonObject();
 
-        // 🌟 VẤN ĐỀ 1: Cập nhật Tên Shop thật và Mô tả Shop động lên UI Client
+        // Cập nhật Tên Shop thật và Mô tả Shop động lên UI Client
         if (dataObj.has("storeName")) {
           String storeName = dataObj.get("storeName").getAsString();
           lblShopName.setText("Đánh giá: " + storeName);
         }
 
-        // Nếu bạn có một Label trên giao diện để hiện mô tả cửa hàng (ví dụ: lblShopDesc)
-        // Bạn có thể mở comment dòng dưới đây để gán text trực quan:
         if (dataObj.has("storeDescription") && lblShopDesc != null) {
           lblShopDesc.setText("Mô tả: " + dataObj.get("storeDescription").getAsString());
         }
 
-
-        // 🌟 ĐÃ SỬA: Bóc tách mảng danh sách bài review nằm bên trong Object tổng thể
+        // Bóc tách mảng danh sách bài review nằm bên trong Object tổng thể
         JsonArray arr = dataObj.getAsJsonArray("reviews");
 
         double sum = 0;
@@ -136,7 +136,6 @@ public class ReviewController {
         for (JsonElement el : arr) {
           JsonObject obj = el.getAsJsonObject();
 
-          // 1. Trích xuất tên thật/username của người viết review
           String name = "Người dùng ẩn danh";
           if (obj.has("reviewerName") && !obj.get("reviewerName").isJsonNull()) {
             name = obj.get("reviewerName").getAsString();
@@ -144,21 +143,17 @@ public class ReviewController {
             name = obj.get("username").getAsString();
           }
 
-          // 2. Trích xuất số sao và tính tổng điểm tích lũy
           int stars = obj.has("stars") ? obj.get("stars").getAsInt() : 5;
           sum += stars;
 
-          // 3. Trích xuất lời bình luận
           String comment = obj.has("comment") && !obj.get("comment").isJsonNull()
               ? obj.get("comment").getAsString()
               : "(Không có bình luận)";
 
-          // 🌟 VẤN ĐỀ 2: ĐÃ ĐỒNG BỘ - Lấy tên sản phẩm thật do Server tra cứu từ Database gửi về
           String productName = obj.has("productName") && !obj.get("productName").isJsonNull()
               ? obj.get("productName").getAsString()
               : "Sản phẩm đấu giá";
 
-          // 4. Xử lý định dạng chuỗi thời gian (createdAt)
           String dateStr = "-/-";
           if (obj.has("createdAt") && !obj.get("createdAt").isJsonNull()) {
             try {
@@ -175,23 +170,20 @@ public class ReviewController {
             }
           }
 
-          // 5. Khởi tạo Layout HBox (Card vẽ động cho từng bài đánh giá trên UI)
+          // Khởi tạo Layout HBox (Card vẽ động cho từng bài đánh giá trên UI)
           HBox card = new HBox(12);
           card.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 12; "
               + "-fx-border-color: #f8bbd0; -fx-border-width: 1; -fx-border-radius: 12;");
           card.setAlignment(Pos.TOP_LEFT);
 
-          // Cấu hình khối Avatar
           VBox avatarBox = new VBox();
           Label avatarLabel = new Label("👤");
           avatarLabel.setStyle("-fx-font-size: 16; -fx-background-color: #ffe4e6; -fx-text-fill: #e91e63; -fx-padding: 8; -fx-background-radius: 50;");
           avatarBox.getChildren().add(avatarLabel);
 
-          // Cấu hình khối thông tin bên phải
           VBox contentBox = new VBox(4);
           HBox.setHgrow(contentBox, Priority.ALWAYS);
 
-          // Dòng 1: Tên người dùng thật + Ngày giờ viết review đặt ở góc phải
           HBox topRow = new HBox();
           topRow.setAlignment(Pos.CENTER_LEFT);
           Label nameLabel = new Label(name);
@@ -204,29 +196,23 @@ public class ReviewController {
           dateLabel.setStyle("-fx-text-fill: #888888; -fx-font-size: 12;");
           topRow.getChildren().addAll(nameLabel, spacer, dateLabel);
 
-          // Dòng 2: Điểm số thập phân kèm ngôi sao sinh động (⭐ 5.0/5.0)
           String starRatingText = String.format("⭐ %.1f/5.0", (double) stars);
           Label starsLabel = new Label(starRatingText);
           starsLabel.setStyle("-fx-text-fill: #ffb300; -fx-font-weight: bold; -fx-font-size: 13;");
 
-          // Dòng 3: Hiển thị TÊN SẢN PHẨM THẬT (Đã fix từ mã phiên đấu giá thô)
           Label productLabel = new Label("📦 Sản phẩm: " + productName);
           productLabel.setStyle("-fx-text-fill: #e91e63; -fx-font-size: 12; -fx-font-style: italic;");
 
-          // Dòng 4: Lời bình luận chi tiết
           Label commentLabel = new Label("Đánh giá: " + comment);
           commentLabel.setStyle("-fx-text-fill: #555555; -fx-font-size: 14; -fx-wrap-text: true;");
           commentLabel.setWrapText(true);
 
-          // Gom tất cả các nhãn thành phần vào khung chứa
           contentBox.getChildren().addAll(topRow, starsLabel, productLabel, commentLabel);
           card.getChildren().addAll(avatarBox, contentBox);
 
-          // Đút chiếc Card vừa dựng thành công vào Container UI chính
           reviewsContainer.getChildren().add(card);
         }
 
-        // Tính toán lại điểm số trung bình thực tế và đồng bộ lên 2 ô điểm
         double avg = sum / arr.size();
         String avgStr = String.format("%.1f", avg);
         lblAvgRating.setText(avgStr);
@@ -274,14 +260,6 @@ public class ReviewController {
   }
 
   @FXML
-  private void handleOpenAddReview() {
-    addReviewBox.setVisible(true);
-    addReviewBox.setManaged(true);
-    btnAddReview.setVisible(false);
-    btnAddReview.setManaged(false);
-  }
-
-  @FXML
   private void handleSubmitReview(ActionEvent event) {
     Integer stars = cmbStars.getValue();
     String comment = txtReviewComment.getText().trim();
@@ -291,28 +269,24 @@ public class ReviewController {
       return;
     }
 
-    // 1. Đóng gói dữ liệu thành Map Payload gửi lên Server
     Map<String, Object> payload = new HashMap<>();
     payload.put("auctionId", ReviewContext.auctionId);
     payload.put("sellerId", ReviewContext.sellerId);
     payload.put("stars", stars);
     payload.put("comment", comment);
 
-    // 2. Bắn gói tin "ADD_REVIEW" sang phía Server xử lý
     ClientService.getInstance()
         .sendRequest("ADD_REVIEW", payload)
         .thenAccept(res -> Platform.runLater(() -> {
           if ("SUCCESS".equals(res.getType())) {
             showAlert(Alert.AlertType.INFORMATION, "Thành công", "Cảm ơn bạn đã gửi đánh giá thành công!");
 
-            // Đóng form nhập đánh giá lại (Tránh gửi lặp lại)
+            // Đóng form nhập đánh giá lại hoàn toàn sau khi viết xong
             addReviewBox.setVisible(false);
             addReviewBox.setManaged(false);
-            btnAddReview.setVisible(true);
-            btnAddReview.setManaged(true);
             txtReviewComment.clear();
 
-            // Refresh cập nhật lại danh sách đánh giá hiển thị trên màn hình ngay lập tức
+            // Refresh cập nhật danh sách lập tức
             loadReviews();
           } else {
             showAlert(Alert.AlertType.ERROR, "Thất bại", String.valueOf(res.getData()));
@@ -326,6 +300,27 @@ public class ReviewController {
 
   private String starsToEmoji(int stars) {
     return "⭐".repeat(Math.max(0, stars));
+  }
+
+  // 🌟 HÀM SỬA ĐỔI CHÍNH: Lắng nghe sự kiện để quay lại màn hình MyManagementController
+  @FXML
+  private void handleBackToManagement(ActionEvent event) {
+    try {
+      // Nạp tệp giao diện quản lý từ thư mục tài nguyên của bạn
+      Parent root = FXMLLoader.load(getClass().getResource("/MyManagement.fxml"));
+
+      // Khai thác Stage hiện tại từ nút bấm được kích hoạt
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+      // Chuyển scene mượt mà về trang quản lý lịch sử và sảnh đấu giá của bidder
+      stage.setScene(new Scene(root));
+      stage.setTitle("Quản lý của tôi - Hệ thống đấu giá");
+      stage.show();
+      System.out.println(">>> [Quay lại] Đã quay trở về màn hình MyManagement.fxml thành công!");
+    } catch (IOException e) {
+      e.printStackTrace();
+      System.err.println("❌ Lỗi: Không thể tải /MyManagement.fxml. Kiểm tra lại đường dẫn tệp!");
+    }
   }
 
   private void addReviewCard(String name, String date, String stars, String content) {

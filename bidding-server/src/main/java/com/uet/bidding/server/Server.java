@@ -4,7 +4,7 @@ import com.uet.bidding.dao.AuctionSqlDAO;
 import com.uet.bidding.dao.ItemSqlDAO;
 import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.service.AuctionManager;
+import com.uet.bidding.service.AuctionExpirationTask;import com.uet.bidding.service.AuctionManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -50,6 +50,10 @@ public class Server { // Đây là file chạy chính của SERVER
 
     // 2. NẠP DỮ LIỆU TỪ FILE LÊN RAM
     System.out.println("Đang khởi động hệ thống và nạp dữ liệu...");
+
+    // --- THÊM 2 DÒNG NÀY ĐỂ KÍCH HOẠT LUỒNG NGẦM ---
+    AuctionExpirationTask expirationTask = new AuctionExpirationTask(auctionSqlDAO);
+    expirationTask.start();
 
     // Sử dụng try-with-resources để tự động đóng ServerSocket
     try (ServerSocket serverSocket = new ServerSocket(port)) {

@@ -99,10 +99,17 @@ public class MyManagementController {
   public void applyAuctionUpdate(Auction updated) {
     if (updated == null) return;
     Platform.runLater(() -> {
-      if ("FINISHED".equals(updated.getStatus())) {
+
+      // Kiểm tra trạng thái trực tiếp bằng String getStatus()
+      boolean isFinished = "FINISHED".equals(updated.getStatus());
+      boolean isRunning = "RUNNING".equals(updated.getStatus());
+
+      // Xử lý logic hiển thị
+      if (isFinished) {
+        // Gỡ khỏi danh sách Active và tải lại danh sách Lịch sử
         activeRows.removeIf(r -> r.getAuctionId() == updated.getId());
         reloadHistoryFromServer();
-      } else if ("RUNNING".equals(updated.getStatus())) {
+      } else if (isRunning) {
         boolean inList = activeRows.stream().anyMatch(r -> r.getAuctionId() == updated.getId());
         if (inList) {
           reloadActiveFromServer();
@@ -114,6 +121,8 @@ public class MyManagementController {
           }
         }
       }
+
+      // Chuyển tiếp tín hiệu sang Sảnh chính
       if (AuctionListController.getInstance() != null) {
         AuctionListController.getInstance().handleAuctionBroadcast(updated);
       }

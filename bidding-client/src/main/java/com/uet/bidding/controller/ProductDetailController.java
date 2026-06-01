@@ -275,11 +275,29 @@ public class ProductDetailController {
 
     timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
       LocalDateTime now = LocalDateTime.now();
-      if (now.isAfter(endTime)) {
+
+      // --- ĐOẠN XỬ LÝ KHI THỜI GIAN KẾT THÚC ---
+      if (now.isAfter(endTime) || now.isEqual(endTime)) {
         lblCountdown.setText("ĐÃ KẾT THÚC");
+        lblCountdown.setStyle("-fx-text-fill: #9e9e9e;"); // Đổi màu xám cho chữ
         timeline.stop();
+
+        // 1. Khóa toàn bộ thao tác đặt giá/đăng ký trên UI ngay lập tức
+        if (btnRegister != null) btnRegister.setDisable(true);
+        if (txtBidAmount != null) txtBidAmount.setDisable(true);
+        if (txtMaxAutoBid != null) txtMaxAutoBid.setDisable(true);
+
+        // 2. Gắn cờ local cho object
+        currentAuction.setStatus("FINISHED");
+
+        // 3. Tự động xóa phiên này khỏi sảnh chính (AuctionList) mà KHÔNG cần chọc lên Server
+        if (AuctionListController.getInstance() != null) {
+          AuctionListController.getInstance().refreshOneAuction(currentAuction);
+        }
+
         return;
       }
+      // --- KẾT THÚC ĐOẠN XỬ LÝ ---
 
       long days = ChronoUnit.DAYS.between(now, endTime);
       long hours = ChronoUnit.HOURS.between(now, endTime) % 24;

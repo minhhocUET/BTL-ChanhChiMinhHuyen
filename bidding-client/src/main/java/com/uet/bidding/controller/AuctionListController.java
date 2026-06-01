@@ -2,7 +2,6 @@ package com.uet.bidding.controller;
 
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.Electronics;
 import com.uet.bidding.model.Item;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.SellerAuctionContext;
@@ -11,7 +10,6 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -24,38 +22,33 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
-import java.math.BigDecimal;
 import java.net.URL;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 import java.util.ResourceBundle;
 
 public class AuctionListController implements Initializable {
 
-  @FXML
-  private TableColumn<Auction, Void> colAction;
+  private static AuctionListController instance;
 
-  @FXML
-  private TableView<Auction> tableView;
-
-  @FXML
-  private TableColumn<Auction, String> colCity;
-
-  private List<Auction> preLoadedAuctions = null;
-
-  @FXML
-  private ComboBox<String> cityComboBox;
+  @FXML private TableColumn<Auction, Void> colAction;
+  @FXML private TableView<Auction> tableView;
+  @FXML private TableColumn<Auction, String> colCity;
+  @FXML private ComboBox<String> cityComboBox;
   @FXML private TableColumn<Auction, String> colItemType;
   @FXML private TableColumn<Auction, String> colProductName;
   @FXML private TableColumn<Auction, Integer> colRegistered;
 
+  private List<Auction> preLoadedAuctions = null;
+
+  public static AuctionListController getInstance() {
+    return instance;
+  }
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
     instance = this;
-    // 🌟 ĐẶT PLACEHOLDER MẶC ĐỊNH LÀ LOADING KHI VỪA MỞ TRANG
     tableView.setPlaceholder(new Label("Loading..."));
+
     colCity.setCellValueFactory(cd -> {
       Item item = cd.getValue().getItem();
       String city = (item != null && item.getCity() != null) ? item.getCity() : "-";
@@ -64,7 +57,7 @@ public class AuctionListController implements Initializable {
 
     colItemType.setCellValueFactory(cd -> {
       Item item = cd.getValue().getItem();
-      String type = (item != null) ? item.getType() : "-"; // ELECTRONICS, ART, VEHICLE
+      String type = (item != null) ? item.getType() : "-";
       return new SimpleStringProperty(type);
     });
 
@@ -75,10 +68,9 @@ public class AuctionListController implements Initializable {
     });
 
     colRegistered.setCellValueFactory(cd ->
-            new SimpleObjectProperty<>(cd.getValue().getRegisteredCount()));
+        new SimpleObjectProperty<>(cd.getValue().getRegisteredCount()));
 
     setupActionColumn();
-
     loadAuctionsFromServer();
 
     tableView.setRowFactory(tv -> {
@@ -92,118 +84,81 @@ public class AuctionListController implements Initializable {
     });
 
     cityComboBox.setItems(FXCollections.observableArrayList(
-    // Danh sách tỉnh thành
-            "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu",
-            "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước",
-            "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng",
-            "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp",
-            "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh",
-            "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên",
-            "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng",
-            "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An",
-            "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình",
-            "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng",
-            "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa",
-            "Thừa Thiên Huế", "Tiền Giang", "TP Hồ Chí Minh", "Trà Vinh",
-            "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
-        ));
+        "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu",
+        "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước",
+        "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng",
+        "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp",
+        "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh",
+        "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên",
+        "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng",
+        "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An",
+        "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình",
+        "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng",
+        "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa",
+        "Thừa Thiên Huế", "Tiền Giang", "TP Hồ Chí Minh", "Trà Vinh",
+        "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+    ));
 
-    // Ép cột "Tên sản phẩm" tự động chiếm toàn bộ chiều rộng còn thừa của bảng
     colProductName.prefWidthProperty().bind(
         tableView.widthProperty()
             .subtract(colCity.widthProperty())
             .subtract(colItemType.widthProperty())
             .subtract(colRegistered.widthProperty())
             .subtract(colAction.widthProperty())
-            .subtract(2) // Trừ hao 2px cho đường viền của bảng để không bị xuất hiện thanh cuộn ngang
+            .subtract(2)
     );
-
   }
 
   private void setupActionColumn() {
+    Callback<TableColumn<Auction, Void>, TableCell<Auction, Void>> cellFactory = new Callback<>() {
+      @Override
+      public TableCell<Auction, Void> call(final TableColumn<Auction, Void> param) {
+        return new TableCell<>() {
+          private final Button btn = new Button("Đăng kí tham gia");
 
-    Callback<TableColumn<Auction, Void>,
-        TableCell<Auction, Void>> cellFactory =
-        new Callback<>() {
+          {
+            btn.setStyle(
+                "-fx-background-color: white;"
+                    + "-fx-border-color: black;"
+                    + "-fx-border-radius: 20;"
+                    + "-fx-background-radius: 20;"
+                    + "-fx-text-fill: #e84393;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-cursor: hand;"
+            );
 
-          @Override
-          public TableCell<Auction, Void> call(
-              final TableColumn<Auction, Void> param
-          ) {
-
-            return new TableCell<>() {
-
-              // Đã đổi tên theo ý bạn
-              private final Button btn =
-                  new Button("Đăng kí tham gia");
-
-              {
-
-                btn.setStyle(
-                    "-fx-background-color: white;"
-                        + "-fx-border-color: black;"
-                        + "-fx-border-radius: 20;"
-                        + "-fx-background-radius: 20;"
-                        + "-fx-text-fill: #e84393;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-cursor: hand;"
-                );
-
-                btn.setOnAction(event -> {
-
-                  // 1. CHÈN LOGIC KIỂM TRA HỒ SƠ TẠI ĐÂY
-                  Customer currentUser = UserSession.getLoggedInCustomer();
-                  if (currentUser != null) {
-                    // Nếu chưa hoàn thiện họ tên (hồ sơ trống)
-                    if (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty()) {
-
-                      Alert alert = new Alert(Alert.AlertType.WARNING);
-                      alert.setTitle("Yêu cầu cập nhật");
-                      alert.setHeaderText(null);
-                      alert.setContentText("Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán.");
-                      alert.showAndWait();
-
-                      return; // Dừng lại luôn, không cho mở trang chi tiết sản phẩm!
-                    }
-                  }
-
-                  Auction selectedAuction =
-                      getTableView()
-                          .getItems()
-                          .get(getIndex());
-
-                  openAuctionDetail(
-                      selectedAuction,
-                      (Stage) ((Node) event.getSource()).getScene().getWindow()
-                  );
-                });
-              }
-
-              @Override
-              protected void updateItem(
-                  Void item,
-                  boolean empty
-              ) {
-
-                super.updateItem(item, empty);
-
-                if (empty) {
-                  setGraphic(null);
-                } else {
-                  setGraphic(btn);
+            btn.setOnAction(event -> {
+              Customer currentUser = UserSession.getLoggedInCustomer();
+              if (currentUser != null) {
+                if (currentUser.getFullName() == null || currentUser.getFullName().trim().isEmpty()) {
+                  Alert alert = new Alert(Alert.AlertType.WARNING);
+                  alert.setTitle("Yêu cầu cập nhật");
+                  alert.setHeaderText(null);
+                  alert.setContentText("Vui lòng hoàn thiện TẤT CẢ thông tin để có thể tham gia đấu giá hoặc đăng bán.");
+                  alert.showAndWait();
+                  return;
                 }
               }
-            };
+
+              Auction selectedAuction = getTableView().getItems().get(getIndex());
+              openAuctionDetail(selectedAuction, (Stage) ((Node) event.getSource()).getScene().getWindow());
+            });
+          }
+
+          @Override
+          protected void updateItem(Void item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty) {
+              setGraphic(null);
+            } else {
+              setGraphic(btn);
+            }
           }
         };
-
-    // 🌟 ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT BẠN ĐANG THIẾU ĐỂ NÚT HIỆN LÊN
+      }
+    };
     colAction.setCellFactory(cellFactory);
   }
-
-  // =========================
-  // SEARCH
-  // =========================
 
   @FXML
   public void handleSearch(ActionEvent event) {
@@ -215,88 +170,51 @@ public class AuctionListController implements Initializable {
     }
   }
 
-  // =========================
-  // LOGOUT
-  // =========================
-
   @FXML
   public void handleLogout(ActionEvent event) {
-    switchScene(
-        event,
-        "/Login.fxml",
-        "Hệ thống Đấu giá VNU - Đăng nhập"
-    );
+    switchScene(event, "/Login.fxml", "Hệ thống Đấu giá VNU - Đăng nhập");
   }
-
-  // =========================
-  // BIDDER -> MY MANAGEMENT
-  // =========================
 
   @FXML
   public void handleGoToMyManagement(MouseEvent event) {
     try {
-      Parent root = FXMLLoader.load(
-          getClass().getResource("/MyManagement.fxml")
-      );
+      Parent root = FXMLLoader.load(getClass().getResource("/MyManagement.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       stage.setScene(new Scene(root));
       stage.setTitle("Quản lý của tôi");
       stage.show();
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("Lỗi khi chuyển sang MyManagement.fxml");
     }
   }
-
-  // =========================
-  // SELLER -> SELLER DASHBOARD
-  // =========================
 
   @FXML
   public void handleGoToSellerDashboard(MouseEvent event) {
     try {
-      Parent root = FXMLLoader.load(
-          getClass().getResource("/SellerDashboard.fxml")
-      );
+      Parent root = FXMLLoader.load(getClass().getResource("/SellerDashboard.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       stage.setScene(new Scene(root));
       stage.setTitle("Kênh người bán - Seller Dashboard");
       stage.show();
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("Lỗi khi chuyển sang SellerDashboard.fxml");
     }
   }
-
-  // =========================
-  // USER PROFILE
-  // =========================
 
   @FXML
   public void handleGoToMyProfile(MouseEvent event) {
     try {
-      Parent root = FXMLLoader.load(
-          getClass().getResource("/UserProfile.fxml")
-      );
+      Parent root = FXMLLoader.load(getClass().getResource("/UserProfile.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       stage.setScene(new Scene(root));
       stage.setTitle("Hồ sơ cá nhân");
       stage.show();
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("Lỗi khi chuyển sang UserProfile.fxml");
     }
   }
 
-  // =========================
-  // HÀM CHUYỂN SCENE CHUNG
-  // =========================
-
-  private void switchScene(
-      ActionEvent event,
-      String fxmlPath,
-      String title
-  ) {
+  private void switchScene(ActionEvent event, String fxmlPath, String title) {
     try {
       Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -305,54 +223,7 @@ public class AuctionListController implements Initializable {
       stage.show();
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("Lỗi khi chuyển sang trang: " + fxmlPath);
     }
-  }
-  private static AuctionListController instance;
-
-  public static AuctionListController getInstance() {
-    return instance;
-  }
-
-
-  public void handleAuctionBroadcast(Auction updated) {
-    if (tableView == null || updated == null) return;
-    if ("FINISHED".equals(updated.getStatus())) {
-      tableView.getItems().removeIf(a -> a.getId() == updated.getId());
-      return;
-    }
-    if (!"RUNNING".equals(updated.getStatus())) {
-      return;
-    }
-    refreshOneAuction(updated);
-  }
-
-  public void refreshOneAuction(Auction updated) {
-    if (tableView == null || updated == null) return;
-    if ("FINISHED".equals(updated.getStatus())) {
-      tableView.getItems().removeIf(a -> a.getId() == updated.getId());
-      return;
-    }
-    for (int i = 0; i < tableView.getItems().size(); i++) {
-      if (tableView.getItems().get(i).getId() == updated.getId()) {
-        tableView.getItems().set(i, updated);
-        return;
-      }
-    }
-  }
-
-  public void addOrRefreshAuction(Auction auction) {
-    if (tableView == null || auction == null) return;
-    if (!"RUNNING".equals(auction.getStatus())) {
-      return;
-    }
-    for (int i = 0; i < tableView.getItems().size(); i++) {
-      if (tableView.getItems().get(i).getId() == auction.getId()) {
-        tableView.getItems().set(i, auction);
-        return;
-      }
-    }
-    tableView.getItems().add(0, auction);
   }
 
   private void openProductDetail(Auction auction, javafx.scene.Scene scene) {
@@ -406,21 +277,17 @@ public class AuctionListController implements Initializable {
     }
   }
 
-  // 2. Tạo một hàm công khai để trang trước truyền dữ liệu vào đây
   public void setPreLoadedAuctions(List<Auction> auctions) {
     this.preLoadedAuctions = auctions;
   }
 
   private void loadAuctionsFromServer() {
-    // 🌟 KIỂM TRA: Nếu đã có dữ liệu tải trước từ trang cũ truyền sang, đổ thẳng vào bảng luôn!
     if (preLoadedAuctions != null) {
       tableView.setItems(FXCollections.observableArrayList(preLoadedAuctions));
-      // Đổ xong thì xóa đi để lần sau bấm nút "Tìm kiếm/Refresh" nó vẫn tự gọi lại server
       preLoadedAuctions = null;
       return;
     }
 
-    // Nếu không có dữ liệu tải trước (Ví dụ: người dùng bấm F5 hoặc tự quay lại trang), chạy code gọi Server cũ của bạn
     ClientService.getInstance().sendRequest("GET_ALL_AUCTIONS", "")
         .thenAccept(response -> Platform.runLater(() -> {
           if ("SUCCESS".equals(response.getType())) {
@@ -433,5 +300,50 @@ public class AuctionListController implements Initializable {
             }
           }
         }));
+  }
+
+  // =========================
+  // XỬ LÝ CẬP NHẬT TRẠNG THÁI AUCTION CHUNG
+  // =========================
+
+  public void refreshData() {
+    loadAuctionsFromServer();
+  }
+
+  public void handleAuctionBroadcast(Auction updated) {
+    if (tableView == null || updated == null) return;
+    refreshOneAuction(updated);
+  }
+
+  public void refreshOneAuction(Auction updated) {
+    if (tableView == null || updated == null) return;
+
+    if ("FINISHED".equals(updated.getStatus())) {
+      tableView.getItems().removeIf(a -> a.getId() == updated.getId());
+      return;
+    }
+
+    for (int i = 0; i < tableView.getItems().size(); i++) {
+      if (tableView.getItems().get(i).getId() == updated.getId()) {
+        tableView.getItems().set(i, updated);
+        return;
+      }
+    }
+  }
+
+  public void addOrRefreshAuction(Auction auction) {
+    if (tableView == null || auction == null) return;
+
+    if (!"RUNNING".equals(auction.getStatus())) {
+      return;
+    }
+
+    for (int i = 0; i < tableView.getItems().size(); i++) {
+      if (tableView.getItems().get(i).getId() == auction.getId()) {
+        tableView.getItems().set(i, auction);
+        return;
+      }
+    }
+    tableView.getItems().add(0, auction);
   }
 }

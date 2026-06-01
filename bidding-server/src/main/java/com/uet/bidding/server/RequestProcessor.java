@@ -85,7 +85,7 @@ public class RequestProcessor {
         case "DELETE_ITEM" -> {
           try {
             // 1. Ép kiểu dữ liệu ID lấy từ gói tin Gson
-            int deleteItemId = ((Double) msg.getData()).intValue();
+            int deleteItemId = ((Number) msg.getData()).intValue();
             System.out.println("⚙️ [Server] Seller yêu cầu xóa sản phẩm ID: " + deleteItemId);
 
             // 2. Thực hiện xóa dữ liệu và dọn dẹp file vật lý trên Cloud
@@ -532,7 +532,7 @@ public class RequestProcessor {
       if (!customer.hasCompleteProfile()) {
         throw new UserException("Hoàn thiện hồ sơ trước khi đăng ký tham gia!");
       }
-      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      int auctionId = ((Number) msg.getData()).intValue();
       Auction auction = auctionSqlDAO.findById(auctionId);
       if (!"RUNNING".equals(auction.getStatus())) {
         throw new UserException("Phiên đấu giá không mở đăng ký!");
@@ -624,7 +624,7 @@ public class RequestProcessor {
       if (!(handler.getLoggedInUser() instanceof Customer customer)) {
         throw new UserException("Phải đăng nhập!");
       }
-      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      int auctionId = ((Number) msg.getData()).intValue();
       boolean registered = auctionSqlDAO.isBidderRegistered(auctionId, customer.getId());
       handler.sendResponse("SUCCESS", registered, msg.getRequestId());
     } catch (Exception e) {
@@ -634,7 +634,7 @@ public class RequestProcessor {
 
   private void handleGetBidHistory(NetworkMessage msg, ClientHandler handler) {
     try {
-      int auctionId = Integer.parseInt(String.valueOf(msg.getData()));
+      int auctionId = ((Number) msg.getData()).intValue();
       List<Bid> bids = new BidSqlDAO().getBidsByAuction(auctionId);
       handler.sendResponse("SUCCESS", bids, msg.getRequestId());
     } catch (Exception e) {
@@ -665,7 +665,7 @@ public class RequestProcessor {
       if (!(handler.getLoggedInUser() instanceof Customer customer)) {
         throw new UserException("Phải đăng nhập!");
       }
-      int auctionId = Integer.parseInt(String.valueOf(msg.getData()).trim());
+      int auctionId = ((Number) msg.getData()).intValue();
       auctionSqlDAO.removeAutoBid(auctionId, customer.getId());
       handler.sendResponse("SUCCESS", "Đã tắt đấu giá tự động!", msg.getRequestId());
     } catch (Exception e) {

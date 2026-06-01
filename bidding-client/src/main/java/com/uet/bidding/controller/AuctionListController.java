@@ -10,6 +10,7 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -49,34 +50,58 @@ public class AuctionListController implements Initializable {
     instance = this;
     tableView.setPlaceholder(new Label("Loading..."));
 
+    // 1. Cấu hình cột Thành phố
     colCity.setCellValueFactory(cd -> {
-      Item item = cd.getValue().getItem();
+      Auction auction = cd.getValue();
+      // Nếu là dòng ảo (id == -1), trả về chuỗi rỗng hoàn toàn
+      if (auction == null || auction.getId() == -1) {
+        return new SimpleStringProperty("");
+      }
+      Item item = auction.getItem();
       String city = (item != null && item.getCity() != null) ? item.getCity() : "-";
       return new SimpleStringProperty(city);
     });
 
+    // 2. Cấu hình cột Loại sản phẩm
     colItemType.setCellValueFactory(cd -> {
-      Item item = cd.getValue().getItem();
+      Auction auction = cd.getValue();
+      if (auction == null || auction.getId() == -1) {
+        return new SimpleStringProperty("");
+      }
+      Item item = auction.getItem();
       String type = (item != null) ? item.getType() : "-";
       return new SimpleStringProperty(type);
     });
 
+    // 3. Cấu hình cột Tên sản phẩm
     colProductName.setCellValueFactory(cd -> {
-      Item item = cd.getValue().getItem();
+      Auction auction = cd.getValue();
+      if (auction == null || auction.getId() == -1) {
+        return new SimpleStringProperty("");
+      }
+      Item item = auction.getItem();
       String name = (item != null) ? item.getName() : "-";
       return new SimpleStringProperty(name);
     });
 
-    colRegistered.setCellValueFactory(cd ->
-        new SimpleObjectProperty<>(cd.getValue().getRegisteredCount()));
+    // 4. Cấu hình cột Số người đăng ký
+    colRegistered.setCellValueFactory(cd -> {
+      Auction auction = cd.getValue();
+      // Nếu là dòng ảo, trả về null thay vì số 0 để cột hoàn toàn trống trơn
+      if (auction == null || auction.getId() == -1) {
+        return new SimpleObjectProperty<>(null);
+      }
+      return new SimpleObjectProperty<>(auction.getRegisteredCount());
+    });
 
     setupActionColumn();
     loadAuctionsFromServer();
 
+    // --- SỬA ROW FACTORY: Dòng ảo thì không cho Double Click kích hoạt xem chi tiết ---
     tableView.setRowFactory(tv -> {
       TableRow<Auction> row = new TableRow<>();
       row.setOnMouseClicked(e -> {
-        if (!row.isEmpty() && e.getClickCount() >= 2) {
+        if (!row.isEmpty() && row.getItem() != null && row.getItem().getId() != -1 && e.getClickCount() >= 2) {
           openProductDetail(row.getItem(), row.getScene());
         }
       });
@@ -151,7 +176,13 @@ public class AuctionListController implements Initializable {
             if (empty) {
               setGraphic(null);
             } else {
-              setGraphic(btn);
+              // 🌟 SỬA TẠI ĐÂY: Nếu là dòng ảo (id == -1) thì ẩn nút bấm đi
+              Auction currentAuction = getTableView().getItems().get(getIndex());
+              if (currentAuction != null && currentAuction.getId() == -1) {
+                setGraphic(null);
+              } else {
+                setGraphic(btn);
+              }
             }
           }
         };
@@ -282,6 +313,11 @@ public class AuctionListController implements Initializable {
   }
 
   private void loadAuctionsFromServer() {
+    // 🌟 1. KHI VỪA BẮT ĐẦU LOAD: Giữ/Đặt lại chữ Loading để người dùng biết app đang tải
+    Label loadingLabel = new Label("Loading...");
+    loadingLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #888888;");
+    tableView.setPlaceholder(loadingLabel);
+
     if (preLoadedAuctions != null) {
       tableView.setItems(FXCollections.observableArrayList(preLoadedAuctions));
       preLoadedAuctions = null;
@@ -290,14 +326,31 @@ public class AuctionListController implements Initializable {
 
     ClientService.getInstance().sendRequest("GET_ALL_AUCTIONS", "")
         .thenAccept(response -> Platform.runLater(() -> {
-          if ("SUCCESS".equals(response.getType())) {
-            String json = ClientService.getInstance().getGson().toJson(response.getData());
-            List<Auction> list = ClientService.getInstance().getGson()
-                .fromJson(json, new com.google.gson.reflect.TypeToken<List<Auction>>(){}.getType());
+          try {
+            if ("SUCCESS".equals(response.getType())) {
+              String json = ClientService.getInstance().getGson().toJson(response.getData());
+              List<Auction> list = ClientService.getInstance().getGson()
+                  .fromJson(json, new com.google.gson.reflect.TypeToken<List<Auction>>(){}.getType());
 
-            if (list != null) {
-              tableView.setItems(FXCollections.observableArrayList(list));
+              if (list != null && !list.isEmpty()) {
+                tableView.setItems(FXCollections.observableArrayList(list));
+              } else {
+                // 🌟 Nếu không có phiên nào, ta nạp 10 dòng ảo để hiện khung lưới có màu
+                ObservableList<Auction> dummyRows = FXCollections.observableArrayList();
+                for (int i = 0; i < 10; i++) {
+                  Auction dummy = new Auction();
+                  dummy.setId(-1); // Quy ước dòng ảo
+                  dummyRows.add(dummy);
+                }
+                tableView.setItems(dummyRows);
+              }
             }
+          } catch (Exception e) {
+            e.printStackTrace();
+            // Phòng trường hợp lỗi ép kiểu JSON làm treo luồng UI
+            Label errorLabel = new Label("Lỗi cấu trúc dữ liệu từ máy chủ.");
+            errorLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #d63031;");
+            tableView.setPlaceholder(errorLabel);
           }
         }));
   }
@@ -320,6 +373,15 @@ public class AuctionListController implements Initializable {
 
     if ("FINISHED".equals(updated.getStatus())) {
       tableView.getItems().removeIf(a -> a.getId() == updated.getId());
+
+      // 🌟 Nếu sau khi xóa phiên vừa kết thúc mà bảng trống trơn, nạp lại dòng ảo ngay
+      if (tableView.getItems().isEmpty()) {
+        for (int i = 0; i < 10; i++) {
+          Auction dummy = new Auction();
+          dummy.setId(-1);
+          tableView.getItems().add(dummy);
+        }
+      }
       return;
     }
 
@@ -337,6 +399,9 @@ public class AuctionListController implements Initializable {
     if (!"RUNNING".equals(auction.getStatus())) {
       return;
     }
+
+    // 🌟 Trước khi thêm hàng thật mới, nếu bảng đang chứa dòng ảo (id == -1) thì xóa sạch dòng ảo đi
+    tableView.getItems().removeIf(a -> a.getId() == -1);
 
     for (int i = 0; i < tableView.getItems().size(); i++) {
       if (tableView.getItems().get(i).getId() == auction.getId()) {

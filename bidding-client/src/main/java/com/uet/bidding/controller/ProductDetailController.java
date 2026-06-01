@@ -178,24 +178,35 @@ public class ProductDetailController {
             }
             customer.getBidderProfile().registerForAuction(currentAuction.getId());
             applyRegistrationButtonState(true);
+
+            // 🌟 TỐI ƯU: Đặt sẵn phương án tự tăng số lượng lên 1 làm dự phòng
+            int newCount = currentAuction.getRegisteredCount() + 1;
+
             try {
               String json = GsonFactory.getInstance().toJson(res.getData());
               Auction updated = GsonFactory.getInstance().fromJson(json, Auction.class);
-              if (updated != null) {
-                currentAuction.setRegisteredCount(updated.getRegisteredCount());
-                if (lblRegisteredCount != null) {
-                  lblRegisteredCount.setText("Đã đăng ký: " + updated.getRegisteredCount() + " người");
-                }
-                AuctionListController list = AuctionListController.getInstance();
-                if (list != null) {
-                  list.refreshOneAuction(updated);
-                }
+              if (updated != null && updated.getRegisteredCount() > 0) {
+                newCount = updated.getRegisteredCount(); // Nếu server trả về object chuẩn thì lấy từ server
               }
             } catch (Exception ignored) {
-              if (lblRegisteredCount != null) {
-                lblRegisteredCount.setText("Đã đăng ký: " + (currentAuction.getRegisteredCount() + 1) + " người");
-              }
+              // Nếu ép kiểu JSON lỗi (do server trả về chuỗi thường), khối try-catch sẽ hứng lỗi
+              // nhưng app không bị sập, và vẫn dùng số lượng tự tăng ở trên.
             }
+
+            // Cập nhật số lượng vào Object hiện tại
+            currentAuction.setRegisteredCount(newCount);
+
+            // Hiển thị lên giao diện Chi tiết sản phẩm
+            if (lblRegisteredCount != null) {
+              lblRegisteredCount.setText("Đã đăng ký: " + newCount + " người");
+            }
+
+            // 🌟 THẦN CHÚ: Luôn luôn thông báo ra ngoài Dashboard để cập nhật số lượng ngay lập tức
+            AuctionListController list = AuctionListController.getInstance();
+            if (list != null) {
+              list.refreshOneAuction(currentAuction);
+            }
+
             if (MyManagementController.getInstance() != null) {
               MyManagementController.getInstance().reloadAfterRegistration();
             }
@@ -203,7 +214,13 @@ public class ProductDetailController {
           } else {
             showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
           }
-        }));
+        }))
+        .exceptionally(ex -> {
+          // 🌟 Bổ sung khối này để bắt lỗi "930003.0" nếu nó xảy ra ngầm trong luồng mạng, tránh làm treo đơ App
+          javafx.application.Platform.runLater(() ->
+              showAlert("Lỗi hệ thống", ex.getMessage(), Alert.AlertType.ERROR));
+          return null;
+        });
   }
   public void applyAuctionUpdate(Auction auction) {
     if (auction == null || currentAuction == null) return;

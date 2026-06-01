@@ -103,6 +103,11 @@ public class ClientService {
 
   private void handleResponse(NetworkMessage msg) {
     switch (msg.getType()) {
+      // 🌟 THÊM CASE NÀY VÀO ĐỂ KÍCH HOẠT HÀM ĐĂNG NHẬP CỦA BẠN
+      case "LOGIN_SUCCESS":
+        processLogin(msg);
+        break;
+
       case "UPDATE_PROFILE_SUCCESS":
         processUpdateProfile(msg);
         break;

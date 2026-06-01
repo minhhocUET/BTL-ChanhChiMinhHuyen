@@ -34,10 +34,15 @@ import java.util.ResourceBundle;
 public class AuctionListController implements Initializable {
 
   @FXML
+  private TableColumn<Auction, Void> colAction;
+
+  @FXML
   private TableView<Auction> tableView;
 
   @FXML
   private TableColumn<Auction, String> colCity;
+
+  private List<Auction> preLoadedAuctions = null;
 
   @FXML
   private ComboBox<String> cityComboBox;
@@ -49,6 +54,8 @@ public class AuctionListController implements Initializable {
   @Override
   public void initialize(URL location, ResourceBundle resources) {
     instance = this;
+    // 🌟 ĐẶT PLACEHOLDER MẶC ĐỊNH LÀ LOADING KHI VỪA MỞ TRANG
+    tableView.setPlaceholder(new Label("Loading..."));
     colCity.setCellValueFactory(cd -> {
       Item item = cd.getValue().getItem();
       String city = (item != null && item.getCity() != null) ? item.getCity() : "-";
@@ -69,6 +76,8 @@ public class AuctionListController implements Initializable {
 
     colRegistered.setCellValueFactory(cd ->
             new SimpleObjectProperty<>(cd.getValue().getRegisteredCount()));
+
+    setupActionColumn();
 
     loadAuctionsFromServer();
 
@@ -98,6 +107,17 @@ public class AuctionListController implements Initializable {
             "Thừa Thiên Huế", "Tiền Giang", "TP Hồ Chí Minh", "Trà Vinh",
             "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
         ));
+
+    // Ép cột "Tên sản phẩm" tự động chiếm toàn bộ chiều rộng còn thừa của bảng
+    colProductName.prefWidthProperty().bind(
+        tableView.widthProperty()
+            .subtract(colCity.widthProperty())
+            .subtract(colItemType.widthProperty())
+            .subtract(colRegistered.widthProperty())
+            .subtract(colAction.widthProperty())
+            .subtract(2) // Trừ hao 2px cho đường viền của bảng để không bị xuất hiện thanh cuộn ngang
+    );
+
   }
 
   private void setupActionColumn() {
@@ -113,8 +133,9 @@ public class AuctionListController implements Initializable {
 
             return new TableCell<>() {
 
+              // Đã đổi tên theo ý bạn
               private final Button btn =
-                  new Button("Đăng kí đấu giá");
+                  new Button("Đăng kí tham gia");
 
               {
 
@@ -130,7 +151,7 @@ public class AuctionListController implements Initializable {
 
                 btn.setOnAction(event -> {
 
-                // 1. CHÈN LOGIC KIỂM TRA HỒ SƠ TẠI ĐÂY
+                  // 1. CHÈN LOGIC KIỂM TRA HỒ SƠ TẠI ĐÂY
                   Customer currentUser = UserSession.getLoggedInCustomer();
                   if (currentUser != null) {
                     // Nếu chưa hoàn thiện họ tên (hồ sơ trống)
@@ -175,6 +196,9 @@ public class AuctionListController implements Initializable {
             };
           }
         };
+
+    // 🌟 ĐÂY LÀ DÒNG QUAN TRỌNG NHẤT BẠN ĐANG THIẾU ĐỂ NÚT HIỆN LÊN
+    colAction.setCellFactory(cellFactory);
   }
 
   // =========================
@@ -382,20 +406,32 @@ public class AuctionListController implements Initializable {
     }
   }
 
+  // 2. Tạo một hàm công khai để trang trước truyền dữ liệu vào đây
+  public void setPreLoadedAuctions(List<Auction> auctions) {
+    this.preLoadedAuctions = auctions;
+  }
+
   private void loadAuctionsFromServer() {
+    // 🌟 KIỂM TRA: Nếu đã có dữ liệu tải trước từ trang cũ truyền sang, đổ thẳng vào bảng luôn!
+    if (preLoadedAuctions != null) {
+      tableView.setItems(FXCollections.observableArrayList(preLoadedAuctions));
+      // Đổ xong thì xóa đi để lần sau bấm nút "Tìm kiếm/Refresh" nó vẫn tự gọi lại server
+      preLoadedAuctions = null;
+      return;
+    }
+
+    // Nếu không có dữ liệu tải trước (Ví dụ: người dùng bấm F5 hoặc tự quay lại trang), chạy code gọi Server cũ của bạn
     ClientService.getInstance().sendRequest("GET_ALL_AUCTIONS", "")
-            .thenAccept(response -> Platform.runLater(() -> {
-              if ("SUCCESS".equals(response.getType())) {
-                String json = ClientService.getInstance().getGson().toJson(response.getData());
-                List<Auction> list = ClientService.getInstance().getGson()
-                        .fromJson(json, new com.google.gson.reflect.TypeToken<List<Auction>>(){}.getType());
-                if (list != null) {
-                  list.removeIf(a -> a == null || !"RUNNING".equals(a.getStatus()));
-                } else {
-                  list = List.of();
-                }
-                tableView.setItems(FXCollections.observableArrayList(list));
-              }
-            }));
+        .thenAccept(response -> Platform.runLater(() -> {
+          if ("SUCCESS".equals(response.getType())) {
+            String json = ClientService.getInstance().getGson().toJson(response.getData());
+            List<Auction> list = ClientService.getInstance().getGson()
+                .fromJson(json, new com.google.gson.reflect.TypeToken<List<Auction>>(){}.getType());
+
+            if (list != null) {
+              tableView.setItems(FXCollections.observableArrayList(list));
+            }
+          }
+        }));
   }
 }

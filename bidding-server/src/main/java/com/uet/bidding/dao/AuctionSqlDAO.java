@@ -679,4 +679,55 @@ public class AuctionSqlDAO {
     }
     return 0;
   }
+
+  /** * Hàm tối ưu hóa đặc biệt dành riêng cho Sảnh đấu giá (AuctionListController).
+   * Chống lỗi N+1 Query và Over-fetching.
+   */
+  /**
+   * Hàm tối ưu hóa đặc biệt dành riêng cho Sảnh đấu giá (AuctionListController).
+   * Chống lỗi N+1 Query và kết hợp hoàn hảo với ItemFactory.
+   */
+  public List<Auction> getFastRunningAuctionsForHall() {
+    List<Auction> list = new ArrayList<>();
+    // Câu SQL lấy dữ liệu cần thiết (5 cột yêu cầu) + ID để map sau này
+    String sql = """
+        SELECT
+            a.id, a.current_price, a.start_time, a.end_time, a.status,
+            a.bid_increment, a.anti_snipe_window_minutes, a.anti_snipe_extension_minutes,
+            i.id AS item_id, i.name AS item_name, i.type AS item_type, i.city AS item_city,
+            (SELECT COUNT(*) FROM auction_registrations ar WHERE ar.auction_id = a.id) AS reg_count
+        FROM auctions a
+        INNER JOIN items i ON a.item_id = i.id
+        WHERE a.status = 'RUNNING'
+        ORDER BY a.start_time DESC
+        """;
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+
+      while (rs.next()) {
+        // Khởi tạo Item cơ bản mà không cần gọi Factory phức tạp
+        // Lưu ý: Item chỉ cần các field hiển thị trên TableView
+        Item item = new Electronics(rs.getInt("item_id"), rs.getString("item_name"), null, null, null, 0, null, 0);
+        item.setType(rs.getString("item_type"));
+        item.setCity(rs.getString("item_city"));
+
+        Auction auction = new Auction(
+            rs.getInt("id"),
+            item,
+            rs.getBigDecimal("current_price"),
+            rs.getTimestamp("start_time").toLocalDateTime(),
+            rs.getTimestamp("end_time").toLocalDateTime(),
+            rs.getString("status")
+        );
+        auction.setRegisteredCount(rs.getInt("reg_count"));
+        list.add(auction);
+      }
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi truy vấn sảnh đấu giá: " + e.getMessage());
+    }
+    return list;
+  }
+
 }

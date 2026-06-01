@@ -107,6 +107,12 @@ public abstract class Item extends Entity {
     this.city = city;
   }
 
+  // ─── GETTER & SETTER CHO TYPE ─────────────────────────────────────
+
+  public void setType(String type) {
+    this.type = type;
+  }
+
   public boolean isInAuction() {
     return inAuction;
   }

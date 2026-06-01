@@ -110,6 +110,8 @@
 
 .table-row-cell {
     -fx-background-color: white;
+    /* 🌟 THÊM DÒNG NÀY: Ép tất cả hàng (kể cả hàng trống) cao 45px bằng nhau */
+    -fx-cell-size: 45px;
 }
 
 .table-row-cell:odd {

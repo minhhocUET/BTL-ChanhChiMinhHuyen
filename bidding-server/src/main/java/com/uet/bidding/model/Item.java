@@ -8,7 +8,7 @@ public abstract class Item extends Entity {
   private String description; // Mô tả chi tiết sản phẩm
   private BigDecimal startingPrice; // Giá khởi điểm
   private String imagePath; // legacy; prefer imageData
-  private String imageData; // base64 image stored in DB
+  private String imageData; // base64 image from DB
   private int sellerId;
   private String city;
   // Thuộc tính quan trọng để kiểm soát luồng đấu giá
@@ -105,6 +105,12 @@ public abstract class Item extends Entity {
 
   public void setCity(String city) {
     this.city = city;
+  }
+
+  // ─── GETTER & SETTER CHO TYPE ─────────────────────────────────────
+
+  public void setType(String type) {
+    this.type = type;
   }
 
   public boolean isInAuction() {

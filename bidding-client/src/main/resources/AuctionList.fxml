@@ -97,7 +97,7 @@
 
                                 </VBox>
 
-                                <Button mnemonicParsing="false" onAction="#handleLogout" style="-fx-background-color: #ef4444;                                                -fx-text-fill: white;                                                -fx-background-radius: 10;                                                -fx-pref-width: 110px;                                                -fx-pref-height: 38px;" text="Đăng xuất">
+                                <Button mnemonicParsing="false" onAction="#handleLogout" style="-fx-background-color: #ef4444; -fx-text-fill: white; -fx-background-radius: 10; -fx-pref-width: 110px; -fx-pref-height: 38px;" text="Đăng xuất">
 
                                     <font>
                                         <Font name="System Bold" size="13.0" />
@@ -117,9 +117,9 @@
 
                     <children>
 
-                        <ComboBox fx:id="cityComboBox" prefHeight="42.0" prefWidth="300.0" promptText="Chọn Tỉnh/Thành phố..." style="-fx-background-radius: 8;                                          -fx-border-radius: 8;" />
+                        <ComboBox fx:id="cityComboBox" prefHeight="42.0" prefWidth="300.0" promptText="Chọn Tỉnh/Thành phố..." style="-fx-background-radius: 8; -fx-border-radius: 8;" />
 
-                        <Button mnemonicParsing="false" onAction="#handleSearch" style="-fx-background-color: #f26f8d;                                        -fx-text-fill: white;                                        -fx-background-radius: 8;                                        -fx-pref-height: 42px;                                        -fx-pref-width: 120px;" text="Tìm kiếm">
+                        <Button mnemonicParsing="false" onAction="#handleSearch" style="-fx-background-color: #f26f8d; -fx-text-fill: white; -fx-background-radius: 8; -fx-pref-height: 42px; -fx-pref-width: 120px;" text="Tìm kiếm">
 
                             <font>
                                 <Font name="System Bold" size="14.0" />
@@ -131,15 +131,18 @@
 
                 </HBox>
 
-                <TableView fx:id="tableView" prefHeight="320.0" prefWidth="860.0">
+                <TableView fx:id="tableView" prefWidth="860.0" VBox.vgrow="ALWAYS">
 
                     <columns>
+                        <TableColumn fx:id="colCity" prefWidth="130.0" minWidth="130.0" maxWidth="130.0" text="Thành phố" resizable="false" />
 
-                        <TableColumn fx:id="colCity" prefWidth="144.99999237060547" text="Thành phố" />
-                        <TableColumn fx:id="colItemType" prefWidth="122.20001220703125" text="Loại sản phẩm" />
-                        <TableColumn fx:id="colProductName" prefWidth="360.20001220703125" text="Tên sản phẩm" />
-                        <TableColumn fx:id="colRegistered" prefWidth="153.0" text="Số người đăng ký" />
+                        <TableColumn fx:id="colItemType" prefWidth="130.0" minWidth="130.0" maxWidth="130.0" text="Loại sản phẩm" resizable="false" />
 
+                        <TableColumn fx:id="colProductName" prefWidth="290.0" text="Tên sản phẩm" resizable="false" />
+
+                        <TableColumn fx:id="colRegistered" prefWidth="160.0" minWidth="160.0" maxWidth="160.0" text="Số người đăng ký" resizable="false" />
+
+                        <TableColumn fx:id="colAction" prefWidth="150.0" minWidth="150.0" maxWidth="150.0" text="Thao tác" resizable="false" />
                     </columns>
 
                 </TableView>

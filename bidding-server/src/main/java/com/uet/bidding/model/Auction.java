@@ -27,6 +27,8 @@ public class Auction {
   private List<Bid> bidHistory = new ArrayList<>();
   private transient List<AuctionObserver> observers = new ArrayList<>();
 
+  public Auction() {
+  }
   /**
    * CONSTRUCTOR 1: Dùng khi nạp dữ liệu từ Database hoặc File (Cần ID)
    */

@@ -151,7 +151,7 @@ public class ProductDetailController {
       btnRegister.setDisable(false);
       btnRegister.setText("Đăng ký");
       if (lblRegisterHint != null) {
-        lblRegisterHint.setText("Đăng ký để tham gia phiên (bắt buộc trước khi đặt giá nếu server yêu cầu).");
+        lblRegisterHint.setText("Đăng ký để tham gia phiên (bắt buộc trước khi đặt giá).");
       }
     }
   }
@@ -255,21 +255,36 @@ public class ProductDetailController {
   }
   @FXML
   public void handleEnableAutoBid(ActionEvent event) {
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null) return;
+
     try {
       String clean = txtMaxAutoBid.getText().replaceAll("[^\\d.]", "");
       if (clean.isEmpty()) {
         showAlert("Lỗi", "Nhập trần giá auto-bid!", Alert.AlertType.WARNING);
         return;
       }
-      BigDecimal max = new BigDecimal(clean);
-      new AutoBidService().enable(currentAuction.getId(), max)
-              .thenAccept(res -> javafx.application.Platform.runLater(() -> {
-                if ("SUCCESS".equals(res.getType())) {
-                  showAlert("OK", "Đã bật auto-bid!", Alert.AlertType.INFORMATION);
-                } else {
-                  showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
-                }
-              }));
+
+      BigDecimal maxLimit = new BigDecimal(clean);
+      BigDecimal userBalance = customer.getBalance();
+
+      // ✅ KIỂM TRA: Trần giá tự động không được lớn hơn số dư hiện có
+      if (maxLimit.compareTo(userBalance) > 0) {
+        NumberFormat fmt = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+        showAlert("Vượt quá hạn mức tài chính",
+            "Trần giá Auto-bid không được vượt quá số dư ví (" + fmt.format(userBalance) + " VNĐ).",
+            Alert.AlertType.ERROR);
+        return;
+      }
+
+      new AutoBidService().enable(currentAuction.getId(), maxLimit)
+          .thenAccept(res -> javafx.application.Platform.runLater(() -> {
+            if ("SUCCESS".equals(res.getType())) {
+              showAlert("OK", "Đã bật auto-bid!", Alert.AlertType.INFORMATION);
+            } else {
+              showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
+            }
+          }));
     } catch (Exception e) {
       showAlert("Lỗi", e.getMessage(), Alert.AlertType.ERROR);
     }
@@ -334,8 +349,8 @@ public class ProductDetailController {
 
     if (customer == null || !customer.hasCompleteProfile()) {
       showAlert("⚠️ Thông báo",
-              customer == null ? "Vui lòng đăng nhập!" : "Hoàn thiện hồ sơ trước!",
-              Alert.AlertType.WARNING);
+          customer == null ? "Vui lòng đăng nhập!" : "Hoàn thiện hồ sơ trước!",
+          Alert.AlertType.WARNING);
       return;
     }
 
@@ -347,26 +362,50 @@ public class ProductDetailController {
       }
 
       BigDecimal bidAmount = new BigDecimal(cleanText);
-      if (bidAmount.compareTo(currentAuction.getCurrentPrice()) <= 0) {
-        showAlert("Lỗi", "Giá phải cao hơn giá hiện tại!", Alert.AlertType.ERROR);
+      BigDecimal currentPrice = currentAuction.getCurrentPrice();
+
+      // 🎯 Lấy Bước giá (Bid Increment) từ dữ liệu phiên đấu giá
+      // Lưu ý: Đảm bảo class Auction của bạn có thuộc tính bidIncrement (tương ứng cột bid_increment trong DB)
+      BigDecimal stepPrice = currentAuction.getBidIncrement();
+      BigDecimal minRequired = currentPrice.add(stepPrice);
+
+      // ✅ KIỂM TRA 1: Giá đặt phải >= Giá hiện tại + Bước giá
+      if (bidAmount.compareTo(minRequired) < 0) {
+        NumberFormat fmt = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+        showAlert("Giá đặt không hợp lệ",
+            "Mức giá tối thiểu tiếp theo phải là: " + fmt.format(minRequired) + " VNĐ\n" +
+                "(Bao gồm giá hiện tại + bước giá " + fmt.format(stepPrice) + " VNĐ)",
+            Alert.AlertType.ERROR);
         return;
       }
 
+      // ✅ KIỂM TRA 2: Số dư tài khoản phải đủ để trả mức giá đã đặt
+      BigDecimal userBalance = customer.getBalance();
+      if (bidAmount.compareTo(userBalance) > 0) {
+        NumberFormat fmt = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
+        showAlert("Số dư không đủ",
+            "Số dư hiện tại của bạn (" + fmt.format(userBalance) + " VNĐ) không đủ để đặt mức giá này.\n" +
+                "Vui lòng nạp thêm tiền!",
+            Alert.AlertType.ERROR);
+        return;
+      }
+
+      // Nếu vượt qua các bước kiểm tra, tiến hành gửi lệnh lên Server
       new BidderService().placeBid(currentAuction.getId(), bidAmount)
-              .thenAccept(response -> javafx.application.Platform.runLater(() -> {
-                if ("SUCCESS".equals(response.getType())) {
-                  txtBidAmount.clear();
-                  showAlert("Thành công", "Đã gửi giá lên server!", Alert.AlertType.INFORMATION);
-                  loadBidHistory(); // PHẦN 5
-                } else {
-                  showAlert("Lỗi", String.valueOf(response.getData()), Alert.AlertType.ERROR);
-                }
-              }))
-              .exceptionally(ex -> {
-                javafx.application.Platform.runLater(() ->
-                        showAlert("Lỗi", ex.getMessage(), Alert.AlertType.ERROR));
-                return null;
-              });
+          .thenAccept(response -> javafx.application.Platform.runLater(() -> {
+            if ("SUCCESS".equals(response.getType())) {
+              txtBidAmount.clear();
+              showAlert("Thành công", "Đã gửi giá lên server!", Alert.AlertType.INFORMATION);
+              loadBidHistory();
+            } else {
+              showAlert("Lỗi", String.valueOf(response.getData()), Alert.AlertType.ERROR);
+            }
+          }))
+          .exceptionally(ex -> {
+            javafx.application.Platform.runLater(() ->
+                showAlert("Lỗi", ex.getMessage(), Alert.AlertType.ERROR));
+            return null;
+          });
 
     } catch (NumberFormatException e) {
       showAlert("Lỗi", "Số tiền không hợp lệ!", Alert.AlertType.WARNING);

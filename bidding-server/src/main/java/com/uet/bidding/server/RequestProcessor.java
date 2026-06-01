@@ -41,9 +41,22 @@ public class RequestProcessor {
         case "ADD_BALANCE" -> handleAddBalance(msg, handler);
         case "BID" -> handleBid(msg, handler);
         case "GET_BID_HISTORY" -> handleGetBidHistory(msg, handler);
-        case "GET_ALL_AUCTIONS" ->
-            handler.sendResponse("SUCCESS", auctionSqlDAO.getRunningAuctionsForHall(), reqId);
-        case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
+        case "GET_ALL_AUCTIONS" -> {
+          try {
+            // 1. Lấy danh sách từ Database
+            List<Auction> runningAuctions = auctionSqlDAO.getRunningAuctionsForHall();
+
+            // 2. 🎯 Cực kỳ quan trọng: Lặp qua và lấy số lượng đăng ký thực tế gán vào object
+            for (Auction a : runningAuctions) {
+              a.setRegisteredCount(auctionSqlDAO.getRegistrationCount(a.getId()));
+            }
+
+            // 3. Trả về Client
+            handler.sendResponse("SUCCESS", runningAuctions, reqId);
+          } catch (Exception e) {
+            handler.sendResponse("ERROR", "Lỗi tải sảnh đấu giá: " + e.getMessage(), reqId);
+          }
+        }        case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
         case "SELLER_END_AUCTION" -> handleSellerEndAuction(msg, handler);
         case "SET_AUTO_BID" -> handleSetAutoBid(msg, handler);
         case "REMOVE_AUTO_BID" -> handleRemoveAutoBid(msg, handler);
@@ -461,41 +474,44 @@ public class RequestProcessor {
       if (!(handler.getLoggedInUser() instanceof Customer seller)) {
         throw new UserException("Phải đăng nhập bằng tài khoản người bán!");
       }
+
       String[] parts = String.valueOf(msg.getData()).trim().split("\\s+");
-      if (parts.length < 3) {
-        throw new UserException("Sai cú pháp! Gửi: itemId startPrice durationMinutes");
+      if (parts.length < 4) { // Yêu cầu đủ 4 tham số: id, giá, phút, bước giá
+        throw new UserException("Sai cú pháp! Gửi: itemId startPrice durationMinutes bidIncrement");
       }
+
       int itemId = Integer.parseInt(parts[0]);
       BigDecimal startPrice = new BigDecimal(parts[1]);
       int durationMinutes = Integer.parseInt(parts[2]);
-      // Lấy Bước giá (tham số thứ 4). Nếu Client dùng code cũ không gửi thì mặc định là 10.000
-      BigDecimal bidIncrement = (parts.length >= 4) ? new BigDecimal(parts[3]) : new BigDecimal("10000");
-      if (durationMinutes <= 0) {
-        throw new UserException("Thời lượng phiên phải lớn hơn 0 phút!");
-      }
-      if (startPrice.compareTo(BigDecimal.ZERO) <= 0) {
-        throw new UserException("Giá khởi điểm phải lớn hơn 0!");
-      }
+      BigDecimal bidIncrement = new BigDecimal(parts[3]);
+
+      // Validation
+      if (durationMinutes <= 0) throw new UserException("Thời lượng phải > 0 phút!");
+      if (startPrice.compareTo(BigDecimal.ZERO) <= 0) throw new UserException("Giá khởi điểm phải > 0!");
+      if (bidIncrement.compareTo(BigDecimal.ZERO) <= 0) throw new UserException("Bước giá phải > 0!");
 
       Item item = new ItemSqlDAO().findById(itemId);
-      if (item.getSellerId() != seller.getId()) {
-        throw new UserException("Sản phẩm không thuộc kho hàng của bạn!");
-      }
-      if (item.isInAuction()) {
-        throw new UserException("Sản phẩm đang trong một phiên đấu giá khác!");
-      }
+      if (item == null) throw new UserException("Không tìm thấy sản phẩm!");
+      if (item.getSellerId() != seller.getId()) throw new UserException("Sản phẩm không thuộc sở hữu của bạn!");
+      if (item.isInAuction()) throw new UserException("Sản phẩm đang trong phiên đấu giá khác!");
 
-      item.setStartingPrice(startPrice);
+      // Tính EndTime
       LocalDateTime endTime = LocalDateTime.now().plusMinutes(durationMinutes);
-      Auction created = AuctionManager.getInstance().createAuction(item, endTime);
-      created.setBidIncrement(bidIncrement); // Hãy đảm bảo class Auction của bạn có hàm setBidIncrement()
-      created.setStatus("RUNNING");
-      created.setRegisteredCount(0);
 
+      // 🎯 THAY ĐỔI QUAN TRỌNG: Truyền đầy đủ tham số vào Manager
+      // Không set lẻ tẻ ở ngoài nữa
+      Auction created = AuctionManager.getInstance().createAuction(item, startPrice, endTime, bidIncrement);
+
+      // Thông báo thành công
       Server.broadcast(new NetworkMessage("NEW_AUCTION_ADDED", created));
       Server.broadcast(new NetworkMessage("AUCTION_UPDATED", created));
+
       handler.sendResponse("SUCCESS", created, msg.getRequestId());
+
+      System.out.println("[Server] Đã tạo phiên #" + created.getId() + " với bước giá " + bidIncrement);
+
     } catch (Exception e) {
+      e.printStackTrace();
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }
   }
@@ -544,11 +560,27 @@ public class RequestProcessor {
         handler.sendResponse("SUCCESS", "ALREADY_REGISTERED", msg.getRequestId());
         return;
       }
+      // 1. Lưu xuống Database (Đảm bảo hàm này trong DAO có thực thi INSERT)
       auctionSqlDAO.registerBidderForAuction(auctionId, customer.getId());
+
+      // 2. Lấy con số chính xác vừa được lưu trong Database ra
+      int newCount = auctionSqlDAO.getRegistrationCount(auctionId);
+
+      // 3. 🎯 ĐỒNG BỘ VÀO RAM: Bắt buộc để những người dùng khác khi gọi AuctionManager nhận được số đúng
+      Auction cachedAuction = AuctionManager.getInstance().getAuction(auctionId);
+      if (cachedAuction != null) {
+        cachedAuction.setRegisteredCount(newCount);
+      }
+
+      // 4. Trả phản hồi về cho người vừa đăng ký
       Auction updated = auctionSqlDAO.findById(auctionId);
-      updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auctionId));
+      updated.setRegisteredCount(newCount);
+
       Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
       handler.sendResponse("SUCCESS", updated, msg.getRequestId());
+
+      System.out.println("✅ [Server] User " + customer.getUsername() + " đã đăng ký phiên #" + auctionId + ". Tổng số: " + newCount);
+
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());
     }

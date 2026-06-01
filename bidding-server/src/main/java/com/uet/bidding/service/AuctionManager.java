@@ -55,17 +55,15 @@ public class AuctionManager {
 
   // ================== QUẢN LÝ PHIÊN ĐẤU GIÁ ==================
 
-  public Auction createAuction(Item item, LocalDateTime endTime) throws UserException {
-    BigDecimal startPrice = item.getStartingPrice();
+  // Trong file AuctionManager.java
+  public Auction createAuction(Item item, BigDecimal startPrice, LocalDateTime endTime, BigDecimal bidIncrement) throws UserException {
     LocalDateTime startTime = LocalDateTime.now();
-    BigDecimal defaultIncrement = BigDecimal.valueOf(5.00); // Bước giá mặc định
 
-    // 1. Giao cho DAO lưu vào DB và lấy ID tự sinh
-    Auction newAuction = auctionSqlDAO.createAuction(item, startPrice, startTime, endTime, defaultIncrement);
+    // 🎯 Gọi DAO với giá trị thực tế từ người dùng, KHÔNG dùng default 5.00 nữa
+    Auction newAuction = auctionSqlDAO.createAuction(item, startPrice, startTime, endTime, bidIncrement);
 
-    // 2. Lưu vào bộ nhớ RAM (cache)
+    // Lưu vào cache RAM của Server
     addAuctionInternal(newAuction);
-    System.out.println("Đã tạo phiên đấu giá mới ID: " + newAuction.getId());
 
     return newAuction;
   }
@@ -112,9 +110,16 @@ public class AuctionManager {
       throw new InvalidBidException("Không tìm thấy phiên đấu giá trên hệ thống!");
     }
 
+
     // Chấp nhận cả việc kiểm tra RUNNING để chặt chẽ hơn
     if (!"RUNNING".equals(auction.getStatus())) {
       throw new AuctionClosedException("Phiên đấu giá không ở trạng thái sẵn sàng (Đã đóng hoặc chưa mở)!");
+    }
+    // 🎯 2. BỔ SUNG: Kiểm tra người dùng đã đăng ký tham gia chưa (Chặn đứng từ vòng gửi xe)
+    // Lưu ý: customer.getId() lấy ra ID của người dùng đang thực hiện đặt giá
+    boolean isRegistered = auctionSqlDAO.isUserRegistered(auctionId, customer.getId());
+    if (!isRegistered) {
+      throw new InvalidBidException("Bạn chưa đăng ký tham gia phiên đấu giá này! Vui lòng ấn nút đăng ký trước.");
     }
 
     // 2. Lấy hoặc tạo Lock an toàn

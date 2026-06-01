@@ -93,7 +93,7 @@ public class Customer extends User {
     this.address = address;
   }
 
-  public BigDecimal getBalance() {
+  public  BigDecimal getBalance() {
     return balance;
   }
 

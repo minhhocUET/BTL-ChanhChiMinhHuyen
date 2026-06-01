@@ -54,8 +54,6 @@ public class AuctionLogicTest {
     Field auctionsField = AuctionManager.class.getDeclaredField("auctions");
     auctionsField.setAccessible(true);
     ((ConcurrentHashMap<Integer, Auction>) auctionsField.get(manager)).put(auction.getId(), auction);
-
-    // Lock sẽ được Manager tự tạo nhờ hàm computeIfAbsent/putIfAbsent bạn đã viết
   }
 
   /**
@@ -65,7 +63,7 @@ public class AuctionLogicTest {
   void testBidOnClosedAuction() throws Exception {
     int auctionId = 555;
 
-    // 1. Tạo một món đồ Xe cộ bằng Factory mới (rất gọn)
+    // 1. Tạo một món đồ Xe cộ bằng Factory
     Item item = ItemFactory.createVehicle(
         "Tesla Model S", "Electric Car", new BigDecimal("50000"), "tesla.jpg", 1,
         "Tesla", "Model S", 2023, 0.0, "Electric", "Battery"
@@ -78,7 +76,7 @@ public class AuctionLogicTest {
     auction.setId(auctionId);
     auction.setStatus("FINISHED");
 
-    // 2. Nạp vào RAM của Manager để qua bước check 'auction == null'
+    // 3. Nạp vào RAM
     injectAuctionToRam(auction);
 
     Customer customer = new Customer();
@@ -89,7 +87,7 @@ public class AuctionLogicTest {
       manager.placeBid(auctionId, customer, new BigDecimal("60000"));
     });
 
-    // Xác nhận rằng DAO chưa bao giờ được gọi (vì đã bị chặn từ RAM)
+    // Xác nhận rằng DAO chưa bao giờ được gọi (vì bị chặn từ RAM)
     verify(mockDao, never()).placeBid(anyInt(), any(), any());
   }
 
@@ -98,31 +96,37 @@ public class AuctionLogicTest {
    */
   @Test
   void testAuctionDataIntegrity() throws UserException {
-    // 1. Tạo đồ điện tử bằng Factory
+    // 1. Tạo đồ điện tử
     Item item = ItemFactory.createElectronics(
         "iPhone 15", "New", new BigDecimal("1000"), "ip15.jpg", 1, "Apple", 12
     );
     item.setId(108);
 
+    // 🎯 CHUẨN BỊ ĐẦY ĐỦ THAM SỐ NHƯ BẢN FIX DAO MỚI NHẤT
+    BigDecimal startPrice = new BigDecimal("1000");
+    BigDecimal bidIncrement = new BigDecimal("50");
     LocalDateTime endTime = LocalDateTime.now().plusHours(2);
 
-    // 2. Giả lập khi Manager gọi DAO để tạo auction
-    Auction mockAuction = new Auction(item, new BigDecimal("1000"), LocalDateTime.now(), endTime);
+    // 2. Giả lập đối tượng DAO sẽ trả về
+    Auction mockAuction = new Auction(item, startPrice, LocalDateTime.now(), endTime);
     mockAuction.setId(888);
     mockAuction.setStatus("RUNNING");
+    mockAuction.setBidIncrement(bidIncrement);
 
-    when(mockDao.createAuction(eq(item), any(), any(), eq(endTime), any()))
+    // 🎯 SỬA CHỮ KÝ MOCKITO: Khi dùng any() thì các tham số khác phải bọc trong eq()
+    when(mockDao.createAuction(eq(item), eq(startPrice), any(LocalDateTime.class), eq(endTime), eq(bidIncrement)))
         .thenReturn(mockAuction);
 
-    // 3. Thực thi hành động
-    Auction created = manager.createAuction(item, endTime);
+    // 3. 🎯 GỌI HÀM VỚI CHỮ KÝ MỚI NHẤT
+    Auction created = manager.createAuction(item, startPrice, endTime, bidIncrement);
 
     // 4. Kiểm tra kết quả
     assertNotNull(created);
     assertEquals(888, created.getId());
-    assertEquals(0, new BigDecimal("1000").compareTo(created.getCurrentPrice()));
+    assertEquals(0, startPrice.compareTo(created.getCurrentPrice()));
     assertEquals("RUNNING", created.getStatus());
     assertEquals("ELECTRONICS", created.getItem().getType());
+    assertEquals(0, bidIncrement.compareTo(created.getBidIncrement()));
   }
 
   @Test
@@ -137,12 +141,13 @@ public class AuctionLogicTest {
 
     injectAuctionToRam(auction);
 
-    // Mock DAO xử lý đặt giá thành công
     Customer customer = new Customer();
     customer.setUsername("UserA");
     BigDecimal bidAmount = new BigDecimal("600");
 
+    // Mock DAO xử lý đặt giá thành công
     when(mockDao.placeBid(eq(auctionId), any(Customer.class), eq(bidAmount))).thenReturn(true);
+
     // Mock DAO trả về auction đã cập nhật giá sau khi đặt thành công
     Auction updatedAuction = new Auction(item, bidAmount, auction.getStartTime(), auction.getEndTime());
     updatedAuction.setId(auctionId);
@@ -154,6 +159,7 @@ public class AuctionLogicTest {
 
     // Kiểm tra
     assertTrue(result);
+    // Lưu ý: So sánh BigDecimal nên dùng compareTo == 0 thay vì assertEquals trực tiếp
     assertEquals(0, bidAmount.compareTo(manager.getAuction(auctionId).getCurrentPrice()));
     verify(mockDao, times(1)).placeBid(eq(auctionId), any(), eq(bidAmount));
   }

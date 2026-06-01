@@ -61,8 +61,13 @@ public class AuctionSqlDAO {
       stmt.setBigDecimal(2, startPrice);
       stmt.setTimestamp(3, Timestamp.valueOf(startTime));
       stmt.setTimestamp(4, Timestamp.valueOf(endTime));
-      stmt.setBigDecimal(5, bidIncrement != null ? bidIncrement : BigDecimal.valueOf(5.00));
+      // 🎯 ĐIỂM CẦN SỬA: Đảm bảo không để mặc định là 5 hay 1000 nếu bidIncrement có giá trị
+      // Nếu người dùng không nhập (null), ta mới để mặc định (ví dụ 10.000 VNĐ)
+      BigDecimal finalIncrement = (bidIncrement != null && bidIncrement.compareTo(BigDecimal.ZERO) > 0)
+          ? bidIncrement
+          : BigDecimal.valueOf(10000);
 
+      stmt.setBigDecimal(5, finalIncrement);
       stmt.executeUpdate();
 
       try (ResultSet gk = stmt.getGeneratedKeys()) {
@@ -248,9 +253,20 @@ public class AuctionSqlDAO {
     if (!"RUNNING".equals(auction.getStatus())) {
       throw new AuctionClosedException("Phiên đấu giá chưa bắt đầu hoặc đã kết thúc.");
     }
-    if (bidAmount.compareTo(auction.getCurrentPrice()) <= 0) {
-      throw new InvalidBidException("Giá đặt phải cao hơn giá hiện tại ("
-          + auction.getCurrentPrice() + ").");
+
+    // 🎯 FIX LỖI 1 VNĐ: Kiểm tra bước giá tối thiểu
+    BigDecimal bidIncrement = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(1000);
+    BigDecimal minRequiredBid = auction.getCurrentPrice().add(bidIncrement);
+
+    if (bidAmount.compareTo(minRequiredBid) < 0) {
+      throw new InvalidBidException("Giá đặt không hợp lệ. Mức giá tối thiểu tiếp theo phải là "
+          + minRequiredBid + " VNĐ (Giá hiện tại + bước giá " + bidIncrement + ")");
+    }
+    // 🎯 FIX LỖI SỐ DƯ: Kiểm tra tiền trong ví người dùng
+    // Lưu ý: Phải lấy balance mới nhất từ DB, không dùng biến trong object bidder vì có thể cũ
+    BigDecimal currentBalance = userDao.getBalance(bidder.getId());
+    if (bidAmount.compareTo(currentBalance) > 0) {
+      throw new InvalidBidException("Số dư tài khoản không đủ. Bạn cần " + bidAmount + " VNĐ nhưng hiện chỉ có " + currentBalance + " VNĐ.");
     }
 
     try (Connection conn = DatabaseConnection.getConnection()) {
@@ -460,6 +476,20 @@ public class AuctionSqlDAO {
     return 0;
   }
 
+  public boolean isUserRegistered(int auctionId, int bidderId) {
+    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND bidder_id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      stmt.setInt(2, bidderId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        return rs.next(); // Nếu tìm thấy bản ghi nghĩa là đã đăng ký
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return false;
+  }
   private Auction mapAuction(ResultSet rs) throws SQLException, UserException {
     int id = rs.getInt("id");
     int itemId = rs.getInt("item_id");
@@ -532,15 +562,34 @@ public class AuctionSqlDAO {
             int autoBidId = rs.getInt("id");
             int bidderId = rs.getInt("bidder_id");
             BigDecimal maxBid = rs.getBigDecimal("max_bid");
-            BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(5);
+
+            // 🎯 FIX LỖI "5 VNĐ": Lấy bước giá chuẩn của Seller (mặc định 1000 nếu chưa có)
+            BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(1000);
             BigDecimal nextBid = auction.getCurrentPrice().add(increment);
+
+            // Kiểm tra xem mức giá tự động tiếp theo có vượt quá "Trần" của người dùng không
             if (nextBid.compareTo(maxBid) <= 0) {
+
+              // 🎯 FIX LỖI SỐ DƯ: Kiểm tra xem người cài Auto-bid còn đủ tiền không
+              BigDecimal autoBidderBalance = userDao.getBalance(bidderId);
+              if (nextBid.compareTo(autoBidderBalance) > 0) {
+                // Nếu không đủ tiền, tự động tắt Auto-bid của người này để tránh làm treo luồng
+                String deactivateSql = "UPDATE auto_bids SET is_active = FALSE WHERE id = ?";
+                try(PreparedStatement ps = conn.prepareStatement(deactivateSql)) {
+                  ps.setInt(1, autoBidId);
+                  ps.executeUpdate();
+                }
+                continue; // Bỏ qua người này, xét người tiếp theo
+              }
+
               User user = userDao.findById(bidderId);
               if (!(user instanceof Customer)) continue;
               Customer bidder = (Customer) user;
-              // Insert auto bid
+
+              // Thực hiện đặt giá tự động
               int newBidId = bidDao.addBid(conn, auction.getId(), bidderId, nextBid, LocalDateTime.now());
-              // Log auto bid
+
+              // Log lại việc auto-bid đã nhảy giá
               String logSql = "INSERT INTO auto_bid_logs (auto_bid_id, triggered_bid_id, bid_amount) VALUES (?, ?, ?)";
               try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {
                 logStmt.setInt(1, autoBidId);
@@ -548,12 +597,14 @@ public class AuctionSqlDAO {
                 logStmt.setBigDecimal(3, nextBid);
                 logStmt.executeUpdate();
               }
-              // Cập nhật auction
+
+              // Cập nhật giá mới nhất cho Auction
               auction.setCurrentPrice(nextBid);
               auction.setHighestBidder(bidder);
               updateAuctionInTransaction(conn, auction);
+
               changed = true;
-              break; // restart do-while loop
+              break; // Có giá mới, phải scan lại từ đầu danh sách auto-bid
             }
           }
         }
@@ -735,6 +786,21 @@ public class AuctionSqlDAO {
       System.err.println("❌ Lỗi truy vấn sảnh đấu giá: " + e.getMessage());
     }
     return list;
+  }
+  public boolean registerForAuction(int auctionId, int userId) throws UserException {
+    String sql = "INSERT INTO auction_registrations (auction_id, user_id) VALUES (?, ?)";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auctionId);
+      stmt.setInt(2, userId);
+      int rows = stmt.executeUpdate();
+      return rows > 0;
+    } catch (SQLException e) {
+      if (e.getErrorCode() == 1062) { // Mã lỗi Duplicate entry của MySQL
+        throw new UserException("ALREADY_REGISTERED");
+      }
+      throw new UserException("Lỗi lưu đăng ký: " + e.getMessage());
+    }
   }
 
 }

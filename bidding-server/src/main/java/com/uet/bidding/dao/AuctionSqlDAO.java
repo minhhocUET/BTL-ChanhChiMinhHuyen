@@ -325,6 +325,13 @@ public class AuctionSqlDAO {
       }
       // Cập nhật trạng thái item
       itemDao.setInAuction(auction.getItem().getId(), false);
+      // 2. ÉP TRẠNG THÁI SẢN PHẨM THÀNH "AUCTION_ENDED" TRONG DATABASE
+      String updateItemSql = "UPDATE items SET status = 'AUCTION_ENDED' WHERE id = ?";
+      try (PreparedStatement stmtItem = conn.prepareStatement(updateItemSql)) {
+        stmtItem.setInt(1, auction.getItem().getId());
+        stmtItem.executeUpdate();
+      }
+
       conn.commit();
 
       // Tạo transaction cho người thắng và người bán (có thể sau commit)

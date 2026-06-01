@@ -110,9 +110,13 @@ public class SellerProductDetailController implements Initializable {
 
     updateStatusUi(auction);
     if (auction.getEndTime() != null && "RUNNING".equals(auction.getStatus())) {
+      // Đảm bảo chữ đếm ngược hiện màu đỏ/đen bình thường khi đang chạy
+      if (lblCountdown != null) lblCountdown.setStyle("-fx-text-fill: #e81e63; -fx-font-weight: bold;");
       startCountdown(auction.getEndTime());
     } else if (lblCountdown != null) {
       lblCountdown.setText("ĐÃ KẾT THÚC");
+      // Đổi chữ "ĐÃ KẾT THÚC" thành màu xám cho hợp lý
+      lblCountdown.setStyle("-fx-text-fill: #9e9e9e; -fx-font-weight: bold;");
     }
 
     loadBidHistory();
@@ -127,14 +131,25 @@ public class SellerProductDetailController implements Initializable {
 
   private void updateStatusUi(Auction auction) {
     String status = auction.getStatus() != null ? auction.getStatus() : "UNKNOWN";
+    boolean running = "RUNNING".equals(status) || "OPEN".equals(status);
+
     if (lblStatusBadge != null) {
       lblStatusBadge.setText(status);
+      // Thay đổi màu sắc của nhãn góc trái tùy theo trạng thái
+      if (running) {
+        lblStatusBadge.setStyle("-fx-background-color: #e81e63; -fx-background-radius: 5; -fx-text-fill: white; -fx-padding: 5 10;");
+      } else {
+        lblStatusBadge.setStyle("-fx-background-color: #9e9e9e; -fx-background-radius: 5; -fx-text-fill: white; -fx-padding: 5 10;");
+      }
     }
-    boolean running = "RUNNING".equals(status) || "OPEN".equals(status);
+
     if (btnEndEarly != null) {
       btnEndEarly.setDisable(!running);
       btnEndEarly.setVisible(running);
+      // DÒNG QUAN TRỌNG: Thu hồi lại không gian trống của nút khi nó bị ẩn
+      btnEndEarly.setManaged(running);
     }
+
     if (lblSellerHint != null) {
       if (running) {
         lblSellerHint.setText("Bạn có thể dừng sớm phiên. Người mua không thể đặt giá sau khi kết thúc.");

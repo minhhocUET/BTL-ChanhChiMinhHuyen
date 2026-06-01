@@ -106,48 +106,63 @@ public class SellerDashboardController {
     if (invColType != null) invColType.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getType()));
     if (invColCity != null) invColCity.setCellValueFactory(cd -> new SimpleStringProperty(nullSafeCity(cd.getValue())));
 
-    // Logic hiển thị trạng thái (Kho hàng quản lý tập trung)
+    // 🔥 CẬP NHẬT 1: ÉP GIAO DIỆN HIỂN THỊ "ĐÃ KẾT THÚC" DỰA VÀO DANH SÁCH FINISHED AUCTIONS
     if (invColStatus != null) {
       invColStatus.setCellValueFactory(cellData -> {
         Item item = cellData.getValue();
         if (item == null) return new SimpleStringProperty("-");
+
         String status = item.getStatus();
         boolean inAuction = item.isInAuction();
 
+        // KHIÊN BẢO VỆ 1: Kiểm tra chéo xem Item này có nằm trong danh sách phiên đã kết thúc chưa
+        boolean isActuallyFinished = false;
+        if (finishedAuctions != null) {
+          for (Auction a : finishedAuctions) {
+            if (a.getItem() != null && a.getItem().getId() == item.getId()) {
+              isActuallyFinished = true;
+              break;
+            }
+          }
+        }
+
+        // Nếu đã từng kết thúc, ÉP HIỂN THỊ ĐÃ KẾT THÚC (Mặc kệ Database báo gì)
+        if (isActuallyFinished || "AUCTION_ENDED".equals(status) || "SOLD".equals(status) || "UNSOLD".equals(status)) {
+          return new SimpleStringProperty("🔒 Đã kết thúc");
+        }
+
+        // Các trạng thái bình thường khác
         if ("REJECTED".equals(status)) return new SimpleStringProperty("❌ Bị từ chối");
         if ("PENDING".equals(status)) return new SimpleStringProperty("⏳ Chờ duyệt");
         if (inAuction) return new SimpleStringProperty("🔥 Đang đấu giá");
         if ("APPROVED".equals(status)) return new SimpleStringProperty("✅ Sẵn sàng");
+
         return new SimpleStringProperty(status);
       });
     }
 
-    // 🔥 CẤU HÌNH CỘT NÚT XÓA SẢN PHẨM 🔥
+    // Cấu hình nút Xóa
     if (invColAction != null) {
       invColAction.setCellFactory(param -> new TableCell<Item, Void>() {
         private final Button deleteBtn = new Button("🗑 Xóa");
         {
-          // Style màu đỏ hồng hợp với theme fce4ec của bạn
           deleteBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 4 10 4 10;");
           deleteBtn.setOnAction(event -> {
             Item currentItem = getTableView().getItems().get(getIndex());
-            handleDeleteProductAction(currentItem); // Gọi hàm xử lý xóa
+            handleDeleteProductAction(currentItem);
           });
         }
-
         @Override
         protected void updateItem(Void item, boolean empty) {
           super.updateItem(item, empty);
-          if (empty) {
-            setGraphic(null);
-          } else {
-            setGraphic(deleteBtn);
-          }
+          setGraphic(empty ? null : deleteBtn);
         }
       });
     }
 
     inventoryTable.setItems(inventoryItems);
+
+    // 🔥 CẬP NHẬT 2: SỬA LOGIC CLICK ĐÚP CHẶN HOÀN TOÀN TẠO PHIÊN MỚI NẾU ĐÃ KẾT THÚC
     inventoryTable.setRowFactory(tv -> {
       TableRow<Item> row = new TableRow<>();
       row.setOnMouseClicked(event -> {
@@ -157,27 +172,53 @@ public class SellerDashboardController {
 
           String status = selected.getStatus();
 
-          // 1. Nếu đã duyệt (APPROVED) và chưa lên sàn -> Cho phép tạo đấu giá
-          if ("APPROVED".equals(status) && !selected.isInAuction()) {
-            openCreateAuctionPage(selected);
+          // KHIÊN BẢO VỆ 2: Quét xem có nằm trong danh sách đã kết thúc không
+          Auction matchedFinishedAuction = null;
+          if (finishedAuctions != null) {
+            for (Auction a : finishedAuctions) {
+              if (a.getItem() != null && a.getItem().getId() == selected.getId()) {
+                matchedFinishedAuction = a;
+                break;
+              }
+            }
           }
-          // 2. Nếu đang trong phiên đấu giá (inAuction = true)
-          else if (selected.isInAuction()) {
-            showAlert(Alert.AlertType.WARNING, "Chú ý", "Sản phẩm đang trong phiên đấu giá!");
+
+          // NẾU ĐÃ KẾT THÚC -> MỞ CHI TIẾT (HOẶC CHẶN), DỪNG LẠI NGAY!
+          if (matchedFinishedAuction != null || "AUCTION_ENDED".equals(status) || "SOLD".equals(status) || "UNSOLD".equals(status)) {
+            if (matchedFinishedAuction != null) {
+              openSellerProductDetail(matchedFinishedAuction); // Mở chi tiết phiên cũ
+            } else {
+              showAlert(Alert.AlertType.INFORMATION, "Phiên đã đóng", "Sản phẩm này đã trải qua đấu giá và kết thúc.");
+            }
+            return; // Lệnh return này cực kỳ quan trọng, nó sẽ cắt đứt luồng tạo phiên mới
           }
-          // 3. 🎯 THÊM CASE NÀY: Nếu sản phẩm bị Admin từ chối (REJECTED)
-          else if ("REJECTED".equals(status)) {
-            showAlert(Alert.AlertType.ERROR, "Từ chối duyệt",
-                "Sản phẩm này đã bị Admin từ chối phê duyệt.\nBạn có thể bấm nút XÓA để đăng lại sản phẩm mới.");
+
+          // Nếu đang đấu giá -> Tìm và mở
+          if (selected.isInAuction()) {
+            Auction activeAuction = null;
+            if (activeAuctions != null) {
+              for (Auction a : activeAuctions) {
+                if (a.getItem() != null && a.getItem().getId() == selected.getId()) {
+                  activeAuction = a;
+                  break;
+                }
+              }
+            }
+            if (activeAuction != null) {
+              openSellerProductDetail(activeAuction);
+            } else {
+              showAlert(Alert.AlertType.WARNING, "Chú ý", "Sản phẩm đang trong phiên đấu giá!");
+            }
+            return;
           }
-          // 4. Nếu sản phẩm vẫn đang chờ duyệt (PENDING)
-          else if ("PENDING".equals(status)) {
-            showAlert(Alert.AlertType.INFORMATION, "Đang chờ duyệt",
-                "Sản phẩm đang trong danh sách chờ Admin phê duyệt.");
-          }
-          // 5. Dự phòng trường hợp trạng thái khác bất thường
-          else {
-            showAlert(Alert.AlertType.INFORMATION, "Thông báo", "Sản phẩm không đủ điều kiện lên sàn đấu giá.");
+
+          // CÁC TRẠNG THÁI CÒN LẠI
+          if ("APPROVED".equals(status)) {
+            openCreateAuctionPage(selected); // TẠO PHIÊN MỚI (Chỉ khi qua được hết các cửa ải trên)
+          } else if ("REJECTED".equals(status)) {
+            showAlert(Alert.AlertType.ERROR, "Từ chối duyệt", "Sản phẩm này đã bị Admin từ chối phê duyệt.");
+          } else if ("PENDING".equals(status)) {
+            showAlert(Alert.AlertType.INFORMATION, "Đang chờ duyệt", "Sản phẩm đang chờ Admin phê duyệt.");
           }
         }
       });
@@ -191,8 +232,17 @@ public class SellerDashboardController {
 
     setupAuctionColumns(finishedColCity, finishedColType, finishedColName, finishedColPrice, finishedColRegistered);
     finishedAuctionsTable.setItems(finishedAuctions);
-    finishedAuctionsTable.setRowFactory(this::createAuctionRow);
+    finishedAuctionsTable.setRowFactory(tv -> {
+      TableRow<Auction> row = new TableRow<>();
+      row.setOnMouseClicked(event -> {
+        if (event.getClickCount() == 2 && (!row.isEmpty())) {
+          openSellerProductDetail(row.getItem());
+        }
+      });
+      return row;
+    });
   }
+
 
   public void applyAuctionUpdate(Auction updated) {
     if (updated == null) return;
@@ -242,7 +292,7 @@ public class SellerDashboardController {
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource("/SellerProductDetail.fxml"));
       Parent root = loader.load();
-      ProductDetailController ctrl = loader.getController();
+      SellerProductDetailController ctrl = loader.getController();
       ctrl.setAuctionData(auction);
       Stage stage = (Stage) sellerTabPane.getScene().getWindow();
       stage.setScene(new Scene(root));

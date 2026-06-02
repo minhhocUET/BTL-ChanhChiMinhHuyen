@@ -28,6 +28,13 @@
                                         <Font name="System Bold" size="24.0"/>
                                     </font>
                                 </Label>
+
+                                <Label fx:id="lblShopDescription" text="Đang tải mô tả cửa hàng..." textFill="#ad1457" wrapText="true">
+                                    <font>
+                                        <Font name="System Italic" size="14.0"/>
+                                    </font>
+                                </Label>
+
                                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                                     <children>
                                         <Label fx:id="lblAvgRating" style="-fx-font-weight: bold; -fx-font-size: 18px;"
@@ -81,9 +88,8 @@
                     </content>
                 </ScrollPane>
 
-                <VBox fx:id="addReviewBox" managed="false" spacing="10.0"
-                      style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 12; -fx-border-color: #f8bbd0; -fx-border-radius: 12;"
-                      visible="false">
+                <VBox fx:id="addReviewBox" spacing="10.0"
+                      style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 12; -fx-border-color: #f8bbd0; -fx-border-radius: 12;">
                     <children>
                         <Label style="-fx-font-weight: bold; -fx-text-fill: #880e4f;" text="Viết đánh giá của bạn"/>
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
@@ -104,9 +110,9 @@
                                 style="-fx-background-color: #fdf2f4; -fx-text-fill: #e91e63; -fx-border-color: #e91e63; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;"
                                 text="📋 Danh sách đấu giá"/>
 
-                        <Button fx:id="btnAddReview" mnemonicParsing="false" onAction="#handleOpenAddReview" prefHeight="40.0" prefWidth="220.0"
+                        <Button fx:id="btnBackToManagement" mnemonicParsing="false" onAction="#handleBackToManagement" prefHeight="40.0" prefWidth="220.0"
                                 style="-fx-background-color: #ffffff; -fx-text-fill: #e91e63; -fx-border-color: #e91e63; -fx-border-radius: 10; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;"
-                                text="📝 Thêm đánh giá" />
+                                text="⬅ Quay lại" />
                     </children>
                 </HBox>
             </children>

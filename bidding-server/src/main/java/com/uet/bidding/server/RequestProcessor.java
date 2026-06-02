@@ -144,22 +144,16 @@ public class RequestProcessor {
         // 🎯 ĐOẠN CODE ĐÃ ĐƯỢC FIX HẾT LỖI BÁO ĐỎ:
         case "CHECK_AUTO_BID" -> {
           try {
-            // 1. Ép kiểu an toàn bằng Number (tránh lỗi xung đột giữa Double/Integer của Gson)
             int auctionId = ((Number) msg.getData()).intValue();
-
-            // 2. Kiểm tra xem user hiện tại đã đăng nhập ở handler chưa
             if (handler.getLoggedInUser() != null) {
               int bidderId = handler.getLoggedInUser().getId();
-
-              // 3. Gọi DAO lấy giá trần đang active dưới database
               BigDecimal maxBid = auctionSqlDAO.getActiveAutoBidMaxPrice(auctionId, bidderId);
 
+              // 🎯 ĐỔI THÀNH TYPE RIÊNG BIỆT THEO ĐÚNG CONVENTION DỰ ÁN CỦA BẠN
               if (maxBid != null) {
-                // Trả về SUCCESS kèm số tiền trần và reqId cho Client khớp luồng
-                handler.sendResponse("SUCCESS", maxBid.toString(), reqId);
+                handler.sendResponse("CHECK_AUTO_BID_SUCCESS", maxBid.toString(), reqId);
               } else {
-                // Nếu chưa bật thì data trả về là null
-                handler.sendResponse("SUCCESS", null, reqId);
+                handler.sendResponse("CHECK_AUTO_BID_SUCCESS", null, reqId);
               }
             } else {
               handler.sendResponse("ERROR", "Yêu cầu đăng nhập trước!", reqId);
@@ -820,9 +814,9 @@ public class RequestProcessor {
 
       // 2. Khởi tạo các DAO để truy vấn thông tin Shop và Sản phẩm
       com.uet.bidding.dao.UserSqlDAO userDAO = new com.uet.bidding.dao.UserSqlDAO();
-      com.uet.bidding.dao.AuctionSqlDAO auctionDAO = new com.uet.bidding.dao.AuctionSqlDAO(); // 🌟 Thêm DAO này để lấy tên sản phẩm
+      com.uet.bidding.dao.AuctionSqlDAO auctionDAO = new com.uet.bidding.dao.AuctionSqlDAO(); // 🌟 DAO để lấy tên sản phẩm
 
-      // 3. 🌟 GIẢI QUYẾT VẤN ĐỀ 1: Tìm thông tin Tên Shop và Mô tả Shop thực tế
+      // 3. Tìm thông tin Tên Shop và Mô tả Shop thực tế
       String storeName = "Cửa hàng #" + sellerId; // Tên mặc định nếu không tìm thấy
       String storeDescription = "Chưa có mô tả cho cửa hàng này.";
 
@@ -836,6 +830,7 @@ public class RequestProcessor {
             if (dbStoreName != null && !dbStoreName.trim().isEmpty() && !"-".equals(dbStoreName)) {
               storeName = dbStoreName;
             }
+            // 🎯 ĐÃ SỬA: Kiểm tra kỹ chuỗi mô tả từ Database
             if (dbDesc != null && !dbDesc.trim().isEmpty() && !"-".equals(dbDesc)) {
               storeDescription = dbDesc;
             }
@@ -860,9 +855,32 @@ public class RequestProcessor {
         reviewJson.addProperty("comment", r.getComment());
         reviewJson.addProperty("createdAt", r.getCreatedAt() != null ? r.getCreatedAt().toString() : "");
 
-        // Lấy tên người đánh giá thật từ Object Reviewer
+        // 🎯 ĐÃ SỬA: Logic tìm tên sản phẩm thực tế từ Database thông qua AuctionSqlDAO
+        String realProductName = "Sản phẩm đấu giá"; // Giá trị dự phòng mặc định
+        try {
+          // Lấy Id cuộc đấu giá/sản phẩm từ review.
+          // 💡 LƯU Ý: Nếu trong Model Review của bạn đặt tên hàm là getAuctionId() hoặc getItemId() thì bạn đổi lại cho đúng nhé!
+          int auctionId = r.getAuctionId();
+
+          com.uet.bidding.model.Auction auction = auctionDAO.findById(auctionId);
+          if (auction != null && auction.getItem() != null) {
+            String itemName = auction.getItem().getName();
+            if (itemName != null && !itemName.trim().isEmpty()) {
+              realProductName = itemName;
+            }
+          }
+        } catch (Exception ex) {
+          System.err.println("❌ Lỗi khi lấy tên sản phẩm cho Review #" + r.getId() + ": " + ex.getMessage());
+        }
+
+        // Đút tên sản phẩm thật tìm được vào JSON gửi về Client
+        reviewJson.addProperty("productName", realProductName);
+
+        // Tên người đánh giá thật từ r.getReviewerName()
         String reviewerName = "Người dùng ẩn danh";
-        if (r.getReviewer() != null) {
+        if (r.getReviewerName() != null && !r.getReviewerName().trim().isEmpty() && !"-".equals(r.getReviewerName())) {
+          reviewerName = r.getReviewerName();
+        } else if (r.getReviewer() != null) {
           if (r.getReviewer().getFullName() != null && !r.getReviewer().getFullName().trim().isEmpty() && !"-".equals(r.getReviewer().getFullName())) {
             reviewerName = r.getReviewer().getFullName();
           } else {
@@ -870,20 +888,6 @@ public class RequestProcessor {
           }
         }
         reviewJson.addProperty("reviewerName", reviewerName);
-
-        // 🌟 GIẢI QUYẾT VẤN ĐỀ 2: Lấy TÊN SẢN PHẨM THẬT từ Database
-        String realProductName = "Sản phẩm đấu giá #" + r.getAuctionId(); // Tên phòng hờ
-        try {
-          // Gọi lên AuctionSqlDAO để lấy thông tin phiên và mặt hàng
-          com.uet.bidding.model.Auction auction = auctionDAO.findById(r.getAuctionId());          if (auction != null && auction.getItem() != null) {
-            if (auction != null && auction.getItem() != null) {
-              realProductName = auction.getItem().getName(); // 📦 Lấy chính xác tên sản phẩm thực tế từ DB!
-            }
-          }
-        } catch (Exception ex) {
-          System.err.println("❌ Lỗi lấy tên sản phẩm thực tế cho phiên #" + r.getAuctionId() + ": " + ex.getMessage());
-        }
-        reviewJson.addProperty("productName", realProductName);
 
         richReviewsArray.add(reviewJson);
       }

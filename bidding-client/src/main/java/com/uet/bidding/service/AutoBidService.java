@@ -23,4 +23,9 @@ public class AutoBidService {
   public CompletableFuture<NetworkMessage> disable(int auctionId) {
     return client.sendRequest("REMOVE_AUTO_BID", String.valueOf(auctionId));
   }
+
+  // 🎯 ĐÃ BỔ SUNG: Hàm giao tiếp mạng dành riêng cho việc check trạng thái
+  public CompletableFuture<NetworkMessage> checkStatus(int auctionId) {
+    return client.sendRequest("CHECK_AUTO_BID", auctionId);
+  }
 }

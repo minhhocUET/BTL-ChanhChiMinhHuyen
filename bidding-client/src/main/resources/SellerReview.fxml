@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.*?>
+
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="850.0"
             style="-fx-background-color: #fce4ec;" xmlns="http://javafx.com/javafx/17.0.12"
             fx:controller="com.uet.bidding.controller.SellerReviewController">
@@ -22,16 +23,23 @@
                             </children>
                         </StackPane>
 
-                        <VBox alignment="CENTER_LEFT" spacing="5.0">
+                        <VBox alignment="CENTER_LEFT" spacing="6.0" HBox.hgrow="ALWAYS">
                             <children>
-                                <Label text="Chuyên bán đồ cute và phụ kiện màu" textFill="#880e4f">
+                                <Label fx:id="lblShopName" text="Tên Cửa Hàng" textFill="#880e4f">
                                     <font>
                                         <Font name="System Bold" size="20.0"/>
                                     </font>
                                 </Label>
-                                <HBox alignment="BASELINE_LEFT" spacing="8.0">
+
+                                <Label fx:id="lblShopDesc" text="Mô tả: Đang tải mô tả cửa hàng..." textFill="#747d8c">
+                                    <font>
+                                        <Font name="System Italic" size="13.0"/>
+                                    </font>
+                                </Label>
+
+                                <HBox alignment="BASELINE_LEFT" spacing="8.0" style="-fx-padding: 2 0 0 0;">
                                     <children>
-                                        <Label text="4.8" textFill="#c2185b">
+                                        <Label fx:id="lblAvgRating" text="0.0" textFill="#c2185b">
                                             <font>
                                                 <Font name="System Bold" size="28.0"/>
                                             </font>
@@ -41,18 +49,17 @@
                                                 <Font name="System Bold" size="18.0"/>
                                             </font>
                                         </Label>
-                                        <Label text="⭐⭐⭐⭐★" textFill="#e91e63" style="-fx-font-size: 20px;"/>
+                                        <Label fx:id="lblStarRating" text="⭐⭐⭐⭐⭐" textFill="#e91e63" style="-fx-font-size: 20px;"/>
                                     </children>
                                 </HBox>
-                                <Label text="(128 đánh giá)" textFill="#888888">
+
+                                <Label fx:id="lblReviewCount" text="(0 đánh giá)" textFill="#888888">
                                     <font>
                                         <Font size="14.0"/>
                                     </font>
                                 </Label>
                             </children>
                         </VBox>
-
-                        <Region HBox.hgrow="ALWAYS"/>
 
                         <GridPane hgap="10.0" vgap="5.0">
                             <columnConstraints>
@@ -69,29 +76,24 @@
                             </rowConstraints>
                             <children>
                                 <Label text="5 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                                <ProgressBar progress="0.8" prefWidth="150.0" style="-fx-accent: #e91e63;"
-                                             GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-                                <Label text="102" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                                <ProgressBar fx:id="bar5" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                <Label fx:id="lblCount5" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
 
                                 <Label text="4 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                                <ProgressBar progress="0.14" prefWidth="150.0" style="-fx-accent: #e91e63;"
-                                             GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                                <Label text="18" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+                                <ProgressBar fx:id="bar4" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                <Label fx:id="lblCount4" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
 
                                 <Label text="3 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                                <ProgressBar progress="0.04" prefWidth="150.0" style="-fx-accent: #e91e63;"
-                                             GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                                <Label text="5" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                                <ProgressBar fx:id="bar3" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                <Label fx:id="lblCount3" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
 
                                 <Label text="2 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                                <ProgressBar progress="0.015" prefWidth="150.0" style="-fx-accent: #e91e63;"
-                                             GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-                                <Label text="2" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                                <ProgressBar fx:id="bar2" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                <Label fx:id="lblCount2" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
 
                                 <Label text="1 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-                                <ProgressBar progress="0.005" prefWidth="150.0" style="-fx-accent: #e91e63;"
-                                             GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-                                <Label text="1" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
+                                <ProgressBar fx:id="bar1" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                <Label fx:id="lblCount1" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
                             </children>
                         </GridPane>
                     </children>

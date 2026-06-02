@@ -109,20 +109,38 @@ public class UserProfileController implements Initializable {
 
     // 2. Kiểm tra hợp lệ (Validation)
     if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || address.isEmpty()) {
-      showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ thông tin cá nhân và ngân hàng!");
+      showAlert(Alert.AlertType.ERROR, "Thiếu thông tin", "Vui lòng nhập đầy đủ thông tin cá nhân!");
       return;
     }
 
-    // 3. Tạo một bản sao hoặc cập nhật tạm thời vào object gửi đi
-    // Đừng cập nhật thẳng vào currentUser ngay nếu bạn muốn an toàn tuyệt đối
+    // 3. Cập nhật tạm thời vào object gửi đi
     currentUser.setFullName(fullName);
     currentUser.setEmail(email);
     currentUser.setPhone(phone);
     currentUser.setAddress(address);
     currentUser.setProfileComplete(true);
 
-    // 4. CHỈ GỬI YÊU CẦU
-    ClientService.getInstance().sendRequest("UPDATE_PROFILE", currentUser);
+    // 4. GỬI YÊU CẦU VÀ LẮNG NGHE PHẢN HỒI TỪ SERVER
+    ClientService.getInstance()
+        .sendRequest("UPDATE_PROFILE", currentUser)
+        .thenAccept(response -> {
+          Platform.runLater(() -> {
+            // Kiểm tra tín hiệu xử lý thành công từ Backend
+            if ("UPDATE_PROFILE_SUCCESS".equals(response.getType())) {
+              showAlert(Alert.AlertType.INFORMATION, "Thành công", "Cập nhật thông tin cá nhân thành công! 🎉");
+            } else {
+              // Hiển thị lỗi từ Server (nếu có, ví dụ: Trùng Email, sai định dạng...)
+              String errorDetail = response.getData() != null ? String.valueOf(response.getData()) : "Không rõ nguyên nhân.";
+              showAlert(Alert.AlertType.ERROR, "Thất bại", "Không thể lưu thông tin: " + errorDetail);
+            }
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() ->
+              showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", "Không thể kết nối đến máy chủ để lưu thông tin: " + ex.getMessage())
+          );
+          return null;
+        });
   }
 
   @FXML

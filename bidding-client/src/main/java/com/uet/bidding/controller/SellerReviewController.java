@@ -39,6 +39,8 @@ public class SellerReviewController {
   @FXML private Label lblAvgRating;
   @FXML private Label lblStarRating;
   @FXML private Label lblReviewCount;
+  @FXML private javafx.scene.image.ImageView sellerReviewAvatarImageView;
+  @FXML private Label sellerReviewAvatarLabel;
   @FXML private ProgressBar bar5, bar4, bar3, bar2, bar1;
   @FXML private Label lblCount5, lblCount4, lblCount3, lblCount2, lblCount1;
 
@@ -52,6 +54,27 @@ public class SellerReviewController {
 
     ReviewContext.set(0, customer.getId(), storeName, false);
     if(lblShopName != null) lblShopName.setText(storeName);
+    // 🎯 1. CẮT TRÒN AVATAR
+    if (sellerReviewAvatarImageView != null) {
+      Circle clip = new Circle();
+      clip.centerXProperty().bind(sellerReviewAvatarImageView.fitWidthProperty().divide(2));
+      clip.centerYProperty().bind(sellerReviewAvatarImageView.fitHeightProperty().divide(2));
+      clip.radiusProperty().bind(sellerReviewAvatarImageView.fitWidthProperty().divide(2));
+      sellerReviewAvatarImageView.setClip(clip);
+    }
+
+    // 🎯 2. LOAD ẢNH TỪ SESSION
+    if (sellerReviewAvatarLabel != null && sellerReviewAvatarImageView != null) {
+      String initial = "?";
+      if (storeName != null && !storeName.isEmpty()) {
+        initial = storeName.substring(0, 1).toUpperCase();
+      }
+      sellerReviewAvatarLabel.setText(initial);
+
+      // Lấy URL và load!
+      String avatarUrl = customer.getSellerProfile().getAvatarData();
+      com.uet.bidding.util.ImageUtils.loadAvatarFromUrl(sellerReviewAvatarImageView, sellerReviewAvatarLabel, avatarUrl);
+    }
 
     loadReviews();
   }

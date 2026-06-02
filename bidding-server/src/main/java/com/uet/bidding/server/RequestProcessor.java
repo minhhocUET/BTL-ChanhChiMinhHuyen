@@ -143,22 +143,16 @@ public class RequestProcessor {
         // 🎯 ĐOẠN CODE ĐÃ ĐƯỢC FIX HẾT LỖI BÁO ĐỎ:
         case "CHECK_AUTO_BID" -> {
           try {
-            // 1. Ép kiểu an toàn bằng Number (tránh lỗi xung đột giữa Double/Integer của Gson)
             int auctionId = ((Number) msg.getData()).intValue();
-
-            // 2. Kiểm tra xem user hiện tại đã đăng nhập ở handler chưa
             if (handler.getLoggedInUser() != null) {
               int bidderId = handler.getLoggedInUser().getId();
-
-              // 3. Gọi DAO lấy giá trần đang active dưới database
               BigDecimal maxBid = auctionSqlDAO.getActiveAutoBidMaxPrice(auctionId, bidderId);
 
+              // 🎯 ĐỔI THÀNH TYPE RIÊNG BIỆT THEO ĐÚNG CONVENTION DỰ ÁN CỦA BẠN
               if (maxBid != null) {
-                // Trả về SUCCESS kèm số tiền trần và reqId cho Client khớp luồng
-                handler.sendResponse("SUCCESS", maxBid.toString(), reqId);
+                handler.sendResponse("CHECK_AUTO_BID_SUCCESS", maxBid.toString(), reqId);
               } else {
-                // Nếu chưa bật thì data trả về là null
-                handler.sendResponse("SUCCESS", null, reqId);
+                handler.sendResponse("CHECK_AUTO_BID_SUCCESS", null, reqId);
               }
             } else {
               handler.sendResponse("ERROR", "Yêu cầu đăng nhập trước!", reqId);

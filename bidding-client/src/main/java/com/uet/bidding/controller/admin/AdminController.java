@@ -10,6 +10,7 @@ import javafx.stage.Stage;
 
 public class AdminController {
 
+
   @FXML
   private StackPane mainContent; // Vùng sẽ thay đổi nội dung khi bấm nút
 

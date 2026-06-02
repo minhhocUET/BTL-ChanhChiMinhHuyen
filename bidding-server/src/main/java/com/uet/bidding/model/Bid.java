@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class Bid {
 
   private Bidder bidder; // Thay vì chỉ lưu String tên, ta lưu cả Object Bidder
+  private String bidderUsername;
   private BigDecimal amount; // Đổi từ double sang BigDecimal
   private LocalDateTime time;
 
@@ -26,6 +27,14 @@ public class Bid {
 
   public Bidder getBidder() {
     return bidder;
+  }
+
+  public String getBidderUsername() {
+    return bidderUsername;
+  }
+
+  public void setBidderUsername(String bidderUsername) {
+    this.bidderUsername = bidderUsername;
   }
 
   public LocalDateTime getTime() {

@@ -5,6 +5,9 @@ import com.uet.bidding.exception.InvalidBidException;
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.*;
 import com.uet.bidding.service.AuctionManager;
+import com.uet.bidding.service.ProxyBidResolver;
+import com.uet.bidding.service.ProxyBidResolver.Outcome;
+import com.uet.bidding.service.ProxyBidResolver.Participant;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -236,8 +239,8 @@ public class AuctionSqlDAO {
           logSniping(conn, auctionId, now, newEnd, auction.getAntiSnipeExtensionMinutes(), newBidId);
         }
 
-        // 4. Auto-bid trigger
-        triggerAutoBids(conn, auction, newBidId);
+        // 4. Proxy bids — one-shot resolution inside the same transaction
+        applyProxyBidResolution(conn, auction);
 
         conn.commit();
         return true;
@@ -309,6 +312,20 @@ public class AuctionSqlDAO {
   // =========================================================
 
   public void setAutoBid(int auctionId, int bidderId, BigDecimal maxBid) throws UserException {
+    Auction auction = findById(auctionId);
+    if (!"RUNNING".equals(auction.getStatus())) {
+      throw new UserException("Phiên đấu giá không đang diễn ra!");
+    }
+    BigDecimal balance = userDao.getBalance(bidderId);
+    if (maxBid.compareTo(balance) > 0) {
+      throw new UserException("Số dư không đủ cho trần Auto-bid. Bạn có " + balance + " VNĐ.");
+    }
+    BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(1000);
+    BigDecimal minRequired = auction.getCurrentPrice().add(increment);
+    if (maxBid.compareTo(minRequired) < 0) {
+      throw new UserException("Trần giá phải >= " + minRequired + " VNĐ (giá hiện tại + bước giá).");
+    }
+
     String sql = """
         INSERT INTO auto_bids (auction_id, bidder_id, max_bid, is_active)
         VALUES (?, ?, ?, TRUE)
@@ -323,6 +340,31 @@ public class AuctionSqlDAO {
       stmt.executeUpdate();
     } catch (SQLException e) {
       throw new UserException("Lỗi đăng ký auto-bid: " + e.getMessage());
+    }
+    resolveProxyBidsForAuction(auctionId);
+  }
+
+  /**
+   * Recomputes proxy competition in one server pass (e.g. after SET_AUTO_BID).
+   */
+  public void resolveProxyBidsForAuction(int auctionId) throws UserException {
+    Auction auction = findById(auctionId);
+    if (!"RUNNING".equals(auction.getStatus())) {
+      return;
+    }
+    try (Connection conn = DatabaseConnection.getConnection()) {
+      conn.setAutoCommit(false);
+      try {
+        applyProxyBidResolution(conn, auction);
+        conn.commit();
+      } catch (SQLException | UserException ex) {
+        conn.rollback();
+        throw new UserException("Lỗi xử lý đấu giá tự động: " + ex.getMessage());
+      } finally {
+        conn.setAutoCommit(true);
+      }
+    } catch (SQLException e) {
+      throw new UserException("Lỗi kết nối DB: " + e.getMessage());
     }
   }
 
@@ -488,73 +530,136 @@ public class AuctionSqlDAO {
     }
   }
 
-  private void triggerAutoBids(Connection conn, Auction auction, int triggeringBidId) throws SQLException, UserException {
-    boolean changed;
-    do {
-      changed = false;
-      String sql = """
-          SELECT ab.id, ab.bidder_id, ab.max_bid
-          FROM auto_bids ab
-          WHERE ab.auction_id = ? AND ab.is_active = TRUE
-            AND ab.bidder_id != ?
-          ORDER BY ab.max_bid DESC
-          """;
-      try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setInt(1, auction.getId());
-        stmt.setInt(2, auction.getHighestBidder().getId());
-        try (ResultSet rs = stmt.executeQuery()) {
-          while (rs.next()) {
-            int autoBidId = rs.getInt("id");
-            int bidderId = rs.getInt("bidder_id");
-            BigDecimal maxBid = rs.getBigDecimal("max_bid");
+  /**
+   * One-pass proxy bid resolution: load ceilings, compute final price (second-price rule),
+   * write at most runner-up + winner bids — no iterative client/server rounds.
+   */
+  private void applyProxyBidResolution(Connection conn, Auction auction) throws SQLException, UserException {
+    BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(1000);
+    int leaderId = auction.getHighestBidder() != null ? auction.getHighestBidder().getId() : -1;
+    BigDecimal currentPrice = auction.getCurrentPrice();
 
-            // 🎯 FIX LỖI "5 VNĐ": Lấy bước giá chuẩn của Seller (mặc định 1000 nếu chưa có)
-            BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(1000);
-            BigDecimal nextBid = auction.getCurrentPrice().add(increment);
+    List<Participant> participants = new ArrayList<>();
+    java.util.Map<Integer, BigDecimal> ceilingByBidder = new java.util.HashMap<>();
 
-            // Kiểm tra xem mức giá tự động tiếp theo có vượt quá "Trần" của người dùng không
-            if (nextBid.compareTo(maxBid) <= 0) {
-
-              // 🎯 FIX LỖI SỐ DƯ: Kiểm tra xem người cài Auto-bid còn đủ tiền không
-              BigDecimal autoBidderBalance = userDao.getBalance(bidderId);
-              if (nextBid.compareTo(autoBidderBalance) > 0) {
-                // Nếu không đủ tiền, tự động tắt Auto-bid của người này để tránh làm treo luồng
-                String deactivateSql = "UPDATE auto_bids SET is_active = FALSE WHERE id = ?";
-                try(PreparedStatement ps = conn.prepareStatement(deactivateSql)) {
-                  ps.setInt(1, autoBidId);
-                  ps.executeUpdate();
-                }
-                continue; // Bỏ qua người này, xét người tiếp theo
-              }
-
-              User user = userDao.findById(bidderId);
-              if (!(user instanceof Customer)) continue;
-              Customer bidder = (Customer) user;
-
-              // Thực hiện đặt giá tự động
-              int newBidId = bidDao.addBid(conn, auction.getId(), bidderId, nextBid, LocalDateTime.now());
-
-              // Log lại việc auto-bid đã nhảy giá
-              String logSql = "INSERT INTO auto_bid_logs (auto_bid_id, triggered_bid_id, bid_amount) VALUES (?, ?, ?)";
-              try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {
-                logStmt.setInt(1, autoBidId);
-                logStmt.setInt(2, newBidId);
-                logStmt.setBigDecimal(3, nextBid);
-                logStmt.executeUpdate();
-              }
-
-              // Cập nhật giá mới nhất cho Auction
-              auction.setCurrentPrice(nextBid);
-              auction.setHighestBidder(bidder);
-              updateAuctionInTransaction(conn, auction);
-
-              changed = true;
-              break; // Có giá mới, phải scan lại từ đầu danh sách auto-bid
-            }
-          }
+    String sql = """
+        SELECT id, bidder_id, max_bid FROM auto_bids
+        WHERE auction_id = ? AND is_active = TRUE
+        """;
+    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setInt(1, auction.getId());
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          int bidderId = rs.getInt("bidder_id");
+          BigDecimal maxBid = rs.getBigDecimal("max_bid");
+          ceilingByBidder.merge(bidderId, maxBid, BigDecimal::max);
         }
       }
-    } while (changed);
+    }
+
+    if (leaderId >= 0) {
+      ceilingByBidder.merge(leaderId, currentPrice, BigDecimal::max);
+    }
+
+    for (var entry : ceilingByBidder.entrySet()) {
+      participants.add(new Participant(entry.getKey(), entry.getValue()));
+    }
+
+    Outcome outcome = ProxyBidResolver.resolve(
+        currentPrice,
+        increment,
+        leaderId,
+        participants,
+        bidderId -> {
+          try {
+            return userDao.getBalance(bidderId);
+          } catch (UserException e) {
+            return BigDecimal.ZERO;
+          }
+        });
+
+    if (outcome == null || !outcome.changesPrice(currentPrice, leaderId)) {
+      deactivateExhaustedAutoBids(conn, auction.getId(), currentPrice);
+      return;
+    }
+
+    if (outcome.runnerUpBid != null && outcome.runnerUpBidderId >= 0
+        && outcome.runnerUpBidderId != outcome.winnerId) {
+      User runnerUser = userDao.findById(outcome.runnerUpBidderId);
+      if (runnerUser instanceof Customer runner) {
+        BigDecimal runnerBalance = userDao.getBalance(outcome.runnerUpBidderId);
+        if (outcome.runnerUpBid.compareTo(runnerBalance) <= 0) {
+          int runnerBidId = bidDao.addBid(conn, auction.getId(), outcome.runnerUpBidderId,
+              outcome.runnerUpBid, LocalDateTime.now());
+          logAutoBidForBidder(conn, auction.getId(), outcome.runnerUpBidderId, outcome.runnerUpBid, runnerBidId);
+        }
+      }
+    }
+
+    User winnerUser = userDao.findById(outcome.winnerId);
+    if (!(winnerUser instanceof Customer winner)) {
+      return;
+    }
+    BigDecimal winnerBalance = userDao.getBalance(outcome.winnerId);
+    if (outcome.finalPrice.compareTo(winnerBalance) > 0) {
+      deactivateAutoBid(conn, auction.getId(), outcome.winnerId);
+      return;
+    }
+
+    int winnerBidId = bidDao.addBid(conn, auction.getId(), outcome.winnerId, outcome.finalPrice, LocalDateTime.now());
+    logAutoBidForBidder(conn, auction.getId(), outcome.winnerId, outcome.finalPrice, winnerBidId);
+
+    auction.setCurrentPrice(outcome.finalPrice);
+    auction.setHighestBidder(winner);
+    updateAuctionInTransaction(conn, auction);
+    deactivateExhaustedAutoBids(conn, auction.getId(), outcome.finalPrice);
+  }
+
+  private void logAutoBidForBidder(Connection conn, int auctionId, int bidderId, BigDecimal amount,
+      int triggeredBidId) throws SQLException {
+    String findAuto = "SELECT id FROM auto_bids WHERE auction_id = ? AND bidder_id = ? AND is_active = TRUE LIMIT 1";
+    try (PreparedStatement ps = conn.prepareStatement(findAuto)) {
+      ps.setInt(1, auctionId);
+      ps.setInt(2, bidderId);
+      try (ResultSet rs = ps.executeQuery()) {
+        if (!rs.next()) return;
+        int autoBidId = rs.getInt("id");
+        insertAutoBidLog(conn, autoBidId, amount, triggeredBidId);
+      }
+    }
+  }
+
+  private void insertAutoBidLog(Connection conn, int autoBidId, BigDecimal amount, int triggeredBidId)
+      throws SQLException {
+    String logSql = "INSERT INTO auto_bid_logs (auto_bid_id, bid_amount, triggered_bid_id) VALUES (?, ?, ?)";
+    try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {
+      logStmt.setInt(1, autoBidId);
+      logStmt.setBigDecimal(2, amount);
+      logStmt.setInt(3, triggeredBidId);
+      logStmt.executeUpdate();
+    }
+  }
+
+  private void deactivateAutoBid(Connection conn, int auctionId, int bidderId) throws SQLException {
+    String sql = "UPDATE auto_bids SET is_active = FALSE WHERE auction_id = ? AND bidder_id = ?";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setInt(1, auctionId);
+      ps.setInt(2, bidderId);
+      ps.executeUpdate();
+    }
+  }
+
+  private void deactivateExhaustedAutoBids(Connection conn, int auctionId, BigDecimal currentPrice)
+      throws SQLException {
+    String sql = """
+        UPDATE auto_bids SET is_active = FALSE
+        WHERE auction_id = ? AND is_active = TRUE AND max_bid < ?
+        """;
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setInt(1, auctionId);
+      ps.setBigDecimal(2, currentPrice);
+      ps.executeUpdate();
+    }
   }
 
   private void createPaymentTransactions(Auction auction) throws UserException {
@@ -883,13 +988,9 @@ public class AuctionSqlDAO {
   /**
    * Ghi nhận lịch sử nhảy giá của Bot vào bảng liên kết
    */
-  public void logAutoBidAction(int autoBidId, BigDecimal amount) {
-    String sql = "INSERT INTO auto_bid_logs (auto_bid_id, bid_amount) VALUES (?, ?)";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, autoBidId);
-      stmt.setBigDecimal(2, amount);
-      stmt.executeUpdate();
+  public void logAutoBidAction(int autoBidId, BigDecimal amount, int triggeredBidId) {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+      insertAutoBidLog(conn, autoBidId, amount, triggeredBidId);
     } catch (SQLException e) {
       System.err.println("❌ Lỗi log lịch sử hoạt động của Bot: " + e.getMessage());
     }

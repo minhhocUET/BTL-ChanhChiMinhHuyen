@@ -719,6 +719,10 @@ public class RequestProcessor {
       BigDecimal maxBid = new BigDecimal(parts[1]);
 
       auctionSqlDAO.setAutoBid(auctionId, customer.getId(), maxBid);
+      AuctionManager.getInstance().syncAutoBidCache(auctionId);
+      Auction updated = auctionSqlDAO.findById(auctionId);
+      updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auctionId));
+      Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
       handler.sendResponse("SUCCESS", "Đã bật đấu giá tự động!", msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());

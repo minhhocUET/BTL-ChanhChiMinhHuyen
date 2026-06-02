@@ -424,19 +424,6 @@ public class SellerDashboardController {
         }));
   }
 
-  @FXML
-  private void handleGoToMyProfile(MouseEvent event) {
-    try {
-      Parent root = FXMLLoader.load(getClass().getResource("/UserProfile.fxml"));
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      stage.setScene(new Scene(root));
-      stage.setTitle("Hồ sơ cá nhân");
-      stage.show();
-    } catch (IOException e) {
-      e.printStackTrace();
-      showAlert(Alert.AlertType.ERROR, "Lỗi", "Không mở được trang hồ sơ cá nhân.");
-    }
-  }
 
   private void showRejectionAlert(Item item) {
     String reason = item.getRejectionReason();

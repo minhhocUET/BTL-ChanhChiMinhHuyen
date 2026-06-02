@@ -141,9 +141,7 @@ public class AuctionManager {
           auctions.put(auctionId, updatedAuction);
         }
         System.out.println("[Server] " + customer.getUsername() + " đặt giá thành công: " + amount);
-
-        // Kích hoạt bot Auto-Bid chạy trên luồng RAM phẳng an toàn
-        processAutoBids(auctionId);
+        // Proxy bids resolved inside AuctionSqlDAO.placeBid transaction (one-shot)
       }
       return success;
     } finally {
@@ -153,73 +151,20 @@ public class AuctionManager {
 
   // Đăng ký/Cập nhật cấu hình Auto-Bid từ UI Controller
   public void enableAutoBid(int auctionId, int bidderId, BigDecimal maxBid) throws UserException {
-    auctionSqlDAO.setAutoBid(auctionId, bidderId, maxBid); // Ghi xuống DB trước
-
-    autoBidCache.computeIfAbsent(auctionId, k -> new ArrayList<>());
-    List<RemoteAutoBid> list = autoBidCache.get(auctionId);
-    list.removeIf(config -> config.bidderId == bidderId);
-
-    // Tìm ID vừa sinh hoặc nạp lại list từ DB để đồng bộ hoàn hảo
-    List<RemoteAutoBid> updatedList = auctionSqlDAO.getAutoBidsByAuctionId(auctionId);
-    autoBidCache.put(auctionId, updatedList);
-    System.out.println("[Server Sync] Đã đồng bộ cấu hình Auto-bid lên bộ nhớ RAM.");
+    auctionSqlDAO.setAutoBid(auctionId, bidderId, maxBid);
+    syncAutoBidCache(auctionId);
   }
 
-  private void processAutoBids(int auctionId) {
-    Auction auction = auctions.get(auctionId);
-    List<RemoteAutoBid> configs = autoBidCache.get(auctionId);
-    if (auction == null || configs == null || configs.isEmpty()) return;
-
-    boolean botFired = true;
-
-    // Sử dụng vòng lặp phẳng (Flat-loop), loại bỏ đệ quy sâu gây StackOverflowError
-    while (botFired) {
-      botFired = false;
-
-      BigDecimal increment = auction.getBidIncrement() != null ? auction.getBidIncrement() : BigDecimal.valueOf(10000);
-      BigDecimal minNextBid = auction.getCurrentPrice().add(increment);
-      int currentWinnerId = (auction.getHighestBidder() != null) ? auction.getHighestBidder().getId() : -1;
-
-      RemoteAutoBid bestBot = null;
-      for (RemoteAutoBid config : configs) {
-        // Điều kiện: Không tự đè giá của chính mình và Trần giá cài đặt phải >= Bước giá tiếp theo
-        if (config.bidderId != currentWinnerId && config.maxBid.compareTo(minNextBid) >= 0) {
-          if (bestBot == null || config.maxBid.compareTo(bestBot.maxBid) > 0) {
-            bestBot = config;
-          }
-        }
-      }
-
-      if (bestBot != null) {
-        Customer botCustomer = auctionSqlDAO.getCustomerById(bestBot.bidderId);
-        if (botCustomer != null) {
-          try {
-            // Kiểm tra số dư của ví người dùng qua Bot trước khi ném vào DB
-            BigDecimal botBalance = auctionSqlDAO.getUserBalanceBridge(botCustomer.getId());
-            if (minNextBid.compareTo(botBalance) > 0) {
-              // Hết tiền -> Hủy trạng thái kích hoạt bot của người này
-              auctionSqlDAO.removeAutoBid(auctionId, bestBot.bidderId);
-              configs.remove(bestBot);
-              continue;
-            }
-
-            boolean success = auctionSqlDAO.placeBid(auctionId, botCustomer, minNextBid);
-            if (success) {
-              // Log hành vi bot đặt giá thành công vào bảng logs
-              auctionSqlDAO.logAutoBidAction(bestBot.id, minNextBid);
-
-              // Cập nhật lại giá tạm trên RAM để vòng lặp sau tính toán tiếp
-              auction = auctionSqlDAO.createFastAuctionRefresh(auctionId);
-              auctions.put(auctionId, auction);
-
-              System.out.println("[BOT FLAT LOOP] Bot của " + botCustomer.getUsername() + " đã nâng giá lên: " + minNextBid);
-              botFired = true;
-            }
-          } catch (Exception e) {
-            System.err.println("[Lỗi Thực Thi Bot] " + e.getMessage());
-          }
-        }
-      }
+  /** Refresh in-memory auction + auto-bid cache after DB proxy resolution (no-op if not initialized). */
+  public void syncAutoBidCache(int auctionId) {
+    if (auctionSqlDAO == null) {
+      return;
+    }
+    List<RemoteAutoBid> updatedList = auctionSqlDAO.getAutoBidsByAuctionId(auctionId);
+    autoBidCache.put(auctionId, updatedList);
+    Auction updatedAuction = auctionSqlDAO.createFastAuctionRefresh(auctionId);
+    if (updatedAuction != null) {
+      auctions.put(auctionId, updatedAuction);
     }
   }
 

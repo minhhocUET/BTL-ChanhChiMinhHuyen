@@ -1,0 +1,8 @@
+-- auto_bid_logs.triggered_bid_id links each auto-bid log row to the bid it caused.
+-- Application INSERT must supply triggered_bid_id (NOT NULL, no default).
+--
+-- Example (if column missing on older DBs):
+-- ALTER TABLE auto_bid_logs
+--   ADD COLUMN triggered_bid_id INT NOT NULL AFTER bid_amount,
+--   ADD CONSTRAINT fk_auto_bid_logs_triggered_bid
+--     FOREIGN KEY (triggered_bid_id) REFERENCES bids(id);

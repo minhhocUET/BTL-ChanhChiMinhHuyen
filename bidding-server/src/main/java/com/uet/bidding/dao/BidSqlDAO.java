@@ -94,7 +94,9 @@ public class BidSqlDAO {
           // Lấy Customer -> Bidder
           Customer customer = (Customer) userDao.findById(bidderId);
           Bidder bidder = customer.getBidderProfile();
-          bids.add(new Bid(bidder, amount, time));
+          Bid bid = new Bid(bidder, amount, time);
+          bid.setBidderUsername(customer.getUsername());
+          bids.add(bid);
         }
       }
     } catch (SQLException | UserException e) {

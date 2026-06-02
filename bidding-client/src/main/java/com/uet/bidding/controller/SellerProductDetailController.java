@@ -57,6 +57,7 @@ public class SellerProductDetailController implements Initializable {
   @FXML private Button btnEndEarly;
   @FXML private TableView<ProductDetailController.BidRow> bidHistoryTable;
   @FXML private TableColumn<ProductDetailController.BidRow, String> colBidTime;
+  @FXML private TableColumn<ProductDetailController.BidRow, String> colBidderName;
   @FXML private TableColumn<ProductDetailController.BidRow, String> colBidAmount;
   @FXML private LineChart<String, Number> bidLineChart;
 
@@ -260,12 +261,19 @@ public class SellerProductDetailController implements Initializable {
 
             for (Bid b : bids) {
               String t = b.getTime() != null ? b.getTime().format(dtf) : "-";
+              String name = b.getBidderUsername();
+              if (name == null || name.isBlank()) {
+                name = "—";
+              }
               String a = fmt.format(b.getAmount()) + " đ";
-              rows.add(new ProductDetailController.BidRow(t, a));
+              rows.add(new ProductDetailController.BidRow(t, name, a));
               series.getData().add(new XYChart.Data<>(t, b.getAmount().doubleValue()));
             }
 
             colBidTime.setCellValueFactory(new PropertyValueFactory<>("time"));
+            if (colBidderName != null) {
+              colBidderName.setCellValueFactory(new PropertyValueFactory<>("bidderName"));
+            }
             colBidAmount.setCellValueFactory(new PropertyValueFactory<>("amount"));
             bidHistoryTable.setItems(rows);
 

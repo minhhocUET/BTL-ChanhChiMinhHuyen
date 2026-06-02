@@ -17,7 +17,7 @@
 
                         <Region HBox.hgrow="ALWAYS" />
 
-                        <Label text="SELLER DASHBOARD" textFill="#880e4f">
+                        <Label prefHeight="29.0" prefWidth="253.0" text="SELLER DASHBOARD" textFill="#880e4f">
                             <font>
                                 <Font name="System Bold" size="22.0" />
                             </font>
@@ -39,9 +39,20 @@
                     </children>
                 </HBox>
 
-                <HBox spacing="15.0">
+                <HBox alignment="CENTER_LEFT" spacing="15.0">
                     <children>
                         <Button mnemonicParsing="false" onAction="#handleAddProduct" style="-fx-background-color: #e91e63; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20;" text="➕ Đăng sản phẩm mới" />
+
+                        <Pane prefHeight="40.0" prefWidth="60.0">
+                            <children>
+                                <ImageView fitHeight="128.0" fitWidth="152.0" layoutX="-28.0" layoutY="-43.0" managed="false" mouseTransparent="true" pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@anya.png" />
+                                    </image>
+                                </ImageView>
+                            </children>
+                        </Pane>
+
                         <Button mnemonicParsing="false" onAction="#handleViewReview" style="-fx-background-color: #0288d1; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20;" text="💬 Xem đánh giá của khách hàng" />
                     </children>
                 </HBox>

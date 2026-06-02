@@ -50,6 +50,12 @@
 
                         <Region HBox.hgrow="ALWAYS" />
 
+                        <ImageView fitHeight="114.0" fitWidth="119.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@anya.png" />
+                            </image>
+                        </ImageView>
+
                         <VBox alignment="CENTER" prefHeight="80.0" prefWidth="150.0" style="-fx-background-color: #fdf2f4; -fx-border-color: #ffb3cc; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 10;">
                             <children>
                                 <Label text="Đánh giá trung bình" textFill="#880e4f">

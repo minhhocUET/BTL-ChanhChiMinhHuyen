@@ -829,16 +829,17 @@ public class RequestProcessor {
     try {
       int sellerId = ((Number) msg.getData()).intValue();
 
-      // 1. Lấy danh sách review từ DB (đã nạp đủ thông tin reviewer và ngày giờ nhờ ReviewSqlDAO)
+      // 1. Lấy danh sách review từ DB
       List<Review> reviews = new ReviewSqlDAO().getReviewsBySeller(sellerId);
 
-      // 2. Khởi tạo các DAO để truy vấn thông tin Shop và Sản phẩm
+      // 2. Khởi tạo các DAO
       com.uet.bidding.dao.UserSqlDAO userDAO = new com.uet.bidding.dao.UserSqlDAO();
-      com.uet.bidding.dao.AuctionSqlDAO auctionDAO = new com.uet.bidding.dao.AuctionSqlDAO(); // 🌟 DAO để lấy tên sản phẩm
+      com.uet.bidding.dao.AuctionSqlDAO auctionDAO = new com.uet.bidding.dao.AuctionSqlDAO();
 
-      // 3. Tìm thông tin Tên Shop và Mô tả Shop thực tế
-      String storeName = "Cửa hàng #" + sellerId; // Tên mặc định nếu không tìm thấy
+      // 3. Tìm thông tin Tên Shop, Mô tả Shop VÀ ẢNH ĐẠI DIỆN thực tế
+      String storeName = "Cửa hàng #" + sellerId;
       String storeDescription = "Chưa có mô tả cho cửa hàng này.";
+      String storeAvatar = null; // 🎯 ĐÃ BỔ SUNG: Khởi tạo biến chứa link ảnh
 
       try {
         com.uet.bidding.model.User sellerUser = userDAO.findById(sellerId);
@@ -846,13 +847,17 @@ public class RequestProcessor {
           if (seller.getSellerProfile() != null) {
             String dbStoreName = seller.getSellerProfile().getStoreName();
             String dbDesc = seller.getSellerProfile().getDescription();
+            String dbAvatar = seller.getSellerProfile().getAvatarData(); // 🎯 ĐÃ BỔ SUNG: Móc ảnh từ Database ra
 
             if (dbStoreName != null && !dbStoreName.trim().isEmpty() && !"-".equals(dbStoreName)) {
               storeName = dbStoreName;
             }
-            // 🎯 ĐÃ SỬA: Kiểm tra kỹ chuỗi mô tả từ Database
             if (dbDesc != null && !dbDesc.trim().isEmpty() && !"-".equals(dbDesc)) {
               storeDescription = dbDesc;
+            }
+            // 🎯 ĐÃ BỔ SUNG: Cập nhật biến ảnh nếu có
+            if (dbAvatar != null && !dbAvatar.trim().isEmpty()) {
+              storeAvatar = dbAvatar;
             }
           }
         }
@@ -864,6 +869,7 @@ public class RequestProcessor {
       com.google.gson.JsonObject responseData = new com.google.gson.JsonObject();
       responseData.addProperty("storeName", storeName);
       responseData.addProperty("storeDescription", storeDescription);
+      responseData.addProperty("storeAvatar", storeAvatar); // 🎯 ĐÃ BỔ SUNG: Đút link ảnh vào cục JSON gửi về!
 
       // 5. Duyệt danh sách review và đóng gói dữ liệu phẳng
       com.google.gson.JsonArray richReviewsArray = new com.google.gson.JsonArray();
@@ -875,13 +881,9 @@ public class RequestProcessor {
         reviewJson.addProperty("comment", r.getComment());
         reviewJson.addProperty("createdAt", r.getCreatedAt() != null ? r.getCreatedAt().toString() : "");
 
-        // 🎯 ĐÃ SỬA: Logic tìm tên sản phẩm thực tế từ Database thông qua AuctionSqlDAO
-        String realProductName = "Sản phẩm đấu giá"; // Giá trị dự phòng mặc định
+        String realProductName = "Sản phẩm đấu giá";
         try {
-          // Lấy Id cuộc đấu giá/sản phẩm từ review.
-          // 💡 LƯU Ý: Nếu trong Model Review của bạn đặt tên hàm là getAuctionId() hoặc getItemId() thì bạn đổi lại cho đúng nhé!
           int auctionId = r.getAuctionId();
-
           com.uet.bidding.model.Auction auction = auctionDAO.findById(auctionId);
           if (auction != null && auction.getItem() != null) {
             String itemName = auction.getItem().getName();
@@ -893,10 +895,8 @@ public class RequestProcessor {
           System.err.println("❌ Lỗi khi lấy tên sản phẩm cho Review #" + r.getId() + ": " + ex.getMessage());
         }
 
-        // Đút tên sản phẩm thật tìm được vào JSON gửi về Client
         reviewJson.addProperty("productName", realProductName);
 
-        // Tên người đánh giá thật từ r.getReviewerName()
         String reviewerName = "Người dùng ẩn danh";
         if (r.getReviewerName() != null && !r.getReviewerName().trim().isEmpty() && !"-".equals(r.getReviewerName())) {
           reviewerName = r.getReviewerName();
@@ -915,7 +915,7 @@ public class RequestProcessor {
       // Đút mảng reviews vào Object tổng thể
       responseData.add("reviews", richReviewsArray);
 
-      // Gửi Object lớn chứa đầy đủ (storeName, storeDescription, reviews) về Client
+      // Gửi Object lớn về Client
       handler.sendResponse("SUCCESS", responseData, msg.getRequestId());
 
     } catch (Exception e) {

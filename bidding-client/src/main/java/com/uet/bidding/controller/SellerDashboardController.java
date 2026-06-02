@@ -4,10 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.uet.bidding.model.*;
 import com.uet.bidding.network.ClientService;
-import com.uet.bidding.util.CreateAuctionContext;
-import com.uet.bidding.util.ImageUtils;
-import com.uet.bidding.util.SellerAuctionContext;
-import com.uet.bidding.util.UserSession;
+import com.uet.bidding.util.*;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -816,15 +813,23 @@ public class SellerDashboardController {
 
   @FXML
   public void handleViewReview(ActionEvent event) {
-    try {
-      Parent reviewRoot = FXMLLoader.load(getClass().getResource("/SellerReview.fxml"));
-      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-      stage.setScene(new Scene(reviewRoot));
-      stage.setTitle("Đánh giá của khách hàng");
-      stage.show();
-    } catch (IOException e) {
-      e.printStackTrace();
-      System.out.println("Lỗi: Không mở được trang SellerReview.fxml");
+    Customer me = UserSession.getLoggedInCustomer();
+    if (me != null) {
+      // Lấy link ảnh của chính mình
+      String myAvatar = me.getSellerProfile().getAvatarData();
+
+      // DÙNG HÀM SET MỚI (5 tham số)
+      ReviewContext.set(0, me.getId(), me.getSellerProfile().getStoreName(), false, myAvatar);
+      try {
+        Parent reviewRoot = FXMLLoader.load(getClass().getResource("/SellerReview.fxml"));
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        stage.setScene(new Scene(reviewRoot));
+        stage.setTitle("Đánh giá của khách hàng");
+        stage.show();
+      } catch (IOException e) {
+        e.printStackTrace();
+        System.out.println("Lỗi: Không mở được trang SellerReview.fxml");
+      }
     }
   }
 

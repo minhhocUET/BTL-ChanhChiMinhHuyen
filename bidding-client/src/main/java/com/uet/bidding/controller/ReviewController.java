@@ -98,18 +98,16 @@ public class ReviewController {
       // Tìm URL ảnh đại diện của Seller này:
       String avatarUrl = null;
 
-      // Nếu Seller đang xem đánh giá của chính mình (Lấy từ Session)
       if (UserSession.getLoggedInCustomer() != null
           && UserSession.getLoggedInCustomer().getId() == ReviewContext.sellerId) {
+        // 1. Nếu Chủ shop đang TỰ XEM đánh giá của chính mình -> Lấy trong Session
         avatarUrl = UserSession.getLoggedInCustomer().getSellerProfile().getAvatarData();
+      } else {
+        // 2. Nếu KHÁCH HÀNG đang xem shop người khác -> Lấy link ảnh từ ReviewContext
+        avatarUrl = ReviewContext.avatarUrl;
       }
-      // (Tùy chọn) Nếu sau này bạn mở trang này cho Khách hàng xem shop người khác,
-      // hãy đảm bảo bạn truyền link ảnh vào biến ReviewContext.avatarUrl trước khi mở form nhé!
-      // else if (ReviewContext.avatarUrl != null) {
-      //    avatarUrl = ReviewContext.avatarUrl;
-      // }
 
-      // Gọi hàm load ảnh với URL thật (không truyền null nữa)
+      // Gọi hàm load ảnh
       ImageUtils.loadAvatarFromUrl(reviewAvatarImageView, reviewAvatarLabel, avatarUrl);
     }
 
@@ -168,11 +166,14 @@ public class ReviewController {
         }
         // 🎯 TẢI VÀ ĐỒNG BỘ ẢNH AVATAR CLOUDINARY
         String avatarUrl = null;
-        if (dataObj.has("avatarData") && !dataObj.get("avatarData").isJsonNull()) {
+
+        // SỬA Ở ĐÂY: Tìm đúng key "storeAvatar" mà Server vừa gửi về
+        if (dataObj.has("storeAvatar") && !dataObj.get("storeAvatar").isJsonNull()) {
+          avatarUrl = dataObj.get("storeAvatar").getAsString();
+        }
+        // Giữ lại cái này phòng hờ (nếu lấy từ context khác)
+        else if (dataObj.has("avatarData") && !dataObj.get("avatarData").isJsonNull()) {
           avatarUrl = dataObj.get("avatarData").getAsString();
-        } else if (dataObj.has("avatar") && !dataObj.get("avatar").isJsonNull()) {
-          // Phòng hờ nếu key trả về từ server là "avatar"
-          avatarUrl = dataObj.get("avatar").getAsString();
         }
 
         // Cập nhật lại chữ cái dự phòng cho chắc chắn
@@ -296,39 +297,7 @@ public class ReviewController {
     });
   }
 
-  private void onReviewsLoaded(NetworkMessage response) {
-    Platform.runLater(() -> {
-      if (!"SUCCESS".equals(response.getType())) {
-        showAlert("Lỗi", String.valueOf(response.getData()));
-        return;
-      }
-      String json = GsonFactory.getInstance().toJson(response.getData());
-      List<Review> reviews = GsonFactory.getInstance().fromJson(json,
-          new TypeToken<List<Review>>() {
-          }.getType());
 
-      if (reviews == null) reviews = new java.util.ArrayList<>();
-
-      double sum = 0;
-      for (Review r : reviews) {
-        sum += r.getStars();
-        String date = r.getCreatedAt() != null
-            ? r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-            : "";
-        addReviewCard(r.getReviewerName(), date, starsToEmoji(r.getStars()), r.getComment());
-      }
-
-      double avg = reviews.isEmpty() ? 0 : sum / reviews.size();
-
-      // CẬP NHẬT ĐỒNG THỜI CẢ 2 Ô ĐIỂM TRÊN GIAO DIỆN
-      String avgStr = String.format("%.1f", avg);
-      lblAvgRating.setText(avgStr);
-      if (lblBigAvgRating != null) {
-        lblBigAvgRating.setText(avgStr); // Ô điểm to bên phải sẽ nhảy số theo đúng DB
-      }
-      lblReviewCount.setText("(" + reviews.size() + " đánh giá)");
-    });
-  }
 
   @FXML
   private void handleSubmitReview(ActionEvent event) {
@@ -394,48 +363,6 @@ public class ReviewController {
     }
   }
 
-  private void addReviewCard(String name, String date, String stars, String content) {
-    VBox card = new VBox(8);
-    card.setStyle("-fx-background-color: #ffffff; -fx-padding: 15; -fx-background-radius: 14; -fx-border-color: #f8bbd0; -fx-border-radius: 14; -fx-border-width: 1;");
-
-    HBox topRow = new HBox(12);
-    topRow.setAlignment(Pos.CENTER_LEFT);
-
-    StackPane avatarPane = new StackPane();
-    Circle avatarBg = new Circle(18, Color.web("#ffe4ec"));
-    avatarBg.setStroke(Color.web("#ffb3cc"));
-    Label userIcon = new Label("👤");
-    userIcon.setStyle("-fx-font-size: 16px;");
-    avatarPane.getChildren().addAll(avatarBg, userIcon);
-
-    Label nameLabel = new Label(name);
-    nameLabel.setFont(Font.font("System", FontWeight.BOLD, 15));
-    nameLabel.setTextFill(Color.web("#333333"));
-
-    Region spacer = new Region();
-    HBox.setHgrow(spacer, Priority.ALWAYS);
-
-    Label dateLabel = new Label(date);
-    dateLabel.setTextFill(Color.web("#888888"));
-    dateLabel.setFont(Font.font("System", 12));
-
-    topRow.getChildren().addAll(avatarPane, nameLabel, spacer, dateLabel);
-
-    Label starsLabel = new Label(stars);
-    starsLabel.setTextFill(Color.web("#ffb300"));
-    starsLabel.setStyle("-fx-font-size: 14px;");
-
-    Label contentLabel = new Label(content == null || content.isEmpty() ? "(Không có bình luận)" : content);
-    contentLabel.setTextFill(Color.web("#555555"));
-    contentLabel.setFont(Font.font("System", 14));
-    contentLabel.setWrapText(true);
-
-    card.getChildren().addAll(topRow, starsLabel, contentLabel);
-
-    if (reviewsContainer != null) {
-      reviewsContainer.getChildren().add(card);
-    }
-  }
 
   @FXML
   private void handleBackToAuctionList(ActionEvent event) {

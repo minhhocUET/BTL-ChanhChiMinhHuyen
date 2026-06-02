@@ -106,6 +106,46 @@ public class ProductDetailController {
     startCountdown(auction.getEndTime());
     loadBidHistory();
     refreshRegistrationUi();
+
+    // 🎯 ĐÃ SỬA: Gọi qua AutoBidService để đảm bảo chuẩn kiến trúc MVC
+    new AutoBidService().checkStatus(auction.getId())
+        .thenAccept(response -> javafx.application.Platform.runLater(() -> {
+          // Bắt type SUCCESS hoặc CHECK_AUTO_BID_SUCCESS tùy bạn setup ở Server
+          if ("SUCCESS".equals(response.getType()) || "CHECK_AUTO_BID_SUCCESS".equals(response.getType())) {
+
+            if (response.getData() != null) {
+              // TRƯỜNG HỢP 1: ĐÃ BẬT TỪ TRƯỚC (Có data trả về)
+              String savedMaxBid = String.valueOf(response.getData());
+              txtMaxAutoBid.setText(savedMaxBid);
+              txtMaxAutoBid.setDisable(true); // Khóa ô không cho gõ linh tinh
+
+              // Hóa xám nút Bật
+              btnEnableAutoBid.setDisable(true);
+              btnEnableAutoBid.setStyle("-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: default;");
+
+              // Mở và bôi đỏ nút Tắt
+              btnDisableAutoBid.setDisable(false);
+              btnDisableAutoBid.setStyle("-fx-background-color: #f31313; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
+
+            } else {
+              // TRƯỜNG HỢP 2: CHƯA BẬT HOẶC ĐÃ TẮT (Data null)
+              txtMaxAutoBid.clear();
+              txtMaxAutoBid.setDisable(false);
+
+              // Mở và bôi hồng nút Bật
+              btnEnableAutoBid.setDisable(false);
+              btnEnableAutoBid.setStyle("-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
+
+              // Hóa xám nút Tắt
+              btnDisableAutoBid.setDisable(true);
+              btnDisableAutoBid.setStyle("-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: default;");
+            }
+          }
+        }))
+        .exceptionally(ex -> {
+          System.err.println("Lỗi đồng bộ trạng thái Auto-Bid: " + ex.getMessage());
+          return null;
+        });
   }
 
   private void refreshRegistrationUi() {

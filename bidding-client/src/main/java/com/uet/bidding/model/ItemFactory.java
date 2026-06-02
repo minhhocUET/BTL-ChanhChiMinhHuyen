@@ -104,6 +104,10 @@ public class ItemFactory {
       item.setStatus("PENDING"); // Gán mặc định nếu JSON thiếu
     }
 
+    if (o.has("rejectionReason") && !o.get("rejectionReason").isJsonNull()) {
+      item.setRejectionReason(o.get("rejectionReason").getAsString());
+    }
+
     if (o.has("inAuction") && !o.get("inAuction").isJsonNull()) {
       item.setInAuction(o.get("inAuction").getAsBoolean());
     } else if (o.has("in_auction") && !o.get("in_auction").isJsonNull()) {

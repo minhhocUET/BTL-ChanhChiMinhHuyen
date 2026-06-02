@@ -27,7 +27,10 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -40,6 +43,8 @@ import java.util.Optional;
 
 public class SellerDashboardController {
 
+  @FXML private StackPane avatarPane;
+  @FXML private ImageView avatarImageView;
   @FXML private Label avatarLabel;
   @FXML private TextField storeNameField;
   @FXML private TextArea descriptionArea;
@@ -93,6 +98,7 @@ public class SellerDashboardController {
     seller = c.getSellerProfile();
     setupTables();
     loadSellerData();
+    refreshAvatarUi();
     reloadInventoryFromServer();
     reloadActiveAuctionsFromServer();
     reloadFinishedAuctionsFromServer();
@@ -216,7 +222,7 @@ public class SellerDashboardController {
           if ("APPROVED".equals(status)) {
             openCreateAuctionPage(selected); // TẠO PHIÊN MỚI (Chỉ khi qua được hết các cửa ải trên)
           } else if ("REJECTED".equals(status)) {
-            showAlert(Alert.AlertType.ERROR, "Từ chối duyệt", "Sản phẩm này đã bị Admin từ chối phê duyệt.");
+            showRejectionAlert(selected);
           } else if ("PENDING".equals(status)) {
             showAlert(Alert.AlertType.INFORMATION, "Đang chờ duyệt", "Sản phẩm đang chờ Admin phê duyệt.");
           }
@@ -336,9 +342,79 @@ public class SellerDashboardController {
     if (descriptionArea != null) descriptionArea.setText(seller.getDescription());
     if (ratingLabel != null) ratingLabel.setText(String.valueOf(seller.getSellerRating()));
 
-    if (avatarLabel != null && seller.getStoreName() != null && !seller.getStoreName().isEmpty()) {
-      avatarLabel.setText(seller.getStoreName().substring(0, 1).toUpperCase());
+    if (avatarLabel != null) {
+      String initial = "?";
+      if (seller.getStoreName() != null && !seller.getStoreName().isEmpty()) {
+        initial = seller.getStoreName().substring(0, 1).toUpperCase();
+      }
+      avatarLabel.setText(initial);
     }
+  }
+
+  private void refreshAvatarUi() {
+    Customer c = UserSession.getLoggedInCustomer();
+    if (c == null) return;
+    ImageUtils.loadAvatarFromBase64(avatarImageView, avatarLabel, c.getSellerProfile().getAvatarData());
+  }
+
+  @FXML
+  private void handleAvatarClick(MouseEvent event) {
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null) {
+      showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng đăng nhập lại!");
+      return;
+    }
+
+    FileChooser fc = new FileChooser();
+    fc.setTitle("Chọn ảnh đại diện");
+    fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Ảnh", "*.png", "*.jpg", "*.jpeg"));
+    Stage stage = avatarPane != null ? (Stage) avatarPane.getScene().getWindow()
+        : (Stage) ((Node) event.getSource()).getScene().getWindow();
+    java.io.File file = fc.showOpenDialog(stage);
+    if (file == null) return;
+
+    String base64 = ImageUtils.encodeFileToBase64(file);
+    if (base64 == null) {
+      showAlert(Alert.AlertType.ERROR, "Lỗi", "Không đọc được file ảnh!");
+      return;
+    }
+
+    ClientService.getInstance().sendRequest("UPDATE_AVATAR", base64)
+        .thenAccept(res -> Platform.runLater(() -> {
+          if ("UPDATE_AVATAR_SUCCESS".equals(res.getType())) {
+            customer.getSellerProfile().setAvatarData(base64);
+            refreshAvatarUi();
+            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật ảnh đại diện!");
+          } else {
+            showAlert(Alert.AlertType.ERROR, "Lỗi", String.valueOf(res.getData()));
+          }
+        }));
+  }
+
+  @FXML
+  private void handleGoToMyProfile(MouseEvent event) {
+    try {
+      Parent root = FXMLLoader.load(getClass().getResource("/UserProfile.fxml"));
+      Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+      stage.setScene(new Scene(root));
+      stage.setTitle("Hồ sơ cá nhân");
+      stage.show();
+    } catch (IOException e) {
+      e.printStackTrace();
+      showAlert(Alert.AlertType.ERROR, "Lỗi", "Không mở được trang hồ sơ cá nhân.");
+    }
+  }
+
+  private void showRejectionAlert(Item item) {
+    String reason = item.getRejectionReason();
+    if (reason == null || reason.isBlank()) {
+      reason = "Không có lý do cụ thể.";
+    }
+    Alert alert = new Alert(Alert.AlertType.WARNING);
+    alert.setTitle("Sản phẩm bị từ chối");
+    alert.setHeaderText("Sản phẩm \"" + item.getName() + "\" đã bị Admin từ chối phê duyệt.");
+    alert.setContentText("Lý do từ chối:\n" + reason);
+    alert.showAndWait();
   }
 
   private void reloadInventoryFromServer() {
@@ -438,6 +514,7 @@ public class SellerDashboardController {
     ClientService.getInstance().sendRequest("UPDATE_PROFILE", customer)
         .thenAccept(res -> Platform.runLater(() -> {
           if ("UPDATE_PROFILE_SUCCESS".equals(res.getType())) {
+            refreshAvatarUi();
             showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã lưu thông tin cửa hàng lên hệ thống!");
           } else {
             showAlert(Alert.AlertType.ERROR, "Lỗi", String.valueOf(res.getData()));

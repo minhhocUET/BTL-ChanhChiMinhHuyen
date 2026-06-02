@@ -81,6 +81,10 @@
 
                 <!-- Place bid -->
                 <VBox spacing="10.0" style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10; -fx-border-color: #fd79a8; -fx-border-radius: 10;">
+                    <HBox spacing="8.0" alignment="CENTER_LEFT">
+                        <Label text="Số dư ví:" style="-fx-text-fill: #64748b;"/>
+                        <Label fx:id="lblWalletBalance" style="-fx-font-weight: bold; -fx-text-fill: #ff4757;"/>
+                    </HBox>
                     <Label text="Đặt giá" style="-fx-font-weight: bold; -fx-text-fill: #e84393;"/>
                     <TextField fx:id="txtBidAmount" promptText="Nhập số tiền..." maxWidth="1.7976931348623157E308"/>
                     <Label fx:id="lblMinBid" wrapText="true"

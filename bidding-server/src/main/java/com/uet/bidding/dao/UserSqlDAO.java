@@ -86,6 +86,9 @@ public class UserSqlDAO {
       customer.setAddress(rs.getString("address"));
       customer.setBalance(rs.getBigDecimal("balance"));
       customer.setProfileComplete(rs.getBoolean("is_profile_completed"));
+      if (hasColumn(rs, "avatar_data")) {
+        customer.getSellerProfile().setAvatarData(rs.getString("avatar_data"));
+      }
 
       // Nạp Seller profile (constructor Customer() đã new Seller() sẵn)
       customer.getSellerProfile().setStoreName(rs.getString("store_name"));
@@ -103,6 +106,16 @@ public class UserSqlDAO {
   /**
    * Nạp các trường chung của lớp User (abstract) vào subclass bất kỳ.
    */
+  private static boolean hasColumn(ResultSet rs, String column) throws SQLException {
+    ResultSetMetaData meta = rs.getMetaData();
+    for (int i = 1; i <= meta.getColumnCount(); i++) {
+      if (column.equalsIgnoreCase(meta.getColumnLabel(i))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private void fillBaseFields(User user, ResultSet rs) throws SQLException {
     user.setId(rs.getInt("id"));
     user.setUsername(rs.getString("username"));
@@ -424,6 +437,24 @@ public class UserSqlDAO {
       throw new UserException("Email hoặc Số điện thoại đã được tài khoản khác sử dụng!");
     } catch (SQLException e) {
       throw new UserException("Lỗi cập nhật SQL: " + e.getMessage());
+    }
+  }
+
+  public void updateAvatar(int userId, String avatarData) throws UserException {
+    String sql = "UPDATE users SET avatar_data = ? WHERE id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+      if (avatarData == null || avatarData.isBlank()) {
+        stmt.setNull(1, Types.LONGVARCHAR);
+      } else {
+        stmt.setString(1, avatarData);
+      }
+      stmt.setInt(2, userId);
+      if (stmt.executeUpdate() == 0) {
+        throw new UserException("Không tìm thấy User với ID: " + userId);
+      }
+    } catch (SQLException e) {
+      throw new UserException("Lỗi cập nhật ảnh đại diện: " + e.getMessage());
     }
   }
 

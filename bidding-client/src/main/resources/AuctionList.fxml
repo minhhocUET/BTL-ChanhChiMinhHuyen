@@ -83,9 +83,9 @@
 
                                     <children>
 
-                                        <Circle fill="#e2e8f0" radius="20.0" stroke="#cbd5e1" strokeType="INSIDE" />
+                                        <Label text="👤" style="-fx-font-size: 28px; -fx-background-color: #e2e8f0; -fx-background-radius: 50; -fx-padding: 6 10 6 10;" />
 
-                                        <Label text="Setting" textFill="#555555">
+                                        <Label text="Hồ sơ" textFill="#555555">
 
                                             <font>
                                                 <Font name="System Bold" size="12.0" />

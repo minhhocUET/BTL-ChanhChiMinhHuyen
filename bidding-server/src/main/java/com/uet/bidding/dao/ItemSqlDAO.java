@@ -73,6 +73,16 @@ public class ItemSqlDAO {
    * Cột chung (name, description, starting_price, ...) được nạp trước,
    * sau đó nạp thêm các trường riêng của từng loại.
    */
+  private static boolean hasColumn(ResultSet rs, String column) throws SQLException {
+    ResultSetMetaData meta = rs.getMetaData();
+    for (int i = 1; i <= meta.getColumnCount(); i++) {
+      if (column.equalsIgnoreCase(meta.getColumnLabel(i))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private Item mapResultSetToItem(ResultSet rs) throws SQLException {
     // 1. Ép hoa để tránh lỗi electronics vs ELECTRONICS
     String typeFromDb = rs.getString("item_type");
@@ -140,6 +150,12 @@ public class ItemSqlDAO {
       item.setInAuction(rs.getBoolean("in_auction"));
       item.setCity(rs.getString("city"));
       item.setStatus(rs.getString("status"));
+      if (hasColumn(rs, "image_data")) {
+        item.setImageData(rs.getString("image_data"));
+      }
+      if (hasColumn(rs, "rejection_reason")) {
+        item.setRejectionReason(rs.getString("rejection_reason"));
+      }
       return item;
     } catch (Exception e) {
       System.err.println("❌ Lỗi khi tạo Object Item từ ResultSet: " + e.getMessage());
@@ -353,12 +369,21 @@ public class ItemSqlDAO {
    * Trả về true nếu cập nhật thành công ít nhất 1 dòng trong DB.
    */
   public boolean updateItemStatus(int itemId, String newStatus) {
-    String sql = "UPDATE items SET status = ? WHERE id = ?";
+    return updateItemStatus(itemId, newStatus, null);
+  }
+
+  public boolean updateItemStatus(int itemId, String newStatus, String rejectionReason) {
+    String sql = "UPDATE items SET status = ?, rejection_reason = ? WHERE id = ?";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
       pstmt.setString(1, newStatus.toUpperCase());
-      pstmt.setInt(2, itemId);
+      if (rejectionReason != null && !rejectionReason.isBlank()) {
+        pstmt.setString(2, rejectionReason.trim());
+      } else {
+        pstmt.setNull(2, Types.VARCHAR);
+      }
+      pstmt.setInt(3, itemId);
 
       return pstmt.executeUpdate() > 0;
     } catch (SQLException e) {

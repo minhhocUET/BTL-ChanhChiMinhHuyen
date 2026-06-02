@@ -8,10 +8,6 @@
             style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17.0.12"
             fx:controller="com.uet.bidding.controller.UserProfileController">
     <children>
-        <Button mnemonicParsing="false" onAction="#handleGoToMyManagement" prefHeight="35.0" prefWidth="150.0"
-                style="-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 20;"
-                text="Bidder" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0"/>
-
         <VBox alignment="TOP_CENTER" layoutY="21.0" prefHeight="559.0" prefWidth="816.0" spacing="20.0"
               AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="40.0" AnchorPane.rightAnchor="44.0"
               AnchorPane.topAnchor="21.0">

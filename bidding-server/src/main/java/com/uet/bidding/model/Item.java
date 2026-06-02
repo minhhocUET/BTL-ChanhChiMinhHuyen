@@ -17,6 +17,7 @@ public abstract class Item extends Entity {
   // ─── THUỘC TÍNH MỚI BỔ SUNG ───────────────────────────────────────
   // Trạng thái phê duyệt: "PENDING" (Chờ duyệt), "APPROVED" (Đã duyệt), "REJECTED" (Bị từ chối)
   private String status = "PENDING";
+  private String rejectionReason;
 
   // 🌟 THÊM DÒNG NÀY: Một biến type vật lý để Gson ở Server có thể nhìn thấy và đóng gói
   private String type;
@@ -134,6 +135,14 @@ public abstract class Item extends Entity {
 
   public void setStatus(String status) {
     this.status = status;
+  }
+
+  public String getRejectionReason() {
+    return rejectionReason;
+  }
+
+  public void setRejectionReason(String rejectionReason) {
+    this.rejectionReason = rejectionReason;
   }
 
   public String getProductType() {

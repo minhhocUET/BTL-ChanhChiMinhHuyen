@@ -283,6 +283,11 @@ public class AuctionListController implements Initializable {
       String itemName = auction.getItem() != null ? auction.getItem().getName() : ("#" + auction.getId());
       Parent root;
       if (isOwnAuction(auction)) {
+        Alert ownSessionAlert = new Alert(Alert.AlertType.INFORMATION);
+        ownSessionAlert.setTitle("Thông báo");
+        ownSessionAlert.setHeaderText(null);
+        ownSessionAlert.setContentText("Bạn đã vào phiên của chính mình. Chuyển sang giao diện người bán.");
+        ownSessionAlert.showAndWait();
         SellerAuctionContext.set(auction);
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/SellerProductDetail.fxml"));
         root = loader.load();

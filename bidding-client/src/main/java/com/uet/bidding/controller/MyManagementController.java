@@ -470,19 +470,6 @@
       }
     }
 
-    @FXML
-    private void handleGoToMyProfile() {
-      try {
-        Parent root = FXMLLoader.load(getClass().getResource("/UserProfile.fxml"));
-        Stage stage = (Stage) bidTableView.getScene().getWindow();
-        stage.setScene(new Scene(root));
-        stage.setTitle("Hồ sơ cá nhân");
-        stage.show();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
     public static class ActiveBidRow {
       private final int auctionId;
       private final Auction auction;

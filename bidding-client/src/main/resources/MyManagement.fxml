@@ -27,17 +27,6 @@
                             </font>
                         </Label>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <VBox alignment="CENTER" onMouseClicked="#handleGoToMyProfile" spacing="4.0"
-                              style="-fx-cursor: hand;">
-                            <children>
-                                <Circle fill="#e2e8f0" radius="20.0" stroke="#cbd5e1" strokeType="INSIDE"/>
-                                <Label text="My Profile" textFill="#555555">
-                                    <font>
-                                        <Font name="System Bold" size="12.0"/>
-                                    </font>
-                                </Label>
-                            </children>
-                        </VBox>
                     </children>
                 </HBox>
 

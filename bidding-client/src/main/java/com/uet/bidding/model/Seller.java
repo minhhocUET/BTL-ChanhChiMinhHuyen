@@ -7,6 +7,7 @@ public class Seller {
   private String storeName;
   private String description;
   private double sellerRating;
+  private String avatarData;
 
   // 1. Danh sách chứa Item (Kho hàng của người bán)
   private List<Item> inventory;
@@ -69,5 +70,13 @@ public class Seller {
 
   public List<Review> getReviews() {
     return reviews;
+  }
+
+  public String getAvatarData() {
+    return avatarData;
+  }
+
+  public void setAvatarData(String avatarData) {
+    this.avatarData = avatarData;
   }
 }

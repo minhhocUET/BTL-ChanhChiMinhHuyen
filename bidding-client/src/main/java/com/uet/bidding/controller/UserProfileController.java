@@ -210,11 +210,6 @@ public class UserProfileController implements Initializable {
     switchScene(event, "/AuctionList.fxml", "Hệ thống Đấu giá VNU");
   }
 
-  @FXML
-  public void handleGoToMyManagement(ActionEvent event) {
-    switchScene(event, "/MyManagement.fxml", "Quản lý của tôi");
-  }
-
   // Hàm bổ trợ chuyển trang để tránh lặp code
   private void switchScene(ActionEvent event, String fxmlPath, String title) {
     try {

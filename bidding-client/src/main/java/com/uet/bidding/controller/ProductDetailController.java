@@ -66,8 +66,10 @@ public class ProductDetailController {
   @FXML private Button btnRegister;
   @FXML private Label lblRegisterHint;
   @FXML private Label lblRegisteredCount;
+  @FXML private Label lblWalletBalance;
 
   private Auction currentAuction;
+  private final NumberFormat currencyFormat = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
   private Timeline timeline;
 
   private static ProductDetailController instance;
@@ -87,9 +89,8 @@ public class ProductDetailController {
     lblDescription.setText(item.getDescription());
     lblAuctionId.setText("Mã phiên: #" + auction.getId());
 
-    // Đã fix lỗi deprecated của Locale
-    NumberFormat currencyFormat = NumberFormat.getInstance(Locale.forLanguageTag("vi-VN"));
     lblCurrentPrice.setText(currencyFormat.format(auction.getCurrentPrice()) + " VNĐ");
+    refreshWalletBalanceLabel();
     updateMinBidLabel(auction, currencyFormat);
 
     if (auction.getHighestBidder() != null) {
@@ -258,7 +259,19 @@ public class ProductDetailController {
     }
 
     loadBidHistory();
+    refreshWalletBalanceLabel();
   }
+
+  public void refreshWalletBalanceLabel() {
+    if (lblWalletBalance == null) return;
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null || customer.getBalance() == null) {
+      lblWalletBalance.setText("—");
+      return;
+    }
+    lblWalletBalance.setText(currencyFormat.format(customer.getBalance()) + " VNĐ");
+  }
+
   @FXML
   public void handleEnableAutoBid(ActionEvent event) {
     Customer customer = UserSession.getLoggedInCustomer();
@@ -406,6 +419,7 @@ public class ProductDetailController {
           .thenAccept(response -> javafx.application.Platform.runLater(() -> {
             if ("SUCCESS".equals(response.getType())) {
               txtBidAmount.clear();
+              refreshWalletBalanceLabel();
               showAlert("Thành công", "Đã gửi giá lên server!", Alert.AlertType.INFORMATION);
               loadBidHistory();
             } else {

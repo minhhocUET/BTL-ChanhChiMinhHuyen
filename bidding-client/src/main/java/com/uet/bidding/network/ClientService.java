@@ -112,6 +112,13 @@ public class ClientService {
         processUpdateProfile(msg);
         break;
 
+      case "UPDATE_AVATAR_SUCCESS":
+        User avatarUser = parseUserFromJson(msg.getData());
+        if (avatarUser != null) {
+          UserSession.setCurrentUser(avatarUser);
+        }
+        break;
+
       case "UPDATE_BALANCE_SUCCESS":
         processUpdateBalance(msg);
         break;
@@ -276,6 +283,9 @@ public class ClientService {
       BigDecimal currentBalance = customer.getBalance();
 
       Platform.runLater(() -> {
+        if (ProductDetailController.getInstance() != null) {
+          ProductDetailController.getInstance().refreshWalletBalanceLabel();
+        }
         showAlert("Nạp tiền thành công",
             "Số dư mới: " + String.format("%,.0f", currentBalance.doubleValue()) + " VNĐ",
             Alert.AlertType.INFORMATION);

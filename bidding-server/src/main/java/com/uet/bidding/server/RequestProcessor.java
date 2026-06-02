@@ -37,6 +37,7 @@ public class RequestProcessor {
         case "LOGIN" -> handleLogin(msg, handler);
         case "REGISTER" -> handleRegisterRequest(msg, handler);
         case "UPDATE_PROFILE" -> handleUpdateProfile(msg, handler);
+        case "UPDATE_AVATAR" -> handleUpdateAvatar(msg, handler);
         case "CHANGE_PASSWORD" -> handleChangePassword(msg, handler); // 🚀 ĐÃ BỔ SUNG CASE NÀY
         case "ADD_BALANCE" -> handleAddBalance(msg, handler);
         case "BID" -> handleBid(msg, handler);
@@ -329,7 +330,7 @@ public class RequestProcessor {
       int rejectId = Integer.parseInt(parts[0]);
       String reason = parts.length > 1 ? parts[1] : "Không có lý do cụ thể.";
 
-      boolean success = new ItemSqlDAO().updateItemStatus(rejectId, "REJECTED");
+      boolean success = itemSqlDAO.updateItemStatus(rejectId, "REJECTED", reason);
       if (success) {
         System.out.println("[Server] Đã từ chối SP #" + rejectId + ". Lý do: " + reason);
         handler.sendResponse("REJECT_SUCCESS", "Đã từ chối phê duyệt sản phẩm.", msg.getRequestId());
@@ -390,6 +391,26 @@ public class RequestProcessor {
       handler.sendResponse("UPDATE_PROFILE_SUCCESS", customer, msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", "Cập nhật thất bại: " + e.getMessage(), msg.getRequestId());
+    }
+  }
+
+  private void handleUpdateAvatar(NetworkMessage msg, ClientHandler handler) {
+    if (!(handler.getLoggedInUser() instanceof Customer customer)) {
+      handler.sendResponse("ERROR", "Vui lòng đăng nhập!", msg.getRequestId());
+      return;
+    }
+    try {
+      String avatarData = String.valueOf(msg.getData());
+      if (avatarData == null || avatarData.isBlank() || "null".equals(avatarData)) {
+        handler.sendResponse("ERROR", "Dữ liệu ảnh không hợp lệ.", msg.getRequestId());
+        return;
+      }
+      userSqlDAO.updateAvatar(customer.getId(), avatarData);
+      customer.getSellerProfile().setAvatarData(avatarData);
+      handler.setLoggedInUser(customer);
+      handler.sendResponse("UPDATE_AVATAR_SUCCESS", customer, msg.getRequestId());
+    } catch (Exception e) {
+      handler.sendResponse("ERROR", "Cập nhật ảnh thất bại: " + e.getMessage(), msg.getRequestId());
     }
   }
 

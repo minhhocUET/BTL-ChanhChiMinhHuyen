@@ -399,10 +399,30 @@ public class RequestProcessor {
         handler.sendResponse("ERROR", "Dữ liệu ảnh không hợp lệ.", msg.getRequestId());
         return;
       }
-      userSqlDAO.updateAvatar(customer.getId(), avatarData);
-      customer.getSellerProfile().setAvatarData(avatarData);
+
+      String finalUrl = avatarData;
+
+      // 🎯 1. BẮT BỆNH & UPLOAD LÊN CLOUDINARY NGAY TẠI ĐÂY (Giống hệt handleAddItem)
+      if (avatarData.length() > 500) {
+        System.out.println("👉 [SERVER] Đang upload avatar lên Cloudinary...");
+        finalUrl = com.uet.bidding.util.CloudinaryUtil.uploadFromBase64(avatarData);
+
+        if (finalUrl == null) {
+          throw new UserException("Không thể upload ảnh lên Cloudinary!");
+        }
+        System.out.println("👉 [SERVER] Upload avatar thành công! URL mới: " + finalUrl);
+      }
+
+      // 2. Lưu đường dẫn URL ngắn (https://...) này vào Database thông qua DAO
+      userSqlDAO.updateAvatar(customer.getId(), finalUrl);
+
+      // 3. 🎯 ĐỒNG BỘ VÀO RAM: Gán URL ngắn vào Object lưu trong Session của Server
+      customer.getSellerProfile().setAvatarData(finalUrl);
       handler.setLoggedInUser(customer);
+
+      // 4. Bắn trả Object Customer sạch sẽ (chứa URL ngắn) về cho Client hiển thị lập tức
       handler.sendResponse("UPDATE_AVATAR_SUCCESS", customer, msg.getRequestId());
+
     } catch (Exception e) {
       handler.sendResponse("ERROR", "Cập nhật ảnh thất bại: " + e.getMessage(), msg.getRequestId());
     }

@@ -5,6 +5,7 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.*?>
 
+<?import javafx.scene.image.ImageView?>
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="850.0"
             style="-fx-background-color: #fce4ec;" xmlns="http://javafx.com/javafx/17.0.12"
             fx:controller="com.uet.bidding.controller.SellerReviewController">
@@ -19,7 +20,8 @@
                         <StackPane prefHeight="80.0" prefWidth="80.0">
                             <children>
                                 <Circle fill="#ffe4ec" radius="40.0" stroke="#ffb3cc" strokeType="INSIDE"/>
-                                <Label text="🏪" style="-fx-font-size: 40px;"/>
+                                <Label fx:id="sellerReviewAvatarLabel" text="?" style="-fx-font-size: 35px; -fx-font-weight: bold;" textFill="#e91e63" />
+                                <ImageView fx:id="sellerReviewAvatarImageView" fitHeight="80.0" fitWidth="80.0" preserveRatio="true" smooth="true" />
                             </children>
                         </StackPane>
 

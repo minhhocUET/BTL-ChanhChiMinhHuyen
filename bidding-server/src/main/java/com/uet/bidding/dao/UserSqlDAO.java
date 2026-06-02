@@ -42,7 +42,8 @@ public class UserSqlDAO {
       "SELECT u.*, " +
           "       s.store_name, " +
           "       s.description AS store_description, " +
-          "       s.rating " +
+          "       s.rating, " +
+          "       s.avatar_data " +
           "FROM   users   u " +
           "LEFT   JOIN sellers s ON s.user_id = u.id ";
 
@@ -94,6 +95,7 @@ public class UserSqlDAO {
       customer.getSellerProfile().setStoreName(rs.getString("store_name"));
       customer.getSellerProfile().setDescription(rs.getString("store_description"));
       double rating = rs.getDouble("rating");
+      customer.getSellerProfile().setAvatarData(rs.getString("avatar_data"));
       customer.getSellerProfile().setSellerRating(rs.wasNull() ? 0.0 : rating);
 
       // Bidder profile: danh sách auction ids được load lazy qua AuctionDAO
@@ -441,11 +443,11 @@ public class UserSqlDAO {
   }
 
   public void updateAvatar(int userId, String avatarData) throws UserException {
-    String sql = "UPDATE users SET avatar_data = ? WHERE id = ?";
+    String sql = "UPDATE sellers SET avatar_data = ? WHERE user_id = ?";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
       if (avatarData == null || avatarData.isBlank()) {
-        stmt.setNull(1, Types.LONGVARCHAR);
+        stmt.setNull(1, Types.VARCHAR); // Đổi thành Types.VARCHAR cho đồng bộ cấu trúc link URL
       } else {
         stmt.setString(1, avatarData);
       }

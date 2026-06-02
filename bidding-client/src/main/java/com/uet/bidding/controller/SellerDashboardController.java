@@ -2,12 +2,7 @@ package com.uet.bidding.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.uet.bidding.model.Auction;
-import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.Electronics;
-import com.uet.bidding.model.Item;
-import com.uet.bidding.model.ItemFactory;
-import com.uet.bidding.model.Seller;
+import com.uet.bidding.model.*;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.CreateAuctionContext;
 import com.uet.bidding.util.ImageUtils;
@@ -31,6 +26,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -90,6 +86,17 @@ public class SellerDashboardController {
   @FXML
   public void initialize() {
     instance = this;
+    // ✂️ BỔ SUNG ĐOẠN CODE NÀY ĐỂ BO TRÒN ẢNH:
+    if (avatarImageView != null) {
+      Circle clip = new Circle();
+      // Căn tâm hình tròn vào giữa ImageView
+      clip.centerXProperty().bind(avatarImageView.fitWidthProperty().divide(2));
+      clip.centerYProperty().bind(avatarImageView.fitHeightProperty().divide(2));
+      // Đặt bán kính bằng một nửa chiều rộng của ImageView
+      clip.radiusProperty().bind(avatarImageView.fitWidthProperty().divide(2));
+
+      avatarImageView.setClip(clip);
+    }
     Customer c = UserSession.getLoggedInCustomer();
     if (c == null) {
       showAlert(Alert.AlertType.ERROR, "Lỗi", "Vui lòng đăng nhập lại!");
@@ -370,7 +377,7 @@ public class SellerDashboardController {
   private void refreshAvatarUi() {
     Customer c = UserSession.getLoggedInCustomer();
     if (c == null) return;
-    ImageUtils.loadAvatarFromBase64(avatarImageView, avatarLabel, c.getSellerProfile().getAvatarData());
+    ImageUtils.loadAvatarFromUrl(avatarImageView, avatarLabel, c.getSellerProfile().getAvatarData());
   }
 
   @FXML
@@ -398,9 +405,22 @@ public class SellerDashboardController {
     ClientService.getInstance().sendRequest("UPDATE_AVATAR", base64)
         .thenAccept(res -> Platform.runLater(() -> {
           if ("UPDATE_AVATAR_SUCCESS".equals(res.getType())) {
-            customer.getSellerProfile().setAvatarData(base64);
-            refreshAvatarUi();
-            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật ảnh đại diện!");
+            Customer updatedCustomer = GsonFactory.fromJson(GsonFactory.toJson(res.getData()), Customer.class);
+
+            // 🎯 BƯỚC QUAN TRỌNG NHẤT BỊ THIẾU: Đè dữ liệu mới vào Session để Client ghi nhớ lâu dài
+            // Sửa dòng bị đỏ thành dòng này:
+            UserSession.setCurrentUser(updatedCustomer);
+
+            // Cập nhật lại biến cục bộ của Controller này
+            this.seller = updatedCustomer.getSellerProfile();
+
+            // Lấy link URL mới từ Cloudinary
+            String avatarUrl = this.seller.getAvatarData();
+
+            // Ép giao diện vẽ lại ảnh ngay lập tức
+            ImageUtils.loadAvatarFromUrl(avatarImageView, avatarLabel, avatarUrl);
+
+            showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật ảnh đại diện lên Cloudinary!");
           } else {
             showAlert(Alert.AlertType.ERROR, "Lỗi", String.valueOf(res.getData()));
           }

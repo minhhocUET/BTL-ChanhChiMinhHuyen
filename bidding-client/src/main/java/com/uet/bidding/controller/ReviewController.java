@@ -10,6 +10,7 @@ import com.uet.bidding.model.NetworkMessage;
 import com.uet.bidding.model.Review;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.BidderService;
+import com.uet.bidding.util.ImageUtils;
 import com.uet.bidding.util.ReviewContext;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
@@ -22,6 +23,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -37,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 
 public class ReviewController {
+  @FXML private ImageView reviewAvatarImageView;
+  @FXML private Label reviewAvatarLabel;
   @FXML
   private Label lblBigAvgRating; // Khai báo điều khiển ô điểm lớn bên phải
   @FXML
@@ -71,6 +75,42 @@ public class ReviewController {
       lblShopName.setText(ReviewContext.storeName);
     } else {
       lblShopName.setText("Đánh giá cửa hàng #" + ReviewContext.sellerId);
+    }
+    // 🎯 THIẾT LẬP MẶT NẠ CẮT TRÒN CHO AVATAR (Chuẩn động - không fix cứng)
+    if (reviewAvatarImageView != null) {
+      Circle clip = new Circle();
+      // Tự động bám theo kích thước của ImageView trên FXML
+      clip.centerXProperty().bind(reviewAvatarImageView.fitWidthProperty().divide(2));
+      clip.centerYProperty().bind(reviewAvatarImageView.fitHeightProperty().divide(2));
+      clip.radiusProperty().bind(reviewAvatarImageView.fitWidthProperty().divide(2));
+
+      reviewAvatarImageView.setClip(clip);
+    }
+
+    // 🎯 LẤY LINK ẢNH ĐỂ HIỂN THỊ
+    if (reviewAvatarLabel != null) {
+      String initial = "?";
+      if (lblShopName.getText() != null && !lblShopName.getText().isEmpty()) {
+        initial = lblShopName.getText().substring(0, 1).toUpperCase();
+      }
+      reviewAvatarLabel.setText(initial);
+
+      // Tìm URL ảnh đại diện của Seller này:
+      String avatarUrl = null;
+
+      // Nếu Seller đang xem đánh giá của chính mình (Lấy từ Session)
+      if (UserSession.getLoggedInCustomer() != null
+          && UserSession.getLoggedInCustomer().getId() == ReviewContext.sellerId) {
+        avatarUrl = UserSession.getLoggedInCustomer().getSellerProfile().getAvatarData();
+      }
+      // (Tùy chọn) Nếu sau này bạn mở trang này cho Khách hàng xem shop người khác,
+      // hãy đảm bảo bạn truyền link ảnh vào biến ReviewContext.avatarUrl trước khi mở form nhé!
+      // else if (ReviewContext.avatarUrl != null) {
+      //    avatarUrl = ReviewContext.avatarUrl;
+      // }
+
+      // Gọi hàm load ảnh với URL thật (không truyền null nữa)
+      ImageUtils.loadAvatarFromUrl(reviewAvatarImageView, reviewAvatarLabel, avatarUrl);
     }
 
     // 3. ĐỒNG BỘ ĐỘNG: Ẩn hoàn toàn form nhập và các nút bấm tạo mới nếu showAddForm = false
@@ -126,6 +166,26 @@ public class ReviewController {
         } else {
           System.out.println(">>> [DEBUG CLIENT] Server HOÀN TOÀN KHÔNG gửi trường storeDescription về!");
         }
+        // 🎯 TẢI VÀ ĐỒNG BỘ ẢNH AVATAR CLOUDINARY
+        String avatarUrl = null;
+        if (dataObj.has("avatarData") && !dataObj.get("avatarData").isJsonNull()) {
+          avatarUrl = dataObj.get("avatarData").getAsString();
+        } else if (dataObj.has("avatar") && !dataObj.get("avatar").isJsonNull()) {
+          // Phòng hờ nếu key trả về từ server là "avatar"
+          avatarUrl = dataObj.get("avatar").getAsString();
+        }
+
+        // Cập nhật lại chữ cái dự phòng cho chắc chắn
+        if (reviewAvatarLabel != null) {
+          String initial = "?";
+          if (lblShopName.getText() != null && !lblShopName.getText().isEmpty()) {
+            initial = lblShopName.getText().substring(0, 1).toUpperCase();
+          }
+          reviewAvatarLabel.setText(initial);
+        }
+
+        // Kích hoạt hàm Load URL từ ImageUtils để tự động hiện ảnh bo tròn (nếu có URL) hoặc hiện chữ cái (nếu url null)
+        ImageUtils.loadAvatarFromUrl(reviewAvatarImageView, reviewAvatarLabel, avatarUrl);
 
         // Bóc tách mảng danh sách bài review nằm bên trong Object tổng thể
         JsonArray arr = dataObj.getAsJsonArray("reviews");

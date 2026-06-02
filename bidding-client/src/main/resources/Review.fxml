@@ -28,6 +28,13 @@
                                         <Font name="System Bold" size="24.0"/>
                                     </font>
                                 </Label>
+
+                                <Label fx:id="lblShopDescription" text="Đang tải mô tả cửa hàng..." textFill="#ad1457" wrapText="true">
+                                    <font>
+                                        <Font name="System Italic" size="14.0"/>
+                                    </font>
+                                </Label>
+
                                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                                     <children>
                                         <Label fx:id="lblAvgRating" style="-fx-font-weight: bold; -fx-font-size: 18px;"

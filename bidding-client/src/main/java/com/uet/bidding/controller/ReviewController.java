@@ -44,7 +44,7 @@ public class ReviewController {
   @FXML
   private Label lblShopName;
   @FXML
-  private Label lblShopDesc;
+  private Label lblShopDescription;
   @FXML
   private Label lblAvgRating;
   @FXML
@@ -68,7 +68,7 @@ public class ReviewController {
 
     // 2. Lấy thông tin cơ bản của Shop
     if (ReviewContext.storeName != null) {
-      lblShopName.setText("Đánh giá: " + ReviewContext.storeName);
+      lblShopName.setText(ReviewContext.storeName);
     } else {
       lblShopName.setText("Đánh giá cửa hàng #" + ReviewContext.sellerId);
     }
@@ -109,11 +109,22 @@ public class ReviewController {
         // Cập nhật Tên Shop thật và Mô tả Shop động lên UI Client
         if (dataObj.has("storeName")) {
           String storeName = dataObj.get("storeName").getAsString();
-          lblShopName.setText("Đánh giá: " + storeName);
+          lblShopName.setText(storeName);
         }
 
-        if (dataObj.has("storeDescription") && lblShopDesc != null) {
-          lblShopDesc.setText("Mô tả: " + dataObj.get("storeDescription").getAsString());
+        if (dataObj.has("storeDescription")) {
+          String desc = dataObj.get("storeDescription").getAsString();
+          System.out.println(">>> [DEBUG CLIENT] Mô tả nhận từ Server: " + desc); // Kiểm tra log tại tab Run của IntelliJ
+
+          if (lblShopDescription != null) {
+            if (desc == null || desc.trim().isEmpty() || "-".equals(desc)) {
+              lblShopDescription.setText("Cửa hàng hiện chưa có mô tả nào.");
+            } else {
+              lblShopDescription.setText(desc);
+            }
+          }
+        } else {
+          System.out.println(">>> [DEBUG CLIENT] Server HOÀN TOÀN KHÔNG gửi trường storeDescription về!");
         }
 
         // Bóc tách mảng danh sách bài review nằm bên trong Object tổng thể

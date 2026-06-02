@@ -11,6 +11,10 @@ public class Review {
   private String comment;
   private LocalDateTime createdAt;
 
+  // 🌟 THÊM 2 BIẾN NÀY ĐỂ HỨNG DỮ LIỆU TỪ LỆNH JOIN SQL
+  private String reviewerName;
+  private String productName;
+
   public Review() {
   }
 
@@ -80,7 +84,24 @@ public class Review {
     this.createdAt = createdAt;
   }
 
+  // 🌟 ĐÃ SỬA LẠI: Ưu tiên lấy tên trực tiếp từ SQL truyền vào, nếu không có mới lấy từ Object Customer
   public String getReviewerName() {
+    if (this.reviewerName != null && !this.reviewerName.isEmpty()) {
+      return this.reviewerName;
+    }
     return reviewer != null ? reviewer.getFullName() : "Unknown";
+  }
+
+  public void setReviewerName(String reviewerName) {
+    this.reviewerName = reviewerName;
+  }
+
+  // 🌟 GETTER & SETTER CHO TÊN SẢN PHẨM
+  public String getProductName() {
+    return productName;
+  }
+
+  public void setProductName(String productName) {
+    this.productName = productName;
   }
 }

@@ -52,9 +52,21 @@ public class ReviewSqlDAO {
    * @param sellerId id người bán
    * @return List<Review>, mỗi review chứa đối tượng Customer (người đánh giá)
    */
+  /**
+   * 🌟 ĐÃ SỬA: Thay đổi u.username thành u.full_name để lấy tên thật khách hàng
+   */
   public List<Review> getReviewsBySeller(int sellerId) {
     List<Review> list = new ArrayList<>();
-    String sql = "SELECT * FROM reviews WHERE seller_id = ? ORDER BY created_at DESC";
+
+    // 🚀 ĐÃ ĐỔI: u.username AS reviewerName ➡️ CHUYỂN THÀNH u.full_name AS reviewerName
+    // (Nếu DB của bạn đặt tên cột này là 'name' hoặc 'display_name' thì bạn thay chữ full_name thành tên cột đó nhé)
+    String sql = "SELECT r.*, u.full_name AS reviewerName, i.name AS productName " +
+        "FROM reviews r " +
+        "JOIN users u ON r.reviewer_id = u.id " +
+        "JOIN auctions a ON r.auction_id = a.id " +
+        "JOIN items i ON a.item_id = i.id " +
+        "WHERE r.seller_id = ? " +
+        "ORDER BY r.created_at DESC";
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -63,19 +75,17 @@ public class ReviewSqlDAO {
 
       try (ResultSet rs = stmt.executeQuery()) {
         while (rs.next()) {
-          int reviewerId = rs.getInt("reviewer_id");
-          Customer reviewer = (Customer) userDao.findById(reviewerId);
-
-          // SỬA LỖI Ở ĐÂY: Dùng Constructor rỗng và Map ĐẦY ĐỦ các trường từ DB
           Review review = new Review();
           review.setId(rs.getInt("id"));
           review.setAuctionId(rs.getInt("auction_id"));
           review.setSellerId(rs.getInt("seller_id"));
-          review.setReviewer(reviewer);
           review.setStars(rs.getInt("stars"));
           review.setComment(rs.getString("comment"));
 
-          // Lấy đúng thời gian đánh giá trong Database thay vì lấy giờ hiện tại
+          review.setReviewerName(rs.getString("reviewerName"));
+          review.setProductName(rs.getString("productName"));
+
+          // Giữ nguyên logic lấy giờ thô, chúng ta sẽ ép múi giờ ở DatabaseConnection
           java.sql.Timestamp ts = rs.getTimestamp("created_at");
           if (ts != null) {
             review.setCreatedAt(ts.toLocalDateTime());
@@ -84,7 +94,7 @@ public class ReviewSqlDAO {
           list.add(review);
         }
       }
-    } catch (SQLException | UserException e) {
+    } catch (SQLException e) {
       System.err.println("Lỗi lấy danh sách review: " + e.getMessage());
     }
     return list;

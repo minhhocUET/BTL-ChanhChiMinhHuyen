@@ -91,7 +91,24 @@ public class SellerDashboardController {
       return;
     }
     seller = c.getSellerProfile();
+
+    // 1. Cài đặt các cột của bảng trước
     setupTables();
+
+    // ⏳ 2. Thiết lập Placeholder báo ĐANG TẢI cho cả 3 bảng
+    Label lblLoadInv = new Label("⏳ Đang tải danh sách kho hàng...");
+    lblLoadInv.setStyle("-fx-text-fill: #747d8c; -fx-font-style: italic; -fx-font-size: 14px;");
+    if (inventoryTable != null) inventoryTable.setPlaceholder(lblLoadInv);
+
+    Label lblLoadActive = new Label("⏳ Đang tải các phiên đấu giá đang diễn ra...");
+    lblLoadActive.setStyle("-fx-text-fill: #747d8c; -fx-font-style: italic; -fx-font-size: 14px;");
+    if (activeAuctionsTable != null) activeAuctionsTable.setPlaceholder(lblLoadActive);
+
+    Label lblLoadFinished = new Label("⏳ Đang tải lịch sử các phiên đã kết thúc...");
+    lblLoadFinished.setStyle("-fx-text-fill: #747d8c; -fx-font-style: italic; -fx-font-size: 14px;");
+    if (finishedAuctionsTable != null) finishedAuctionsTable.setPlaceholder(lblLoadFinished);
+
+    // 3. Tiến hành gọi nạp dữ liệu từ máy chủ
     loadSellerData();
     reloadInventoryFromServer();
     reloadActiveAuctionsFromServer();
@@ -243,7 +260,6 @@ public class SellerDashboardController {
     });
   }
 
-
   public void applyAuctionUpdate(Auction updated) {
     if (updated == null) return;
     Platform.runLater(() -> {
@@ -348,41 +364,43 @@ public class SellerDashboardController {
     ClientService.getInstance()
         .sendRequest("GET_ITEMS_BY_SELLER", c.getId())
         .thenAccept(res -> Platform.runLater(() -> {
-          // In log ra console IDE để kiểm tra
           System.out.println("✅ [UI] Tín hiệu từ Server: " + res.getType());
           System.out.println("✅ [UI] Dữ liệu từ Server: " + res.getData());
 
-          // 1. Nếu Server không trả về SUCCESS -> Request chưa được xử lý đúng trên Server
           if (res.getType() == null || !res.getType().contains("SUCCESS")) {
-            showAlert(Alert.AlertType.WARNING, "Cảnh báo Server", "Server không trả về SUCCESS. Xem log console IDE!");
-            inventoryItems.setAll(createDemoInventoryItem(c)); // Ép hiện demo
+            Label lblError = new Label("❌ Không thể tải dữ liệu từ Server.");
+            lblError.setStyle("-fx-text-fill: #e74c3c; -fx-font-style: italic; -fx-font-size: 14px;");
+            inventoryTable.setPlaceholder(lblError);
+            inventoryItems.clear();
             return;
           }
 
-          // 2. Nếu Server trả về đúng, tiến hành đọc JSON
           try {
             Gson gson = ClientService.getInstance().getGson();
             String json = gson.toJson(res.getData());
             List<Item> items = ItemFactory.parseItemsFromJson(json, gson);
 
             seller.getInventory().clear();
-            seller.getInventory().addAll(items);
 
-            if (items.isEmpty()) {
-              Item demo = createDemoInventoryItem(c);
-              seller.getInventory().add(demo);
-              inventoryItems.setAll(demo);
+            // 🎯 ĐÃ SỬA: Kiểm tra mảng trống để hiện chữ "Chưa có..."
+            if (items == null || items.isEmpty()) {
+              Label lblEmpty = new Label("📦 Kho hàng của bạn hiện đang trống.");
+              lblEmpty.setStyle("-fx-text-fill: #a4b0be; -fx-font-style: italic; -fx-font-size: 14px;");
+              inventoryTable.setPlaceholder(lblEmpty);
+              inventoryItems.clear();
             } else {
+              seller.getInventory().addAll(items);
               inventoryItems.setAll(items);
             }
 
             inventoryTable.refresh();
 
           } catch (Exception e) {
-            // 3. Bắt lỗi chết lâm sàng do Parse JSON và ném thẳng lên màn hình
             e.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Lỗi đọc dữ liệu", "Lỗi Parse JSON: " + e.getMessage());
-            inventoryItems.setAll(createDemoInventoryItem(c)); // Ép hiện demo
+            Label lblParseError = new Label("❌ Lỗi cấu trúc dữ liệu.");
+            lblParseError.setStyle("-fx-text-fill: #e74c3c; -fx-font-style: italic; -fx-font-size: 14px;");
+            inventoryTable.setPlaceholder(lblParseError);
+            inventoryItems.clear();
           }
         }));
   }
@@ -402,11 +420,55 @@ public class SellerDashboardController {
     ClientService.getInstance()
         .sendRequest(requestType, c.getId())
         .thenAccept(res -> Platform.runLater(() -> {
-          if (res.getType() == null || !res.getType().contains("SUCCESS")) return;
-          Gson gson = ClientService.getInstance().getGson();
-          String json = gson.toJson(res.getData());
-          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
-          if (list != null) target.setAll(list);
+
+          // 🎯 1. Xác định TableView nào đang xử lý để thay đổi Placeholder cho đúng bảng đó
+          TableView<Auction> currentTable = (target == activeAuctions) ? activeAuctionsTable : finishedAuctionsTable;
+          String emptyText = (target == activeAuctions)
+              ? "🔔 Hiện tại không có phiên đấu giá nào đang diễn ra."
+              : "🏁 Bạn chưa có phiên đấu giá nào kết thúc.";
+
+          // Nếu Server không trả về SUCCESS (hoặc lỗi kết nối)
+          if (res.getType() == null || !res.getType().contains("SUCCESS")) {
+            if (currentTable != null) {
+              Label lblError = new Label("❌ Không thể tải dữ liệu từ Server.");
+              lblError.setStyle("-fx-text-fill: #e74c3c; -fx-font-style: italic; -fx-font-size: 14px;");
+              currentTable.setPlaceholder(lblError);
+            }
+            target.clear();
+            return;
+          }
+
+          try {
+            Gson gson = ClientService.getInstance().getGson();
+            String json = gson.toJson(res.getData());
+            List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
+
+            // 🎯 2. Kiểm tra danh sách nhận về có trống (empty) không
+            if (list == null || list.isEmpty()) {
+              if (currentTable != null) {
+                Label lblEmpty = new Label(emptyText);
+                lblEmpty.setStyle("-fx-text-fill: #a4b0be; -fx-font-style: italic; -fx-font-size: 14px;");
+                currentTable.setPlaceholder(lblEmpty);
+              }
+              target.clear();
+            } else {
+              // Có dữ liệu thì đổ vào bình thường
+              target.setAll(list);
+            }
+
+            if (currentTable != null) {
+              currentTable.refresh();
+            }
+
+          } catch (Exception e) {
+            e.printStackTrace();
+            if (currentTable != null) {
+              Label lblParseError = new Label("❌ Lỗi xử lý cấu trúc dữ liệu.");
+              lblParseError.setStyle("-fx-text-fill: #e74c3c; -fx-font-style: italic; -fx-font-size: 14px;");
+              currentTable.setPlaceholder(lblParseError);
+            }
+            target.clear();
+          }
         }));
   }
 

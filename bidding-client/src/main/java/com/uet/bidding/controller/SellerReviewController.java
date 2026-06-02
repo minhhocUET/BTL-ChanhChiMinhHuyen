@@ -1,10 +1,11 @@
 package com.uet.bidding.controller;
 
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.uet.bidding.model.Customer;
-import com.uet.bidding.model.GsonFactory;
 import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.Review;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.ReviewContext;
 import com.uet.bidding.util.UserSession;
@@ -18,6 +19,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -26,27 +28,30 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class SellerReviewController {
 
-  @FXML
-  private VBox reviewsContainer;
+  @FXML private VBox reviewsContainer;
+  @FXML private Label lblShopName;
+  @FXML private Label lblShopDesc;
+  @FXML private Label lblAvgRating;
+  @FXML private Label lblStarRating;
+  @FXML private Label lblReviewCount;
+  @FXML private ProgressBar bar5, bar4, bar3, bar2, bar1;
+  @FXML private Label lblCount5, lblCount4, lblCount3, lblCount2, lblCount1;
 
   @FXML
   public void initialize() {
     Customer customer = UserSession.getLoggedInCustomer();
-    if (customer == null) {
-      return;
-    }
+    if (customer == null) return;
 
     String storeName = customer.getSellerProfile() != null
-        ? customer.getSellerProfile().getStoreName()
-        : "Cửa hàng";
+        ? customer.getSellerProfile().getStoreName() : "Cửa hàng của tôi";
 
-    // auctionId = 0 vì màn này chỉ XEM review, không gửi mới
     ReviewContext.set(0, customer.getId(), storeName, false);
+    if(lblShopName != null) lblShopName.setText(storeName);
 
     loadReviews();
   }
@@ -54,12 +59,13 @@ public class SellerReviewController {
   private void loadReviews() {
     if (reviewsContainer == null) return;
     reviewsContainer.getChildren().clear();
+    reviewsContainer.setSpacing(15);
 
     ClientService.getInstance()
         .sendRequest("GET_REVIEWS_BY_SELLER", ReviewContext.sellerId)
         .thenAccept(this::onReviewsLoaded)
         .exceptionally(ex -> {
-          Platform.runLater(() -> showAlert("Lỗi", ex.getMessage()));
+          Platform.runLater(() -> showAlert("Lỗi kết nối", ex.getMessage()));
           return null;
         });
   }
@@ -71,74 +77,169 @@ public class SellerReviewController {
         return;
       }
 
-      String json = GsonFactory.getInstance().toJson(response.getData());
-      List<Review> reviews = GsonFactory.getInstance().fromJson(json,
-          new TypeToken<List<Review>>() {
-          }.getType());
+      Gson gson = ClientService.getInstance().getGson();
+      try {
+        JsonElement dataElement = gson.toJsonTree(response.getData());
+        JsonArray arr = null;
 
-      for (Review r : reviews) {
-        String date = r.getCreatedAt() != null
-            ? r.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-            : "";
-        String stars = "⭐".repeat(Math.max(0, r.getStars()));
-        addReviewCard(r.getReviewerName(), date, stars, r.getComment());
+        if (dataElement.isJsonObject()) {
+          JsonObject dataObj = dataElement.getAsJsonObject();
+
+          // 1. Hiển thị tên shop
+          if (dataObj.has("storeName") && lblShopName != null) {
+            lblShopName.setText(dataObj.get("storeName").getAsString());
+          }
+
+          // 📝 2. Hiển thị dòng mô tả shop động nhỏ ở dưới
+          if (dataObj.has("storeDescription") && lblShopDesc != null) {
+            lblShopDesc.setText(dataObj.get("storeDescription").getAsString());
+            lblShopDesc.setStyle("-fx-font-size: 12px; -fx-text-fill: #747d8c; -fx-font-style: italic;");
+          }
+          if (dataObj.has("reviews")) arr = dataObj.getAsJsonArray("reviews");
+        } else if (dataElement.isJsonArray()) {
+          arr = dataElement.getAsJsonArray();
+        }
+
+        if (arr == null || arr.size() == 0) {
+          Label lblEmpty = new Label("Cửa hàng của bạn chưa nhận được đánh giá nào.");
+          lblEmpty.setStyle("-fx-text-fill: #94a3b8; -fx-font-style: italic;");
+          reviewsContainer.getChildren().add(lblEmpty);
+          return;
+        }
+
+        double sumStars = 0;
+        int[] starCounts = new int[6];
+
+        for (JsonElement el : arr) {
+          JsonObject obj = el.getAsJsonObject();
+
+          String name = "Người dùng ẩn danh";
+          if (obj.has("reviewerName") && !obj.get("reviewerName").isJsonNull()) {
+            name = obj.get("reviewerName").getAsString();
+          } else if (obj.has("username") && !obj.get("username").isJsonNull()) {
+            name = obj.get("username").getAsString();
+          }
+
+          int starsNum = obj.has("stars") ? obj.get("stars").getAsInt() : 5;
+          sumStars += starsNum;
+          if(starsNum >= 1 && starsNum <= 5) starCounts[starsNum]++;
+
+          String content = obj.has("comment") && !obj.get("comment").isJsonNull()
+              ? obj.get("comment").getAsString() : "(Không có bình luận)";
+
+          String productName = "Sản phẩm đấu giá"; // Đặt mặc định trước
+          if (obj.has("productName") && !obj.get("productName").isJsonNull()) {
+            String pName = obj.get("productName").getAsString().trim();
+            if (!pName.isEmpty()) {
+              productName = pName; // Chỉ lấy nếu chuỗi thực sự có ký tự
+            }
+          }
+
+          String dateStr = "-/-";
+          if (obj.has("createdAt") && !obj.get("createdAt").isJsonNull()) {
+            try {
+              String rawDate = obj.get("createdAt").getAsString();
+              if (rawDate.length() >= 19) {
+                String cleanDate = rawDate.substring(0, 19).replace(" ", "T");
+                dateStr = LocalDateTime.parse(cleanDate).format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+              } else {
+                dateStr = rawDate;
+              }
+            } catch (Exception e) {
+              dateStr = obj.get("createdAt").getAsString();
+            }
+          }
+
+          addReviewCard(name, dateStr, starsNum, productName, content);
+        }
+
+        double avg = sumStars / arr.size();
+        if (lblAvgRating != null) lblAvgRating.setText(String.format("%.1f", avg));
+        if (lblReviewCount != null) lblReviewCount.setText("(" + arr.size() + " đánh giá)");
+        if (lblStarRating != null) lblStarRating.setText("⭐".repeat((int) Math.round(avg)));
+
+        if(bar5 != null) {
+          bar5.setProgress((double) starCounts[5] / arr.size()); lblCount5.setText(String.valueOf(starCounts[5]));
+          bar4.setProgress((double) starCounts[4] / arr.size()); lblCount4.setText(String.valueOf(starCounts[4]));
+          bar3.setProgress((double) starCounts[3] / arr.size()); lblCount3.setText(String.valueOf(starCounts[3]));
+          bar2.setProgress((double) starCounts[2] / arr.size()); lblCount2.setText(String.valueOf(starCounts[2]));
+          bar1.setProgress((double) starCounts[1] / arr.size()); lblCount1.setText(String.valueOf(starCounts[1]));
+        }
+
+      } catch (Exception e) {
+        e.printStackTrace();
+        showAlert("Lỗi Dữ Liệu", "Không thể phân tích dữ liệu đánh giá từ server.");
       }
     });
+  }
+
+  // 🌟 ĐÃ SỬA: Sắp xếp lại luồng nạp con để bảo vệ dòng Tên sản phẩm không bị biến mất
+  private void addReviewCard(String name, String date, int starsNum, String productName, String content) {
+    HBox card = new HBox(15);
+    card.setStyle("-fx-background-color: #ffffff; -fx-padding: 15; -fx-background-radius: 12; -fx-border-color: #f8bbd0; -fx-border-radius: 12; -fx-border-width: 1;");
+    card.setAlignment(Pos.TOP_LEFT);
+
+    // Khối Avatar tròn bên trái
+    StackPane avatarPane = new StackPane();
+    Circle avatarBg = new Circle(22, Color.web("#ffe4ec"));
+    Label userIcon = new Label("👤");
+    userIcon.setStyle("-fx-font-size: 22px; -fx-text-fill: #e91e63;");
+    avatarPane.getChildren().addAll(avatarBg, userIcon);
+
+    // Khối chứa toàn bộ nội dung chữ bên phải
+    VBox contentBox = new VBox(6);
+    contentBox.setMinWidth(350);
+    HBox.setHgrow(contentBox, Priority.ALWAYS);
+
+    // Dòng tiêu đề: Tên người dùng + Ngày tháng
+    HBox headerBox = new HBox(10);
+    headerBox.setAlignment(Pos.CENTER_LEFT);
+
+    Label nameLabel = new Label(name);
+    nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #333333;");
+
+    Label dateLabel = new Label("(" + date + ")");
+    dateLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #888888;");
+
+    headerBox.getChildren().addAll(nameLabel, dateLabel);
+
+    // Dòng hiển thị số sao số
+    Label starsLabel = new Label("⭐ " + starsNum + ".0/5.0");
+    starsLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #ffb300;");
+
+    // Thêm tuần tự: Tiêu đề -> Số sao
+    contentBox.getChildren().add(headerBox);
+    contentBox.getChildren().add(starsLabel);
+
+    // 📦 ĐÃ SỬA LỖI: Luôn kiểm tra và add trực tiếp dòng hiển thị tên sản phẩm vào đúng vị trí kế tiếp
+    if (productName != null) {
+      Label productLabel = new Label("📦 Sản phẩm: " + productName);
+      productLabel.setStyle("-fx-font-size: 14px; -fx-font-style: italic; -fx-text-fill: #e91e63;");
+      contentBox.getChildren().add(productLabel);
+    }
+
+    // Dòng nội dung bình luận chi tiết
+    Label commentLabel = new Label("Đánh giá: " + content);
+    commentLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #555555;");
+    commentLabel.setWrapText(true);
+
+    contentBox.getChildren().add(commentLabel);
+
+    // Ghép ráp avatar và chữ vào thẻ card
+    card.getChildren().addAll(avatarPane, contentBox);
+
+    // Đẩy thẻ vào container chính
+    if (reviewsContainer != null) {
+      reviewsContainer.getChildren().add(card);
+    }
   }
 
   private void showAlert(String title, String msg) {
     Alert a = new Alert(Alert.AlertType.INFORMATION);
     a.setTitle(title);
+    a.setHeaderText(null);
     a.setContentText(msg);
     a.showAndWait();
-  }
-
-  private void addReviewCard(String name, String date, String stars, String content) {
-    VBox card = new VBox(8);
-    card.setStyle("-fx-background-color: #ffffff; -fx-padding: 15; -fx-background-radius: 12; -fx-border-color: #f8bbd0; -fx-border-radius: 12; -fx-border-width: 1;");
-
-    HBox topRow = new HBox(12);
-    topRow.setAlignment(Pos.CENTER_LEFT);
-
-    // Avatar người dùng (Vòng tròn hồng)
-    StackPane avatarPane = new StackPane();
-    Circle avatarBg = new Circle(20, Color.web("#e91e63"));
-    Label userIcon = new Label("👤");
-    userIcon.setTextFill(Color.WHITE);
-    userIcon.setStyle("-fx-font-size: 18px;");
-    avatarPane.getChildren().addAll(avatarBg, userIcon);
-
-    // Cột chứa Tên và Sao
-    VBox nameStarBox = new VBox(2);
-    Label nameLabel = new Label(name);
-    nameLabel.setFont(Font.font("System", FontWeight.BOLD, 15));
-    nameLabel.setTextFill(Color.web("#333333"));
-
-    Label starsLabel = new Label(stars);
-    starsLabel.setTextFill(Color.web("#e91e63"));
-    starsLabel.setStyle("-fx-font-size: 14px;");
-    nameStarBox.getChildren().addAll(nameLabel, starsLabel);
-
-    // Ngày tháng
-    Region spacer = new Region();
-    HBox.setHgrow(spacer, Priority.ALWAYS);
-    Label dateLabel = new Label(date);
-    dateLabel.setTextFill(Color.web("#d32f2f"));
-    dateLabel.setFont(Font.font("System", 12));
-
-    topRow.getChildren().addAll(avatarPane, nameStarBox, spacer, dateLabel);
-
-    // Nội dung review
-    Label contentLabel = new Label(content);
-    contentLabel.setTextFill(Color.web("#555555"));
-    contentLabel.setFont(Font.font("System", 14));
-    contentLabel.setWrapText(true);
-
-    card.getChildren().addAll(topRow, contentLabel);
-
-    if (reviewsContainer != null) {
-      reviewsContainer.getChildren().add(card);
-    }
   }
 
   @FXML
@@ -147,11 +248,9 @@ public class SellerReviewController {
       Parent dashboardRoot = FXMLLoader.load(getClass().getResource("/SellerDashboard.fxml"));
       Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
       currentStage.setScene(new Scene(dashboardRoot));
-      currentStage.setTitle("Kênh người bán - Seller Dashboard");
       currentStage.show();
     } catch (IOException e) {
       e.printStackTrace();
-      System.out.println("Lỗi: Không thể tải file SellerDashboard.fxml");
     }
   }
 }

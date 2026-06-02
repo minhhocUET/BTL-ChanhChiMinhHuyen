@@ -25,6 +25,15 @@ public class DatabaseConnection {
       throw new SQLException("Thiếu cấu hình biến môi trường cho Database!");
     }
 
+    // ⏰ TỰ ĐỘNG ÉP MÚI GIỜ VIỆT NAM (Sửa lỗi lệch 7 tiếng trên toàn hệ thống)
+    if (!url.contains("serverTimezone")) {
+      if (url.contains("?")) {
+        url += "&serverTimezone=Asia/Ho_Chi_Minh";
+      } else {
+        url += "?serverTimezone=Asia/Ho_Chi_Minh";
+      }
+    }
+
     return DriverManager.getConnection(url, user, password);
   }
 }

@@ -152,3 +152,57 @@
     -fx-text-fill: #22c55e;
     -fx-font-weight: bold;
 }
+
+/* =========================================================
+   5. ĐỒ THỊ LINECHART (ĐỒNG BỘ TONE HỒNG HIỆN ĐẠI, SẠCH SẼ)
+   ========================================================= */
+.chart {
+    -fx-padding: 8px;
+}
+
+/* Nền vùng vẽ đồ thị trong suốt tạo cảm giác thoáng đãng */
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+/* Đường biểu diễn lịch sử giá (Màu hồng đậm sắc nét, dày 3px kèm hiệu ứng đổ bóng) */
+.chart-series-line {
+    -fx-stroke: #e84393;
+    -fx-stroke-width: 3px;
+    -fx-effect: dropshadow(three-pass-box, rgba(232, 67, 147, 0.25), 8, 0, 0, 4);
+}
+
+/* Tùy chỉnh nút chấm tròn tại các mốc giá (Hình tròn trắng, viền hồng) */
+.chart-line-symbol {
+    -fx-background-color: #e84393, white;
+    -fx-background-insets: 0, 2.5;
+    -fx-background-radius: 10px;
+    -fx-padding: 5px;
+}
+
+/* Hiệu ứng tương tác sinh động khi hover chuột vào các điểm nút */
+.chart-line-symbol:hover {
+    -fx-background-color: #fd79a8, white;
+    -fx-scale-x: 1.4;
+    -fx-scale-y: 1.4;
+    -fx-cursor: hand;
+}
+
+/* Thiết kế lại đường lưới ngang (Dạng nét đứt mờ nhẹ mượt mà) */
+.chart-horizontal-grid-lines {
+    -fx-stroke: #f1f5f9;
+    -fx-stroke-dash-array: 3px 4px;
+}
+
+/* Trục chữ và số (X và Y) màu xám dịu mắt */
+.axis {
+    -fx-tick-label-font-size: 11px;
+    -fx-tick-label-fill: #64748b;
+}
+
+/* Tên nhãn của hai trục (Thời gian / Giá tiền VNĐ) */
+.axis-label {
+    -fx-text-fill: #e84393;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}

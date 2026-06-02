@@ -15,7 +15,7 @@ public class Auction {
   private BigDecimal currentPrice;
   private LocalDateTime startTime;
   private LocalDateTime endTime;
-  private String  status;
+  private String status;
   private int registeredCount;
   // Thêm các biến
   private BigDecimal bidIncrement;
@@ -29,6 +29,7 @@ public class Auction {
 
   public Auction() {
   }
+
   /**
    * CONSTRUCTOR 1: Dùng khi nạp dữ liệu từ Database hoặc File (Cần ID)
    */

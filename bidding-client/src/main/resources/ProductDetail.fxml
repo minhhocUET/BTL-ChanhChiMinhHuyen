@@ -118,12 +118,15 @@
                             <TableColumn fx:id="colBidAmount" prefWidth="130.0" text="Số tiền (VNĐ)"/>
                         </columns>
                     </TableView>
-                    <LineChart fx:id="bidLineChart" prefHeight="180.0" legendVisible="false">
+
+                    <LineChart fx:id="bidLineChart" prefHeight="220.0" legendVisible="false"
+                               animated="true" createSymbols="true" alternativeRowFillVisible="false"
+                               horizontalGridLinesVisible="true" verticalGridLinesVisible="false">
                         <xAxis>
-                            <CategoryAxis label="Thời gian"/>
+                            <CategoryAxis label="Thời gian" side="BOTTOM" tickLabelFill="#64748b" />
                         </xAxis>
                         <yAxis>
-                            <NumberAxis label="Giá (VNĐ)"/>
+                            <NumberAxis label="Giá (VNĐ)" side="LEFT" forceZeroInRange="false" tickLabelFill="#64748b" />
                         </yAxis>
                     </LineChart>
                 </VBox>

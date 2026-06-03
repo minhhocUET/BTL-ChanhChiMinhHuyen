@@ -47,4 +47,19 @@ public class AdminOverviewController {
           return null;
         });
   }
+
+  // ─── PHƯƠNG THỨC GETTER BỔ SUNG PHỤC VỤ KIỂM THỬ ────────────────
+
+  public Label getTxtTotalUsers() {
+    return txtTotalUsers;
+  }
+
+  public Label getTxtActiveAuctions() {
+    return txtActiveAuctions;
+  }
+
+  public Label getTxtPendingItems() {
+    return txtPendingItems;
+  }
+
 }

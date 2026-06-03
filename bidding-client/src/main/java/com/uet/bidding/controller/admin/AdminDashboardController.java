@@ -129,4 +129,26 @@ public class AdminDashboardController {
       e.printStackTrace();
     }
   }
+
+  // ─── CÁC PHƯƠNG THỨC GETTER ĐƯỢC BỔ SUNG ĐỂ PHỤC VỤ UNIT TEST ────────────────
+
+  public StackPane getContentArea() {
+    return contentArea;
+  }
+
+  public Button getBtnOverview() {
+    return btnOverview;
+  }
+
+  public Button getBtnUserManagement() {
+    return btnUserManagement;
+  }
+
+  public Button getBtnItemApproval() {
+    return btnItemApproval;
+  }
+
+  public Button getBtnLogout() {
+    return btnLogout;
+  }
 }

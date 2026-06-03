@@ -189,4 +189,34 @@ public class AdminUserManagementController {
     alert.setContentText(content);
     alert.showAndWait();
   }
+
+  // ─── PHƯƠNG THỨC GETTER BỔ SUNG PHỤC VỤ UNIT TEST ────────────────
+
+  public TableView<User> getUserTable() {
+    return userTable;
+  }
+
+  public ObservableList<User> getUserObservableList() {
+    return userObservableList;
+  }
+
+  public TableColumn<User, Integer> getColUserId() {
+    return colUserId;
+  }
+
+  public TableColumn<User, String> getColUsername() {
+    return colUsername;
+  }
+
+  public TableColumn<User, String> getColRole() {
+    return colRole;
+  }
+
+  public TableColumn<User, String> getColStatus() {
+    return colStatus;
+  }
+
+  public TableColumn<User, Void> getColUserAction() {
+    return colUserAction;
+  }
 }

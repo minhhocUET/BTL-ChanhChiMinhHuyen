@@ -1,6 +1,5 @@
 package com.uet.bidding.model;
 
-import com.uet.bidding.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

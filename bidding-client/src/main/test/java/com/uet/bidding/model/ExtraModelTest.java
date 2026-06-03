@@ -1,10 +1,12 @@
 package com.uet.bidding.model;
 
 import com.google.gson.Gson;
-import com.uet.bidding.model.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -120,43 +122,167 @@ public class ExtraModelTest {
   }
 
   /**
-   * 5. Phủ kín 100% GsonFactory (Singleton Design Pattern)
+   * 5. Phủ kín 100% GsonFactory (Singleton & Logic Đa hình, Chuyển đổi DateTime)
    */
   @Test
-  public void testGsonFactorySingleton() {
-    // Lấy instance lần 1 (khởi tạo mới)
+  public void testGsonFactorySingletonAndAllLogics() {
+    // ---- ĐOẠN 1: KIỂM TRA SINGLETON (Giữ nguyên logic cũ của bạn) ----
     Gson gson1 = GsonFactory.getInstance();
-    assertNotNull(gson1, "Gson instance không được null");
-
-    // Lấy instance lần 2 (lấy từ cache tĩnh)
+    assertNotNull(gson1);
     Gson gson2 = GsonFactory.getInstance();
+    assertSame(gson1, gson2);
 
-    // Kiểm tra xem có đúng là cùng một bộ nhớ (Singleton) không
-    assertSame(gson1, gson2, "Hai lần gọi getInstance phải trả về cùng một đối tượng");
+    // ---- ĐOẠN 2: KIỂM TRA CÁC HÀM TIỆN ÍCH STATIC (toJson, fromJson) ----
+    String sampleJson = "{\"fullName\":\"Test Static\"}";
+    Customer staticCustomer = GsonFactory.fromJson(sampleJson, Customer.class);
+    assertNotNull(staticCustomer);
+    assertEquals("Test Static", staticCustomer.getFullName());
+
+    String outputJson = GsonFactory.toJson(staticCustomer);
+    assertTrue(outputJson.contains("Test Static"));
+
+    java.lang.reflect.Type customerType = Customer.class;
+    Customer typeCustomer = GsonFactory.fromJson(sampleJson, customerType);
+    assertNotNull(typeCustomer);
+
+    // ---- ĐOẠN 3: KIỂM TRA BỘ KHỬ TUẦN TỰ ĐA HÌNH ITEM (itemDeserializer) ----
+    // Nhánh 3.1: Đọc bằng key "type" -> Lớp con ART
+    String jsonArt = "{\"type\":\"ART\",\"author\":\"Picasso\"}";
+    Item itemArt = GsonFactory.fromJson(jsonArt, Item.class);
+    assertTrue(itemArt instanceof Art);
+
+    // Nhánh 3.2: Đọc bằng key "item_type" -> Lớp con ELECTRONICS
+    String jsonElec = "{\"item_type\":\"ELECTRONICS\",\"brand\":\"Sony\"}";
+    Item itemElec = GsonFactory.fromJson(jsonElec, Item.class);
+    assertTrue(itemElec instanceof Electronics);
+
+    // Nhánh 3.3: Đọc bằng key "itemType" -> Lớp con VEHICLE
+    String jsonVehicle = "{\"itemType\":\"VEHICLE\",\"brand\":\"Toyota\"}";
+    Item itemVehicle = GsonFactory.fromJson(jsonVehicle, Item.class);
+    assertTrue(itemVehicle instanceof Vehicle);
+
+    // Nhánh 3.4: LỖI - Không tìm thấy thuộc tính phân loại sản phẩm
+    assertThrows(JsonParseException.class, () -> {
+      GsonFactory.fromJson("{\"name\":\"Vo Danh\"}", Item.class);
+    });
+
+    // Nhánh 3.5: LỖI - Loại sản phẩm không hợp lệ (nhánh default)
+    assertThrows(JsonParseException.class, () -> {
+      GsonFactory.fromJson("{\"type\":\"FOOD\"}", Item.class);
+    });
+
+    // ---- ĐOẠN 4: KIỂM TRA BỘ KHỬ TUẦN TỰ ĐA HÌNH USER (userDeserializer) ----
+    // Nhánh 4.1: Chứa role "ADMIN" -> Trả về lớp Admin
+    String jsonAdmin = "{\"username\":\"boss\",\"role\":\"ADMIN\"}";
+    User userAdmin = GsonFactory.fromJson(jsonAdmin, User.class);
+    assertTrue(userAdmin instanceof Admin);
+
+    // Nhánh 4.2: Không chứa role hoặc role khác ADMIN -> Mặc định trả về Customer
+    String jsonCustomer = "{\"username\":\"buyer\",\"role\":\"CUSTOMER\"}";
+    User userCust = GsonFactory.fromJson(jsonCustomer, User.class);
+    assertTrue(userCust instanceof Customer);
+
+    String jsonNoRole = "{\"username\":\"guest\"}";
+    User userNoRole = GsonFactory.fromJson(jsonNoRole, User.class);
+    assertTrue(userNoRole instanceof Customer);
+
+    // ---- ĐOẠN 5: KIỂM TRA XỬ LÝ LOCALDATETIME BẤT TỬ ----
+    // Nhánh 5.1: Serialize LocalDateTime sang định dạng ISO chuẩn
+    LocalDateTime testDateTime = LocalDateTime.of(2026, 6, 3, 15, 30, 0);
+    JsonObject dateContainer = new JsonObject();
+    dateContainer.add("time", GsonFactory.getInstance().toJsonTree(testDateTime));
+    assertTrue(dateContainer.get("time").getAsString().contains("2026-06-03T15:30:00"));
+
+    // Nhánh 5.2: Deserializer - Xử lý dấu cách SQL biến đổi thành chữ 'T'
+    String sqlJsonTime = "\"2026-06-03 15:30:00\"";
+    LocalDateTime parsedSqlTime = GsonFactory.fromJson(sqlJsonTime, LocalDateTime.class);
+    assertEquals(testDateTime, parsedSqlTime);
+
+    // Nhánh 5.3: Deserializer LỖI DỰ PHÒNG - Chuỗi dị thường lỗi nặng ở đuôi (Buộc phải nhảy vào catch để substring 19 ký tự đầu)
+    String longJsonTime = "\"2026-06-03T15:30:00_LOI_DU_LIEU_SQL_O_DAY\"";
+    LocalDateTime parsedLongTime = GsonFactory.fromJson(longJsonTime, LocalDateTime.class);
+    assertEquals(testDateTime, parsedLongTime); // Lần này chắc chắn sẽ bằng nhau vì đã bị ép cắt mất đuôi lỗi và nano giây bằng 0
+
+    // ---- ĐOẠN 6: KIỂM TRA XỬ LÝ LOCALDATE ----
+    LocalDate testDate = LocalDate.of(2026, 6, 3);
+    String jsonDate = GsonFactory.toJson(testDate);
+    assertEquals("\"2026-06-03\"", jsonDate);
+
+    LocalDate parsedDate = GsonFactory.fromJson(jsonDate, LocalDate.class);
+    assertEquals(testDate, parsedDate);
   }
 
-  /**
-   * 6. "Chiêu cuối" cày điểm cho các Enum (Nếu có)
-   * Mình dùng reflection/try-catch để quét, dù bạn có đổi tên Enum nó cũng không báo lỗi.
-   */
+  // ========================================================
+  // 🎯 PHỦ KÍN 100% CLASS: AutoBid (Khớp chính xác với Model)
+  // ========================================================
   @Test
-  public void testEnumsCoverageSafely() {
-    try {
-      assertNotNull(TransactionType.values());
-      assertNotNull(TransactionType.valueOf(TransactionType.values()[0].name()));
-    } catch (Exception e) {
-    }
+  public void testAutoBidClass() {
+    // 1. Kiểm thử Constructor có tham số để bao phủ logic khởi tạo thời gian mặc định
+    BigDecimal maxBidAmount = BigDecimal.valueOf(150000.0);
+    AutoBid autoBidWithArgs = new AutoBid(101, 202, maxBidAmount, true);
 
-    try {
-      assertNotNull(TransactionStatus.values());
-      assertNotNull(TransactionStatus.valueOf(TransactionStatus.values()[0].name()));
-    } catch (Exception e) {
-    }
+    assertEquals(101, autoBidWithArgs.getAuctionId());
+    assertEquals(202, autoBidWithArgs.getBidderId());
+    assertEquals(maxBidAmount, autoBidWithArgs.getMaxBid());
+    assertTrue(autoBidWithArgs.isActive());
+    assertNotNull(autoBidWithArgs.getCreatedAt());
+    assertNotNull(autoBidWithArgs.getUpdatedAt());
 
+    // 2. Kiểm thử Constructor rỗng kết hợp với đầy đủ các hàm Setter/Getter còn lại
+    AutoBid autoBidEmpty = new AutoBid();
+    LocalDateTime fakeTime = LocalDateTime.now().minusDays(1);
+
+    autoBidEmpty.setId(77);
+    autoBidEmpty.setAuctionId(555);
+    autoBidEmpty.setBidderId(999);
+    autoBidEmpty.setMaxBid(BigDecimal.valueOf(300000.0));
+    autoBidEmpty.setActive(false);
+    autoBidEmpty.setCreatedAt(fakeTime);
+    autoBidEmpty.setUpdatedAt(fakeTime);
+
+    // Assert kiểm chứng toàn bộ dữ liệu vừa set
+    assertEquals(77, autoBidEmpty.getId());
+    assertEquals(555, autoBidEmpty.getAuctionId());
+    assertEquals(999, autoBidEmpty.getBidderId());
+    assertEquals(BigDecimal.valueOf(300000.0), autoBidEmpty.getMaxBid());
+    assertFalse(autoBidEmpty.isActive());
+    assertEquals(fakeTime, autoBidEmpty.getCreatedAt());
+    assertEquals(fakeTime, autoBidEmpty.getUpdatedAt());
+
+    // 3. Quét qua hàm toString phòng hờ nếu sau này bạn sinh tự động (auto-generate) hàm toString
     try {
-      assertNotNull(AuctionState.values());
-      assertNotNull(AuctionState.valueOf(AuctionState.values()[0].name()));
-    } catch (Exception e) {
-    }
+      assertNotNull(autoBidEmpty.toString());
+    } catch (Exception ignored) {}
+  }
+
+  // ========================================================
+  // 🎯 PHỦ KÍN 100% CLASS: AuctionRegistration (Khớp chính xác với Model)
+  // ========================================================
+  @Test
+  public void testAuctionRegistrationClass() {
+    // 1. Kiểm thử Constructor có tham số để bao phủ logic khởi tạo thời gian tự động
+    AuctionRegistration regWithArgs = new AuctionRegistration(105, 302);
+
+    assertEquals(105, regWithArgs.getAuctionId());
+    assertEquals(302, regWithArgs.getBidderId());
+    assertNotNull(regWithArgs.getRegisteredAt());
+
+    // 2. Kiểm thử Constructor rỗng kết hợp với đầy đủ các hàm Setter/Getter
+    AuctionRegistration regEmpty = new AuctionRegistration();
+    LocalDateTime fakeTime = LocalDateTime.now().minusHours(2);
+
+    regEmpty.setAuctionId(888);
+    regEmpty.setBidderId(999);
+    regEmpty.setRegisteredAt(fakeTime);
+
+    // Kiểm chứng toàn bộ dữ liệu vừa set qua getter
+    assertEquals(888, regEmpty.getAuctionId());
+    assertEquals(999, regEmpty.getBidderId());
+    assertEquals(fakeTime, regEmpty.getRegisteredAt());
+
+    // 3. Quét qua hàm toString phòng hờ nếu bạn có sinh tự động hàm này
+    try {
+      assertNotNull(regEmpty.toString());
+    } catch (Exception ignored) {}
   }
 }

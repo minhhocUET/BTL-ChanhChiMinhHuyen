@@ -285,7 +285,7 @@ public class RequestProcessor {
 
     try {
       int approveId = ((Number) msg.getData()).intValue();
-      ItemSqlDAO itemDAO = new ItemSqlDAO();
+      ItemSqlDAO itemDAO = this.itemSqlDAO;
 
       // 1. Lấy thông tin sản phẩm trước khi duyệt để lấy giá khởi điểm
       Item item = itemDAO.findById(approveId);

@@ -35,6 +35,13 @@ public class Bidder {
 
   // --- Các hàm hỗ trợ logic (Helper methods) ---
 
+  /**
+   * 🎯 ĐÃ THÊM: Kiểm tra người dùng đã đăng ký tham gia phiên đấu giá này chưa
+   */
+  public boolean isRegistered(int auctionId) {
+    return this.registeredAuctionIds != null && this.registeredAuctionIds.contains(auctionId);
+  }
+
   // Khi người dùng nhấn nút "Đăng ký tham gia" một phiên mới
   public void registerForAuction(int auctionId) {
     if (!registeredAuctionIds.contains(auctionId)) {

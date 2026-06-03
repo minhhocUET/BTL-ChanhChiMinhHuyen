@@ -142,8 +142,12 @@ public class AuctionLogicTest {
     injectAuctionToRam(auction);
 
     Customer customer = new Customer();
+    customer.setId(1); // 🌟 1. BẮT BUỘC: Đặt ID cho customer để truyền vào hàm check của DAO
     customer.setUsername("UserA");
     BigDecimal bidAmount = new BigDecimal("600");
+
+    // 🌟 2. THÊM MOCK NÀY: Giả lập DAO xác nhận user này ĐÃ đăng ký tham gia phiên đấu giá
+    when(mockDao.isBidderRegistered(eq(auctionId), eq(customer.getId()))).thenReturn(true);
 
     // Mock DAO xử lý đặt giá thành công
     when(mockDao.placeBid(eq(auctionId), any(Customer.class), eq(bidAmount))).thenReturn(true);
@@ -152,6 +156,8 @@ public class AuctionLogicTest {
     Auction updatedAuction = new Auction(item, bidAmount, auction.getStartTime(), auction.getEndTime());
     updatedAuction.setId(auctionId);
     updatedAuction.setStatus("RUNNING");
+
+    // 🌟 3. THÊM MOCK NÀY: Vì inside placeBid() gọi hàm này để refresh lại RAM sau khi đặt giá thành công
     when(mockDao.findById(auctionId)).thenReturn(updatedAuction);
 
     // Thực thi
@@ -159,8 +165,175 @@ public class AuctionLogicTest {
 
     // Kiểm tra
     assertTrue(result);
-    // Lưu ý: So sánh BigDecimal nên dùng compareTo == 0 thay vì assertEquals trực tiếp
+    // So sánh giá tiền trên RAM sau khi quản lý đã update thành công
     assertEquals(0, bidAmount.compareTo(manager.getAuction(auctionId).getCurrentPrice()));
     verify(mockDao, times(1)).placeBid(eq(auctionId), any(), eq(bidAmount));
+  }
+  /**
+   * 1. Test bao phủ toàn bộ các Constructor còn lại và các hàm Getter/Setter khuyết
+   */
+  @Test
+  void testAuctionConstructorsAndAllGettersSetters() {
+    Item item = ItemFactory.createElectronics("Sony PS5", "Game Console", new BigDecimal("500"), "ps5.png", 1, "Sony", 12);
+
+    // Test Constructor 1 (Dùng khi load từ DB lên)
+    LocalDateTime start = LocalDateTime.now().minusDays(1);
+    LocalDateTime end = LocalDateTime.now().plusDays(1);
+    Auction auctionDb = new Auction(123, item, new BigDecimal("600"), start, end, "RUNNING");
+
+    assertEquals(123, auctionDb.getId());
+    assertEquals("RUNNING", auctionDb.getStatus());
+    assertEquals(start, auctionDb.getStartTime());
+
+    // Test Constructor 2 (Seller tạo nhanh qua số phút)
+    Auction auctionSeller = new Auction(item, new BigDecimal("500"), 120); // 120 phút
+    assertEquals("OPEN", auctionSeller.getStatus());
+    assertNotNull(auctionSeller.getEndTime());
+
+    // Quét sạch toàn bộ các Getter/Setter để JaCoCo tính điểm tuyệt đối
+    Auction a = new Auction();
+    a.setId(999);
+    a.setItem(item);
+    a.setCurrentPrice(BigDecimal.TEN);
+    a.setStatus("OPEN");
+    a.setRegisteredCount(50);
+    a.setEndTime(end);
+    a.setBidIncrement(BigDecimal.ONE);
+    a.setAntiSnipeWindowMinutes(5);
+    a.setAntiSnipeExtensionMinutes(10);
+
+    Customer highestUser = new Customer();
+    highestUser.setUsername("LeadUser");
+    a.setHighestBidder(highestUser);
+
+    // Assert kiểm chứng dữ liệu vừa ghi nhận
+    assertEquals(999, a.getId());
+    assertEquals(item, a.getItem());
+    assertEquals(BigDecimal.TEN, a.getCurrentPrice());
+    assertEquals("OPEN", a.getStatus());
+    assertEquals(50, a.getRegisteredCount());
+    assertEquals(end, a.getEndTime());
+    assertEquals(BigDecimal.ONE, a.getBidIncrement());
+    assertEquals(5, a.getAntiSnipeWindowMinutes());
+    assertEquals(10, a.getAntiSnipeExtensionMinutes());
+    assertEquals(highestUser, a.getHighestBidder());
+  }
+
+  /**
+   * 2. Test hàm trạng thái isActive và refreshStatus tự chuyển vùng khi hết giờ
+   */
+  @Test
+  void testAuctionStatusAndRefresh() {
+    Auction a = new Auction();
+
+    // Nhánh isActive
+    a.setStatus("RUNNING");
+    assertTrue(a.isActive());
+    a.setStatus("OPEN");
+    assertTrue(a.isActive());
+    a.setStatus("FINISHED");
+    assertFalse(a.isActive());
+
+    // Nhánh refreshStatus: Vẫn còn trong giờ -> Giữ nguyên RUNNING
+    Item item = ItemFactory.createElectronics("M", "D", BigDecimal.ONE, "i.png", 1, "B", 1);
+    Auction aRefresh = new Auction(item, BigDecimal.TEN, LocalDateTime.now().minusHours(1), LocalDateTime.now().plusHours(1));
+    aRefresh.setStatus("RUNNING");
+    aRefresh.refreshStatus();
+    assertEquals("RUNNING", aRefresh.getStatus());
+
+    // Nhánh refreshStatus: Quá giờ kết thúc -> Tự động hóa nhảy sang FINISHED
+    Auction aExpired = new Auction(item, BigDecimal.TEN, LocalDateTime.now().minusHours(5), LocalDateTime.now().minusHours(2));
+    aExpired.setStatus("RUNNING");
+    aExpired.refreshStatus();
+    assertEquals("FINISHED", aExpired.getStatus());
+
+    // Thử nghiệm với trạng thái ban đầu là OPEN nhưng quá giờ
+    Auction aOpenExpired = new Auction(item, BigDecimal.TEN, LocalDateTime.now().minusHours(5), LocalDateTime.now().minusHours(2));
+    aOpenExpired.setStatus("OPEN");
+    aOpenExpired.refreshStatus();
+    assertEquals("FINISHED", aOpenExpired.getStatus());
+  }
+
+  /**
+   * 3. Test trực diện hàm đặt giá nội tại placeNewBid của Auction (Ném các ngoại lệ)
+   */
+  @Test
+  void testPlaceNewBidInternalExceptions() {
+    Item item = ItemFactory.createElectronics("Item", "Desc", BigDecimal.TEN, "i.png", 1, "B", 1);
+    Auction a = new Auction(item, new BigDecimal("1000"), LocalDateTime.now(), LocalDateTime.now().plusHours(1));
+    Customer customer = new Customer();
+    customer.setUsername("BidderA");
+
+    // Lỗi 1: Đặt giá khi phiên đấu giá không ở trạng thái RUNNING (Đang OPEN)
+    a.setStatus("OPEN");
+    assertThrows(com.uet.bidding.exception.AuctionClosedException.class, () -> {
+      a.placeNewBid(customer, new BigDecimal("1200"));
+    });
+
+    // Chuyển sang RUNNING để test lỗi tiếp theo
+    a.setStatus("RUNNING");
+
+    // Lỗi 2: Đặt số tiền thấp hơn hoặc bằng giá hiện tại
+    assertThrows(com.uet.bidding.exception.InvalidBidException.class, () -> {
+      a.placeNewBid(customer, new BigDecimal("900")); // Thấp hơn 1000
+    });
+    assertThrows(com.uet.bidding.exception.InvalidBidException.class, () -> {
+      a.placeNewBid(customer, new BigDecimal("1000")); // Bằng 1000
+    });
+  }
+
+  /**
+   * 4. Test kịch bản đặt giá nội tại THÀNH CÔNG kết hợp cơ chế kích hoạt thông báo Observer Pattern
+   */
+  @Test
+  void testPlaceNewBidInternalSuccessWithObservers() throws Exception {
+    Item item = ItemFactory.createElectronics("Gaming Phone", "Desc", BigDecimal.TEN, "i.png", 1, "B", 1);
+    Auction a = new Auction(item, new BigDecimal("1000"), LocalDateTime.now(), LocalDateTime.now().plusHours(1));
+    a.setStatus("RUNNING");
+
+    Customer customer = new Customer();
+    customer.setUsername("ProBidder");
+    // Giả lập profile bidder để không bị NullPointerException khi add vào bidHistory
+
+    // Tạo một Observer giả lập bằng Mockito để nghe ngóng tình hình thay đổi giá
+    AuctionObserver mockObserver = mock(AuctionObserver.class);
+
+    // Ép object nhận diện danh sách observer (vì observers khai báo private)
+    Field observersField = Auction.class.getDeclaredField("observers");
+    observersField.setAccessible(true);
+    java.util.List<AuctionObserver> obsList = (java.util.List<AuctionObserver>) observersField.get(a);
+    obsList.add(mockObserver);
+
+    // Kích hoạt đặt giá hợp lệ
+    boolean isSuccess = a.placeNewBid(customer, new BigDecimal("1500"));
+
+    assertTrue(isSuccess);
+    assertEquals(new BigDecimal("1500"), a.getCurrentPrice());
+    assertEquals(customer, a.getHighestBidder());
+
+    // Kiểm chứng xem Observer có nhận được cuộc gọi updatePrice chuẩn xác không
+    verify(mockObserver, times(1)).updatePrice(eq("Sản phẩm: Gaming Phone"), eq(1500.0), eq("ProBidder"));
+  }
+
+  /**
+   * 5. Quét qua hàm phòng hộ readResolve dành cho Serialization ( transient bảo vệ )
+   */
+  @Test
+  void testReadResolveSerializationSafe() throws Exception {
+    Auction a = new Auction();
+
+    // Dùng Reflection cố tình phá hoại gán list observers về null (giống hệt hiện tượng xảy ra khi De-serialize biến transient)
+    Field observersField = Auction.class.getDeclaredField("observers");
+    observersField.setAccessible(true);
+    observersField.set(a, null);
+
+    // Gọi hàm private readResolve thông qua Reflection để xem nó tự chữa lành vùng nhớ không
+    java.lang.reflect.Method readResolveMethod = Auction.class.getDeclaredMethod("readResolve");
+    readResolveMethod.setAccessible(true);
+    Auction repairedAuction = (Auction) readResolveMethod.invoke(a);
+
+    // Kiểm chứng danh sách observer đã được khởi tạo mới thành công, không còn bị null nữa
+    java.util.List<?> listAfter = (java.util.List<?>) observersField.get(repairedAuction);
+    assertNotNull(listAfter);
   }
 }

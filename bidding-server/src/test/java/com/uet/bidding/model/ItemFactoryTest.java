@@ -1,16 +1,21 @@
 package com.uet.bidding.model;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ItemFactoryTest {
 
+  private final Gson gson = GsonFactory.getInstance(); // Tận dụng GsonFactory sẵn có của bạn
+
   /**
    * Mục đích: Kiểm tra hàm tạo sản phẩm Điện tử (createElectronics) dành cho Client.
-   * Kỳ vọng: Đối tượng trả về không null, thuộc đúng lớp con Electronics và lưu đúng các thuộc tính đặc trưng (Brand, Warranty).
    */
   @Test
   public void testCreateElectronics() {
@@ -27,7 +32,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kiểm tra hàm tạo sản phẩm Nghệ thuật (createArt) dành cho Client.
-   * Kỳ vọng: Đối tượng thuộc lớp con Art và chứa đúng thông tin Tác giả, Năm sáng tác, Chất liệu.
    */
   @Test
   public void testCreateArt() {
@@ -43,7 +47,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kiểm tra hàm tạo Xe cộ (createVehicle) khớp với Constructor 11 tham số.
-   * Kỳ vọng: Đối tượng thuộc lớp con Vehicle và lưu chính xác các thông số xe.
    */
   @Test
   public void testCreateVehicle() {
@@ -59,7 +62,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kiểm tra nhánh "ELECTRONICS" trong hàm switch-case nạp từ Database (createItemFromDb).
-   * Kỳ vọng: Ép kiểu thành công mảng extra args sang String (Brand) và Integer (Warranty).
    */
   @Test
   public void testCreateItemFromDbElectronics() {
@@ -75,7 +77,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kiểm tra nhánh "ART" trong hàm switch-case nạp từ Database.
-   * Kỳ vọng: Hàm phân tách đúng các tham số phụ (extra) đặc trưng của đồ mỹ thuật.
    */
   @Test
   public void testCreateItemFromDbArt() {
@@ -91,7 +92,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kiểm tra nhánh "VEHICLE" trong hàm switch-case nạp từ Database.
-   * Kỳ vọng: Đọc m mượt mà cấu trúc varargs phức tạp (gồm String, Integer, Double) để dựng đối tượng Vehicle.
    */
   @Test
   public void testCreateItemFromDbVehicle() {
@@ -107,7 +107,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kiểm tra xử lý chuỗi chữ thường/chữ hoa của tham số type (type.toUpperCase()).
-   * Kỳ vọng: Truyền vào "electronics" (chữ thường) thì hệ thống vẫn nhận diện đúng và không bị lỗi.
    */
   @Test
   public void testCreateItemFromDbCaseInsensitive() {
@@ -121,7 +120,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kịch bản LỖI - Kiểm tra nhánh bảo vệ khi type truyền vào bị null.
-   * Kỳ vọng: Ném ra lỗi `IllegalArgumentException` kèm thông điệp "Type cannot be null".
    */
   @Test
   public void testCreateItemFromDbNullType() {
@@ -134,7 +132,6 @@ public class ItemFactoryTest {
 
   /**
    * Mục đích: Kịch bản LỖI - Người dùng truyền vào một loại sản phẩm lạ lẫm không nằm trong hệ thống (nhánh default).
-   * Kỳ vọng: Ném ra lỗi `IllegalArgumentException` kèm thông báo loại sản phẩm không xác định.
    */
   @Test
   public void testCreateItemFromDbUnknownType() {
@@ -143,5 +140,159 @@ public class ItemFactoryTest {
     });
 
     assertTrue(exception.getMessage().contains("Loại sản phẩm không xác định"));
+  }
+
+  // =========================================================================
+  // 🔥 PHẦN THÊM MỚI: QUÉT SẠCH TOÀN BỘ LOGIC JSON PARSING (ĂN TRỌN 52 DÒNG THIẾU)
+  // =========================================================================
+
+  /**
+   * 1. Test phân tích cú pháp chuỗi JSON rỗng/lỗi hoặc trả về mảng null
+   */
+  @Test
+  public void testParseItemsFromJson_NullOrEmptyArray() {
+    List<Item> result = ItemFactory.parseItemsFromJson("[]", gson);
+    assertTrue(result.isEmpty());
+
+    // Nếu el không phải JsonObject (ví dụ mảng chứa chuỗi nguyên bản thay vì object)
+    List<Item> mixedResult = ItemFactory.parseItemsFromJson("[\"not_an_object\"]", gson);
+    assertTrue(mixedResult.isEmpty());
+  }
+
+  /**
+   * 2. Test parse thành công ELECTRONICS từ JSON với đầy đủ các trường bổ sung nâng cao
+   * Kiểm tra bọc lót: `itemType`, `city`, `imageData`, `status`, `rejectionReason`, `inAuction` (dạng camelCase)
+   */
+  @Test
+  public void testParseItemsFromJson_ElectronicsFullFields() {
+    String json = "[" +
+        "{" +
+        "  \"itemType\": \"ELECTRONICS\"," +
+        "  \"id\": 501," +
+        "  \"name\": \"Samsung S24\"," +
+        "  \"description\": \"Chính hãng\"," +
+        "  \"startingPrice\": 1200.50," +
+        "  \"imagePath\": \"s24.jpg\"," +
+        "  \"sellerId\": 99," +
+        "  \"brand\": \"Samsung\"," +
+        "  \"warrantyMonths\": 12," +
+        "  \"city\": \"Hanoi\"," +
+        "  \"imageData\": \"base64_string_here\"," +
+        "  \"status\": \"APPROVED\"," +
+        "  \"rejectionReason\": \"None\"," +
+        "  \"inAuction\": true" +
+        "}" +
+        "]";
+
+    List<Item> items = ItemFactory.parseItemsFromJson(json, gson);
+    assertEquals(1, items.size());
+    Item item = items.get(0);
+
+    assertTrue(item instanceof Electronics);
+    assertEquals(501, item.getId());
+    assertEquals("Samsung S24", item.getName());
+    assertEquals(new BigDecimal("1200.50"), item.getStartingPrice());
+    assertEquals("Hanoi", item.getCity());
+    assertEquals("base64_string_here", item.getImageData());
+    assertEquals("APPROVED", item.getStatus());
+    assertEquals("None", item.getRejectionReason());
+    assertTrue(item.isInAuction());
+  }
+
+  /**
+   * 3. Test parse thành công ART & VEHICLE từ JSON với cơ chế dự phòng biến "type"
+   * Đồng thời test fallback gán giá trị mặc định khi JSON khuyết các trường cơ bản (has và isJsonNull)
+   */
+  @Test
+  public void testParseItemsFromJson_ArtAndVehicleFallbackNulls() {
+    // Chuỗi JSON chứa 1 object ART dùng key "type" thay vì "itemType" và cố tình truyền null ở một số trường
+    // Chuỗi JSON chứa thêm 1 object VEHICLE sử dụng cấu trúc "in_auction" dạng snake_case
+    String json = "[" +
+        "{" +
+        "  \"type\": \"ART\"," +
+        "  \"id\": null," +
+        "  \"name\": null," +
+        "  \"description\": null," +
+        "  \"startingPrice\": null," +
+        "  \"imagePath\": null," +
+        "  \"sellerId\": null," +
+        "  \"author\": null," +
+        "  \"creationYear\": null," +
+        "  \"material\": null" +
+        "}," +
+        "{" +
+        "  \"itemType\": \"VEHICLE\"," +
+        "  \"brand\": null," +
+        "  \"model\": null," +
+        "  \"manufacturingYear\": null," +
+        "  \"mileage\": null," +
+        "  \"engineType\": null," +
+        "  \"fuelType\": null," +
+        "  \"in_auction\": false" + // Thử nghiệm nhánh đọc "in_auction" rẽ nhánh của bạn
+        "}" +
+        "]";
+
+    List<Item> items = ItemFactory.parseItemsFromJson(json, gson);
+    assertEquals(2, items.size());
+
+    // Khảo sát phần tử 1: ART nạp null -> Hệ thống phải tự gán giá trị mặc định an toàn
+    Item artItem = items.get(0);
+    assertTrue(artItem instanceof Art);
+    assertEquals(0, artItem.getId());
+    assertEquals("", artItem.getName());
+    assertEquals(BigDecimal.ZERO, artItem.getStartingPrice());
+    assertEquals("PENDING", artItem.getStatus()); // Mặc định do JSON thiếu trường status
+
+    // Khảo sát phần tử 2: VEHICLE
+    Item vehicleItem = items.get(1);
+    assertTrue(vehicleItem instanceof Vehicle);
+    assertFalse(vehicleItem.isInAuction());
+  }
+
+  /**
+   * 4. Test cơ chế TỰ ĐOÁN KIỂU DỮ LIỆU (Fallback Detection) khi JSON hoàn toàn không gửi kèm "itemType" hay "type"
+   */
+  @Test
+  public void testDetectItemType_FallbackMechanism() {
+    String json = "[" +
+        "  { \"warrantyMonths\": 24, \"name\": \"TV\" }," +                         // Phải tự đoán ra ELECTRONICS
+        "  { \"author\": \"Picasso\", \"name\": \"Tranh cổ\" }," +                  // Phải tự đoán ra ART
+        "  { \"engineType\": \"V8\", \"name\": \"Siêu xe Mustang\" }" +             // Phải tự đoán ra VEHICLE
+        "]";
+
+    List<Item> items = ItemFactory.parseItemsFromJson(json, gson);
+    assertEquals(3, items.size());
+    assertTrue(items.get(0) instanceof Electronics);
+    assertTrue(items.get(1) instanceof Art);
+    assertTrue(items.get(2) instanceof Vehicle);
+  }
+
+  /**
+   * 5. Kịch bản LỖI - JSON không gửi type định danh và cũng không có bất kỳ trường đặc trưng nào để đoán kiểu
+   */
+  @Test
+  public void testDetectItemType_CannotDetermine() {
+    String json = "[{ \"weight\": \"10kg\", \"color\": \"Red\" }]"; // Không có manh mối nào để đoán loại Item
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      ItemFactory.parseItemsFromJson(json, gson);
+    });
+  }
+
+  /**
+   * 6. Kịch bản LỖI - Định danh loại sản phẩm hợp lệ ở bước đoán nhưng switch-case khởi tạo gặp lỗi loại sản phẩm không xác định
+   */
+  @Test
+  public void testParseItemFromJsonObject_UnknownTypeSwitch() {
+    // Ép kiểu thủ công qua JsonObject để gọi nội hàm kiểm tra ngoại lệ rẽ nhánh
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty("itemType", "UNKNOWN_PRODUCT_TYPE");
+
+    assertThrows(IllegalArgumentException.class, () -> {
+      // Vì parseItemFromJsonObject là hàm private, ta đẩy qua hàm public bọc nó để test gián tiếp
+      JsonArray array = new JsonArray();
+      array.add(jsonObject);
+      ItemFactory.parseItemsFromJson(gson.toJson(array), gson);
+    });
   }
 }

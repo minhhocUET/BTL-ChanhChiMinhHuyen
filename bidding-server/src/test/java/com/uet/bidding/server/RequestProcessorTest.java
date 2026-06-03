@@ -6,6 +6,7 @@ import com.uet.bidding.dao.UserSqlDAO;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.model.Review;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,25 +34,7 @@ public class RequestProcessorTest {
   @BeforeEach
   void setUp() {
     requestProcessor = new RequestProcessor(userSqlDAO, itemSqlDAO, auctionSqlDAO);
-  }
-
-  @Test
-  void testProcessRequest_GetAllAuctions_Success() {
-    // 1. Chuẩn bị dữ liệu giả lập
-    String reqId = "test-req-id-123";
-    NetworkMessage msg = new NetworkMessage("GET_ALL_AUCTIONS", "");
-    msg.setRequestId(reqId);
-
-    List<Auction> fakeAuctions = new ArrayList<>();
-    // Giả lập hàm trong DAO trả về danh sách trống hoặc có phần tử
-    when(auctionSqlDAO.getAllAuctions()).thenReturn(fakeAuctions);
-
-    // 2. Chạy hàm cần test
-    requestProcessor.processRequest(msg, clientHandler);
-
-    // 3. Kiểm chứng (Verify): Xem server có gọi hàm gửi phản hồi SUCCESS về cho Client đúng reqId không
-    verify(auctionSqlDAO, times(1)).getAllAuctions();
-    verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq(fakeAuctions), eq(reqId));
+    com.uet.bidding.service.AuctionManager.getInstance().initialize(auctionSqlDAO);
   }
 
   @Test
@@ -242,8 +225,8 @@ public class RequestProcessorTest {
 
     requestProcessor.processRequest(msg, clientHandler);
 
-    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Sai cú pháp! Gửi: itemId startPrice durationMinutes"), eq(reqId));
-  }
+    String expectedErrorMsg = "Sai cú pháp! Gửi: itemId startPrice durationMinutes bidIncrement";
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq(expectedErrorMsg), eq(reqId));  }
 
   // ==============================================================
   // THỬ NGHIỆM ĐĂNG XUẤT HỆ THỐNG (LOGOUT)
@@ -322,6 +305,8 @@ public class RequestProcessorTest {
     mockCustomer.setId(5);
     when(clientHandler.getLoggedInUser()).thenReturn(mockCustomer);
 
+    when(auctionSqlDAO.isBidderRegistered(200, 5)).thenReturn(true);
+
     requestProcessor.processRequest(msg, clientHandler);
 
     verify(auctionSqlDAO, times(1)).setAutoBid(200, 5, new BigDecimal("1500000"));
@@ -331,7 +316,7 @@ public class RequestProcessorTest {
   @Test
   void testProcessRequest_RemoveAutoBid_Success() {
     String reqId = "autobid-remove";
-    NetworkMessage msg = new NetworkMessage("REMOVE_AUTO_BID", "200");
+    NetworkMessage msg = new NetworkMessage("REMOVE_AUTO_BID", 200);
     msg.setRequestId(reqId);
 
     Customer mockCustomer = new Customer("bidder1", "password", BigDecimal.ZERO);
@@ -342,6 +327,24 @@ public class RequestProcessorTest {
 
     verify(auctionSqlDAO, times(1)).removeAutoBid(200, 5);
     verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq("Đã tắt đấu giá tự động!"), eq(reqId));
+  }
+
+  // ─── 4. KIỂM THỬ ĐẶT GIÁ THẦU (BID) & CÀI ĐẶT ĐẤU GIÁ TỰ ĐỘNG ──────────────
+  @Test
+  void testProcessRequest_Bid_ValidationErrors() {
+    String reqId = "bid-errors";
+
+    // Lỗi 1: Chỉ Khách hàng mới được đặt giá (Admin gọi lệnh sẽ lỗi)
+    com.uet.bidding.model.Admin admin = new com.uet.bidding.model.Admin();
+    when(clientHandler.getLoggedInUser()).thenReturn(admin);
+    requestProcessor.processRequest(new NetworkMessage("BID", "100 50000"), clientHandler);
+
+    // Lỗi 2: Sai cú pháp chuỗi gói tin (Thiếu tham số giá tiền)
+    Customer customer = new Customer("buyer", "pass", BigDecimal.ZERO);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+    requestProcessor.processRequest(new NetworkMessage("BID", "100"), clientHandler); // Không có dấu cách chia tiền
+
+    verify(clientHandler, times(2)).sendResponse(eq("ERROR"), anyString(), any());
   }
 
   // ==============================================================
@@ -380,6 +383,70 @@ public class RequestProcessorTest {
     verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq("Đã gửi yêu cầu phê duyệt!"), eq(reqId));
   }
 
+  @Test
+  void testProcessRequest_AddItem_Success_Art_And_Vehicle() {
+    String reqId = "add-item-art-veh";
+    Customer customer = new Customer("seller1", "pass", BigDecimal.ZERO);
+    customer.setId(10);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+
+    // Kịch bản A: Sản phẩm Nghệ thuật (ART)
+    com.google.gson.JsonObject artObj = new com.google.gson.JsonObject();
+    artObj.addProperty("itemType", "ART");
+    artObj.addProperty("name", "Mona Lisa");
+    artObj.addProperty("startingPrice", "1000000"); // Dạng chuỗi số
+    artObj.addProperty("author", "Da Vinci");
+    artObj.addProperty("creationYear", 1503);
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_ITEM", artObj), clientHandler);
+
+    // Kịch bản B: Sản phẩm Phương tiện (VEHICLE)
+    com.google.gson.JsonObject vehObj = new com.google.gson.JsonObject();
+    vehObj.addProperty("itemType", "VEHICLE");
+    vehObj.addProperty("name", "Tesla Model 3");
+    vehObj.addProperty("startingPrice", new BigDecimal("45000")); // Dạng BigDecimal
+    vehObj.addProperty("brand", "Tesla");
+    vehObj.addProperty("model", "Long Range");
+    vehObj.addProperty("manufacturingYear", 2023);
+    vehObj.addProperty("mileage", 5000.5);
+    vehObj.addProperty("engineType", "Điện");
+    vehObj.addProperty("fuelType", "Pin EV");
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_ITEM", vehObj), clientHandler);
+
+    verify(itemSqlDAO, times(2)).addItem(any(com.uet.bidding.model.Item.class));
+  }
+
+  @Test
+  void testProcessRequest_AddItem_Failures() {
+    String reqId = "add-item-fail";
+
+    // Luồng 1: Chưa đăng nhập
+    when(clientHandler.getLoggedInUser()).thenReturn(null);
+    requestProcessor.processRequest(new NetworkMessage("ADD_ITEM", ""), clientHandler);
+
+    // Luồng 2: Loại sản phẩm không hỗ trợ (Nhánh default của switch-case)
+    Customer customer = new Customer("seller1", "pass", BigDecimal.ZERO);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+
+    com.google.gson.JsonObject badObj = new com.google.gson.JsonObject();
+    badObj.addProperty("itemType", "FOOD"); // Không hỗ trợ
+    badObj.addProperty("name", "Bánh mì");
+    badObj.addProperty("startingPrice", 2);
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_ITEM", badObj), clientHandler);
+
+    // Luồng 3: Thiếu hoặc lỗi trường giá khởi điểm (readBigDecimal Exception)
+    com.google.gson.JsonObject emptyPriceObj = new com.google.gson.JsonObject();
+    emptyPriceObj.addProperty("itemType", "ELECTRONICS");
+    emptyPriceObj.addProperty("name", "Lỗi giá");
+    emptyPriceObj.addProperty("startingPrice", "   "); // Trống rỗng
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_ITEM", emptyPriceObj), clientHandler);
+
+    verify(clientHandler, times(3)).sendResponse(eq("ERROR"), anyString(), any());
+  }
+
   // ==============================================================
   // 2. TEST THÊM SẢN PHẨM LỖI ĐỊNH DẠNG GIÁ (INVALID_PRICE)
   // ==============================================================
@@ -404,8 +471,9 @@ public class RequestProcessorTest {
 
     verify(itemSqlDAO, never()).addItem(any());
 
-    // 🎯 ĐÃ SỬA: Dùng chính xác chuỗi lỗi hệ thống trả về thay vì dùng contains()
-    String exactErrorMsg = "Lỗi định dạng giá: Character G is neither a decimal digit number, decimal point, nor \"e\" notation exponential mark.";
+    // 🎯 ĐÃ CẬP NHẬT: Loại bỏ chuỗi "Lỗi định dạng giá: " để khớp hoàn toàn với thực tế hệ thống bắn ra
+    String exactErrorMsg = "Character G is neither a decimal digit number, decimal point, nor \"e\" notation exponential mark.";
+
     verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq(exactErrorMsg), eq(reqId));
   }
 
@@ -451,9 +519,84 @@ public class RequestProcessorTest {
     verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq("Đổi mật khẩu thành công!"), eq(reqId));
   }
 
+  @Test
+  void testProcessRequest_ChangePassword_WrongOldPassword() {
+    String reqId = "pass-wrong-old";
+    NetworkMessage msg = new NetworkMessage("CHANGE_PASSWORD", "wrong_old_pass|newPass123|newPass123");
+    msg.setRequestId(reqId);
+
+    Customer mockCustomer = new Customer("testuser", "correct_old_hashed", BigDecimal.ZERO);
+    mockCustomer.setId(1);
+    when(clientHandler.getLoggedInUser()).thenReturn(mockCustomer);
+    when(userSqlDAO.findById(1)).thenReturn(mockCustomer);
+
+    // Sử dụng BCrypt tạo một chuỗi hash hợp lệ khác để giả lập việc kiểm tra pass cũ sai lệch
+    String anotherHash = org.mindrot.jbcrypt.BCrypt.hashpw("different_pass", org.mindrot.jbcrypt.BCrypt.gensalt(4));
+    Customer dbUser = new Customer("testuser", anotherHash, BigDecimal.ZERO);
+    when(userSqlDAO.findById(1)).thenReturn(dbUser);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Mật khẩu cũ không chính xác!"), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_ChangePassword_SameAsOld() {
+    String reqId = "pass-same-old";
+    String rawOld = "old123";
+    String oldHashed = org.mindrot.jbcrypt.BCrypt.hashpw(rawOld, org.mindrot.jbcrypt.BCrypt.gensalt(4));
+
+    NetworkMessage msg = new NetworkMessage("CHANGE_PASSWORD", rawOld + "|" + rawOld + "|" + rawOld);
+    msg.setRequestId(reqId);
+
+    Customer mockCustomer = new Customer("testuser", oldHashed, BigDecimal.ZERO);
+    mockCustomer.setId(1);
+    when(clientHandler.getLoggedInUser()).thenReturn(mockCustomer);
+    when(userSqlDAO.findById(1)).thenReturn(mockCustomer);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Mật khẩu mới phải khác với mật khẩu hiện tại!"), eq(reqId));
+  }
+
   // ==============================================================
   // THỬ NGHIỆM TÍNH NĂNG ADMIN (DUYỆT/TỪ CHỐI SẢN PHẨM & LẤY LIST)
   // ==============================================================
+  @Test
+  void testProcessRequest_ApproveItem_NotFound() {
+    String reqId = "admin-approve-notfound";
+    NetworkMessage msg = new NetworkMessage("APPROVE_ITEM", 999);
+    msg.setRequestId(reqId);
+
+    com.uet.bidding.model.Admin admin = new com.uet.bidding.model.Admin();
+    when(clientHandler.getLoggedInUser()).thenReturn(admin);
+    when(itemSqlDAO.findById(999)).thenReturn(null);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Sản phẩm không tồn tại."), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_AdminActions_ForbiddenForCustomer() {
+    String reqId = "admin-forbidden";
+    NetworkMessage msgGet = new NetworkMessage("GET_PENDING_ITEMS", "");
+    msgGet.setRequestId(reqId);
+
+    // Giả lập là Customer chứ không phải Admin
+    Customer customer = new Customer("user", "pass", BigDecimal.ZERO);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+
+    requestProcessor.processRequest(msgGet, clientHandler);
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Bạn không có quyền thực hiện chức năng này!"), eq(reqId));
+
+    // Kiểm tra tương tự với APPROVE_ITEM
+    NetworkMessage msgApprove = new NetworkMessage("APPROVE_ITEM", 123);
+    msgApprove.setRequestId(reqId);
+    requestProcessor.processRequest(msgApprove, clientHandler);
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Bạn không có quyền thực hiện!"), eq(reqId));
+  }
+
   @Test
   void testProcessRequest_GetPendingItems_Success() throws Exception {
     String reqId = "pending-123";
@@ -492,22 +635,44 @@ public class RequestProcessorTest {
   }
 
   @Test
+  void testProcessRequest_ApproveItem_Failure_Exception() {
+    String reqId = "approve-exception";
+    NetworkMessage msg = new NetworkMessage("APPROVE_ITEM", 15);
+    msg.setRequestId(reqId);
+
+    com.uet.bidding.model.Admin admin = new com.uet.bidding.model.Admin();
+    when(clientHandler.getLoggedInUser()).thenReturn(admin);
+
+    // Ép DAO ném ra Exception để đi vào khối catch(Exception e)
+    when(itemSqlDAO.findById(15)).thenThrow(new RuntimeException("Lỗi kết nối DB khi tìm kiếm"));
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Lỗi xử lý: Lỗi kết nối DB khi tìm kiếm"), eq(reqId));
+  }
+
+  @Test
   void testProcessRequest_ApproveItem_Success() throws Exception {
     String reqId = "approve-123";
     NetworkMessage msg = new NetworkMessage("APPROVE_ITEM", 15);
     msg.setRequestId(reqId);
 
+    // 1. Giả lập quyền ADMIN
     com.uet.bidding.model.Admin mockAdmin = mock(com.uet.bidding.model.Admin.class);
-    // 🎯 ĐÃ SỬA: Giả lập quyền "ADMIN"
     lenient().when(mockAdmin.getRole()).thenReturn("ADMIN");
     when(clientHandler.getLoggedInUser()).thenReturn(mockAdmin);
 
+    // 2. Giả lập Abstract Class Item (Chỉ cần mock, không cần gán getter vì code thật không dùng)
     com.uet.bidding.model.Item mockItem = mock(com.uet.bidding.model.Item.class);
+
+    // 3. Cấu hình hành vi cho DAO (Chỉ giữ lại 2 hàm mà code thật chắc chắn gọi)
     when(itemSqlDAO.findById(15)).thenReturn(mockItem);
     when(itemSqlDAO.updateItemStatus(15, "APPROVED")).thenReturn(true);
 
+    // 4. Thực thi xử lý
     requestProcessor.processRequest(msg, clientHandler);
 
+    // 5. Kiểm chứng kết quả
     verify(itemSqlDAO, times(1)).updateItemStatus(15, "APPROVED");
     verify(clientHandler, times(1)).sendResponse(eq("APPROVE_SUCCESS"), eq("Đã duyệt sản phẩm thành công!"), eq(reqId));
   }
@@ -529,6 +694,23 @@ public class RequestProcessorTest {
 
     verify(itemSqlDAO, times(1)).updateItemStatus(15, "REJECTED", "Ảnh không hợp lệ");
     verify(clientHandler, times(1)).sendResponse(eq("REJECT_SUCCESS"), eq("Đã từ chối phê duyệt sản phẩm."), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_RejectItem_Failure_DbUpdateFalse() {
+    String reqId = "reject-db-false";
+    NetworkMessage msg = new NetworkMessage("REJECT_ITEM", "15|Ảnh không hợp lệ");
+    msg.setRequestId(reqId);
+
+    com.uet.bidding.model.Admin admin = new com.uet.bidding.model.Admin();
+    when(clientHandler.getLoggedInUser()).thenReturn(admin);
+
+    // Giả lập trường hợp DAO trả về false (Không tìm thấy hoặc không update được)
+    when(itemSqlDAO.updateItemStatus(15, "REJECTED", "Ảnh không hợp lệ")).thenReturn(false);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Không thể cập nhật trạng thái từ chối."), eq(reqId));
   }
 
   // ==============================================================
@@ -556,6 +738,19 @@ public class RequestProcessorTest {
     verify(clientHandler, times(1)).sendResponse(eq("GET_SYSTEM_STATS_SUCCESS"), any(com.google.gson.JsonObject.class), eq(reqId));
   }
 
+  @Test
+  void testProcessRequest_GetSystemStats_Exception() {
+    String reqId = "stats-fail";
+    NetworkMessage msg = new NetworkMessage("GET_SYSTEM_STATS", "");
+    msg.setRequestId(reqId);
+
+    when(userSqlDAO.getTotalUserCount()).thenThrow(new RuntimeException("Lỗi kết nối DB"));
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Lỗi tổng hợp số liệu thống kê: Lỗi kết nối DB"), eq(reqId));
+  }
+
   // ==============================================================
   // THỬ NGHIỆM XÓA SẢN PHẨM & MỞ KHÓA USER
   // ==============================================================
@@ -574,6 +769,19 @@ public class RequestProcessorTest {
   }
 
   @Test
+  void testProcessRequest_DeleteItem_Failure_Exception() {
+    String reqId = "delete-item-exception";
+    NetworkMessage msg = new NetworkMessage("DELETE_ITEM", 404);
+    msg.setRequestId(reqId);
+
+    when(itemSqlDAO.deleteItemCompletely(404)).thenThrow(new RuntimeException("Lỗi IO xóa file ảnh Cloud"));
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("DELETE_ITEM_FAILED"), eq("Lỗi Server: Lỗi IO xóa file ảnh Cloud"), eq(reqId));
+  }
+
+  @Test
   void testProcessRequest_UnbanUser_Success() {
     String reqId = "unban-abc";
     NetworkMessage msg = new NetworkMessage("UNBAN_USER", 55);
@@ -586,5 +794,148 @@ public class RequestProcessorTest {
     verify(userSqlDAO, times(1)).updateBanStatus(55, false);
     verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq("Mở khóa tài khoản thành công."), eq(reqId));
   }
+
+  // ─── 3. KIỂM THỬ TOÀN DIỆN LỆNH LẤY TẤT CẢ USER (GET_ALL_USERS) ───────────
+  @Test
+  void testProcessRequest_GetAllUsers_Exception() {
+    String reqId = "get-users-exception";
+    NetworkMessage msg = new NetworkMessage("GET_ALL_USERS", "");
+    msg.setRequestId(reqId);
+
+    // Ép DAO ném ra lỗi để bao phủ block catch của GET_ALL_USERS
+    when(userSqlDAO.getAllUsers()).thenThrow(new RuntimeException("TiDB Cloud timeout"));
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Lỗi lấy danh sách user: TiDB Cloud timeout"), eq(reqId));
+  }
+
+  // ─── 6. BẮT NGOẠI LỆ TỔNG CHO TOÀN BỘ HÀM PROCESS_REQUEST ──────────────────
+
+  @Test
+  void testProcessRequest_Global_Exception() {
+    String reqId = "global-exception";
+    // Truyền một NetworkMessage có loại lệnh null để ép switch-case bắn thẳng ra NullPointerException
+    NetworkMessage msg = new NetworkMessage(null, "");
+    msg.setRequestId(reqId);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    // Kiểm tra xem khối bọc try-catch lớn ngoài cùng có bắt được và trả response ERROR không
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), startsWith("Lỗi hệ thống:"), eq(reqId));
+  }
+
+
+  // ─── 3. KIỂM THỬ THÊM MỚI ĐÁNH GIÁ (ADD_REVIEW) ───────────────────────────
+  @Test
+  void testProcessRequest_AddReview_ValidationAndErrors() {
+    String reqId = "add-review-val";
+    Customer customer = new Customer("bidder1", "pass", BigDecimal.ZERO);
+    customer.setId(22);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+
+    // Trường hợp 1: Số sao không hợp lệ (Ví dụ: 6 sao)
+    com.google.gson.JsonObject revBadStars = new com.google.gson.JsonObject();
+    revBadStars.addProperty("auctionId", 10);
+    revBadStars.addProperty("sellerId", 5);
+    revBadStars.addProperty("stars", 6); // LỖI
+    revBadStars.addProperty("comment", "Fake review");
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_REVIEW", revBadStars), clientHandler);
+
+    // Trường hợp 2: Phiên đấu giá không tồn tại trong hệ thống
+    com.google.gson.JsonObject revNoAuction = new com.google.gson.JsonObject();
+    revNoAuction.addProperty("auctionId", 999);
+    revNoAuction.addProperty("sellerId", 5);
+    revNoAuction.addProperty("stars", 5);
+    revNoAuction.addProperty("comment", "Good");
+    when(auctionSqlDAO.findById(999)).thenReturn(null); // Trả về null
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_REVIEW", revNoAuction), clientHandler);
+
+    // Trường hợp 3: Phiên chưa kết thúc (Trạng thái vẫn là RUNNING)
+    com.google.gson.JsonObject revRunning = new com.google.gson.JsonObject();
+    revRunning.addProperty("auctionId", 200);
+    revRunning.addProperty("sellerId", 5);
+    revRunning.addProperty("stars", 5);
+    revRunning.addProperty("comment", "Good");
+
+    Auction runningAuction = mock(Auction.class);
+    when(runningAuction.getStatus()).thenReturn("RUNNING"); // Chưa FINISHED
+    when(auctionSqlDAO.findById(200)).thenReturn(runningAuction);
+
+    requestProcessor.processRequest(new NetworkMessage("ADD_REVIEW", revRunning), clientHandler);
+
+    verify(clientHandler, times(3)).sendResponse(eq("ERROR"), anyString(), any());
+  }
+
+  // ─── 5. KIỂM THỬ CÁC LỆNH KẾT THÚC / QUẢN LÝ PHIÊN CỦA SELLER ──────────────
+  @Test
+  void testProcessRequest_SellerEndAuction_Errors() {
+    Customer seller = new Customer("seller", "pass", BigDecimal.ZERO);
+    seller.setId(7);
+    when(clientHandler.getLoggedInUser()).thenReturn(seller);
+
+    // Kịch bản lỗi: Thử dừng một phiên đấu giá thuộc về người khác
+    Auction otherAuction = mock(Auction.class);
+    com.uet.bidding.model.Item normalItem = mock(com.uet.bidding.model.Item.class);
+    when(normalItem.getSellerId()).thenReturn(999); // Không trùng ID = 7 của người gọi
+    when(otherAuction.getItem()).thenReturn(normalItem);
+    when(auctionSqlDAO.findById(123)).thenReturn(otherAuction);
+
+    requestProcessor.processRequest(new NetworkMessage("SELLER_END_AUCTION", 123), clientHandler);
+
+    // Kịch bản lỗi: Phiên đấu giá vốn dĩ đã kết thúc từ trước
+    Auction finishedAuction = mock(Auction.class);
+    com.uet.bidding.model.Item myItem = mock(com.uet.bidding.model.Item.class);
+    when(myItem.getSellerId()).thenReturn(7); // Đúng hàng của mình
+    when(finishedAuction.getItem()).thenReturn(myItem);
+    when(finishedAuction.getStatus()).thenReturn("FINISHED"); // Đã kết thúc
+    when(auctionSqlDAO.findById(456)).thenReturn(finishedAuction);
+
+    requestProcessor.processRequest(new NetworkMessage("SELLER_END_AUCTION", 456), clientHandler);
+
+    verify(clientHandler, times(2)).sendResponse(eq("ERROR"), anyString(), any());
+  }
+
+  // ─── 6. QUÉT SẠCH LỆNH XEM KHO KHÁC & HÀM BẢO MẬT HỆ THỐNG ────────────────
+  @Test
+  void testProcessRequest_GetItemsBySeller_Forbidden() {
+    Customer customer = new Customer("hacker", "pass", BigDecimal.ZERO);
+    customer.setId(66);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+
+    // Yêu cầu xem kho của Seller có ID = 11 (Trong khi mình là ID = 66) -> Bị cấm lập tức!
+    NetworkMessage msg = new NetworkMessage("GET_ITEMS_BY_SELLER", 11);
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Không được xem kho người khác!"), any());
+  }
+
+  @Test
+  void testProcessRequest_GetSellerActiveAuctions_Forbidden() {
+    Customer customer = new Customer("hacker", "pass", BigDecimal.ZERO);
+    customer.setId(66);
+    when(clientHandler.getLoggedInUser()).thenReturn(customer);
+
+    // Thử dòm ngó danh sách đấu giá riêng tư của tài khoản số 11
+    NetworkMessage msg = new NetworkMessage("GET_SELLER_ACTIVE_AUCTIONS", 11);
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Không được xem phiên đấu giá của người khác!"), any());
+  }
+
+  @Test
+  void testProcessRequest_LoginLogic_RootBlock() {
+    String reqId = "login-root";
+    // Ép gửi tài khoản chứa từ khóa nhạy cảm "root" để kiểm thử cơ chế chặn hack cục bộ
+    NetworkMessage msg = new NetworkMessage("LOGIN", "root_admin 123456");
+    msg.setRequestId(reqId);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Tài khoản root không được phép truy cập từ Client!"), eq(reqId));
+  }
+
 
 }

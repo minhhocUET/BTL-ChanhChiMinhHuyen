@@ -12,6 +12,22 @@ public class BidderService {
 
   private final ClientService clientService = ClientService.getInstance();
 
+  // Lấy toàn bộ danh sách
+  /**
+   * Lấy toàn bộ danh sách phiên đấu giá từ hệ thống
+   */
+  public CompletableFuture<NetworkMessage> fetchAllAuctions() {
+    return clientService.sendRequest("GET_ALL_AUCTIONS", "");
+  }
+
+  /**
+   * Lọc danh sách các phiên đấu giá dựa theo địa điểm/thành phố
+   */
+  public CompletableFuture<NetworkMessage> fetchAuctionsByCity(String city) {
+    if (city == null) return CompletableFuture.completedFuture(null);
+    return clientService.sendRequest("GET_BY_CITY", city.trim());
+  }
+
   public CompletableFuture<NetworkMessage> placeBid(int auctionId, BigDecimal amount) {
     Customer current = UserSession.getLoggedInCustomer();
     if (current == null) {

@@ -404,12 +404,187 @@ public class RequestProcessorTest {
 
     verify(itemSqlDAO, never()).addItem(any());
 
-    // 🌟 SỬA TẠI ĐÂY: Chấp nhận mọi tin nhắn chứa lỗi định dạng số của hệ thống
-    verify(clientHandler, times(1)).sendResponse(
-        eq("ERROR"),
-        org.mockito.ArgumentMatchers.contains("Character G"),
-        eq(reqId)
-    );
+    // 🎯 ĐÃ SỬA: Dùng chính xác chuỗi lỗi hệ thống trả về thay vì dùng contains()
+    String exactErrorMsg = "Lỗi định dạng giá: Character G is neither a decimal digit number, decimal point, nor \"e\" notation exponential mark.";
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq(exactErrorMsg), eq(reqId));
+  }
+
+  // ==============================================================
+  // THỬ NGHIỆM ĐỔI MẬT KHẨU (CHANGE_PASSWORD)
+  // ==============================================================
+  @Test
+  void testProcessRequest_ChangePassword_Failure_NotLoggedIn() {
+    String reqId = "cpwd-no-login";
+    NetworkMessage msg = new NetworkMessage("CHANGE_PASSWORD", "oldPass|newPass|newPass");
+    msg.setRequestId(reqId);
+
+    // Chưa đăng nhập
+    when(clientHandler.getLoggedInUser()).thenReturn(null);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Bạn chưa đăng nhập!"), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_ChangePassword_Success() throws Exception {
+    String reqId = "cpwd-success";
+    // Data: oldPass | newPass | confirmPass
+    NetworkMessage msg = new NetworkMessage("CHANGE_PASSWORD", "123456|newpass123|newpass123");
+    msg.setRequestId(reqId);
+
+    Customer mockCustomer = new Customer("testuser", "hashed_pass_placeholder", BigDecimal.ZERO);
+    mockCustomer.setId(99);
+    when(clientHandler.getLoggedInUser()).thenReturn(mockCustomer);
+
+    // Cần tạo một mật khẩu đã mã hóa thật bằng BCrypt để vượt qua vòng check BCrypt.checkpw
+    String realHashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw("123456", org.mindrot.jbcrypt.BCrypt.gensalt());
+    Customer dbCustomer = new Customer("testuser", realHashedPassword, BigDecimal.ZERO);
+    dbCustomer.setId(99);
+
+    when(userSqlDAO.findById(99)).thenReturn(dbCustomer);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    // Xác minh đã gọi DAO để update password và phản hồi SUCCESS
+    verify(userSqlDAO, times(1)).updatePassword(99, "123456", "newpass123");
+    verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq("Đổi mật khẩu thành công!"), eq(reqId));
+  }
+
+  // ==============================================================
+  // THỬ NGHIỆM TÍNH NĂNG ADMIN (DUYỆT/TỪ CHỐI SẢN PHẨM & LẤY LIST)
+  // ==============================================================
+  @Test
+  void testProcessRequest_GetPendingItems_Success() throws Exception {
+    String reqId = "pending-123";
+    NetworkMessage msg = new NetworkMessage("GET_PENDING_ITEMS", "");
+    msg.setRequestId(reqId);
+
+    // 🎯 ĐÃ SỬA: Giả lập kỹ hơn để Server nhận diện đúng là Admin
+    com.uet.bidding.model.Admin mockAdmin = mock(com.uet.bidding.model.Admin.class);
+    // Nếu hàm check quyền của bạn dùng instanceof, mock() đã lo.
+    // Nếu hàm dùng getRole(), ta cần giả lập trả về "ADMIN" để vượt qua lớp bảo mật
+    lenient().when(mockAdmin.getRole()).thenReturn("ADMIN");
+    when(clientHandler.getLoggedInUser()).thenReturn(mockAdmin);
+
+    List<com.uet.bidding.model.Item> mockList = new ArrayList<>();
+    when(itemSqlDAO.getItemsByStatus("PENDING")).thenReturn(mockList);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(itemSqlDAO, times(1)).getItemsByStatus("PENDING");
+    verify(clientHandler, times(1)).sendResponse(eq("GET_PENDING_ITEMS_SUCCESS"), eq(mockList), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_GetPendingItems_Failure_NotAdmin() {
+    String reqId = "pending-fail";
+    NetworkMessage msg = new NetworkMessage("GET_PENDING_ITEMS", "");
+    msg.setRequestId(reqId);
+
+    // Là Customer, không phải Admin
+    Customer mockCustomer = new Customer("buyer", "pass", BigDecimal.ZERO);
+    when(clientHandler.getLoggedInUser()).thenReturn(mockCustomer);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(clientHandler, times(1)).sendResponse(eq("ERROR"), eq("Bạn không có quyền thực hiện chức năng này!"), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_ApproveItem_Success() throws Exception {
+    String reqId = "approve-123";
+    NetworkMessage msg = new NetworkMessage("APPROVE_ITEM", 15);
+    msg.setRequestId(reqId);
+
+    com.uet.bidding.model.Admin mockAdmin = mock(com.uet.bidding.model.Admin.class);
+    // 🎯 ĐÃ SỬA: Giả lập quyền "ADMIN"
+    lenient().when(mockAdmin.getRole()).thenReturn("ADMIN");
+    when(clientHandler.getLoggedInUser()).thenReturn(mockAdmin);
+
+    com.uet.bidding.model.Item mockItem = mock(com.uet.bidding.model.Item.class);
+    when(itemSqlDAO.findById(15)).thenReturn(mockItem);
+    when(itemSqlDAO.updateItemStatus(15, "APPROVED")).thenReturn(true);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(itemSqlDAO, times(1)).updateItemStatus(15, "APPROVED");
+    verify(clientHandler, times(1)).sendResponse(eq("APPROVE_SUCCESS"), eq("Đã duyệt sản phẩm thành công!"), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_RejectItem_Success() throws Exception {
+    String reqId = "reject-123";
+    NetworkMessage msg = new NetworkMessage("REJECT_ITEM", "15|Ảnh không hợp lệ");
+    msg.setRequestId(reqId);
+
+    com.uet.bidding.model.Admin mockAdmin = mock(com.uet.bidding.model.Admin.class);
+    // 🎯 ĐÃ SỬA: Giả lập quyền "ADMIN"
+    lenient().when(mockAdmin.getRole()).thenReturn("ADMIN");
+    when(clientHandler.getLoggedInUser()).thenReturn(mockAdmin);
+
+    when(itemSqlDAO.updateItemStatus(15, "REJECTED", "Ảnh không hợp lệ")).thenReturn(true);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(itemSqlDAO, times(1)).updateItemStatus(15, "REJECTED", "Ảnh không hợp lệ");
+    verify(clientHandler, times(1)).sendResponse(eq("REJECT_SUCCESS"), eq("Đã từ chối phê duyệt sản phẩm."), eq(reqId));
+  }
+
+  // ==============================================================
+  // THỬ NGHIỆM THỐNG KÊ (GET_SYSTEM_STATS)
+  // ==============================================================
+  @Test
+  void testProcessRequest_GetSystemStats_Success() throws Exception {
+    String reqId = "stats-123";
+    NetworkMessage msg = new NetworkMessage("GET_SYSTEM_STATS", "");
+    msg.setRequestId(reqId);
+
+    // Mock kết quả từ 3 DAO
+    when(userSqlDAO.getTotalUserCount()).thenReturn(50);
+    when(auctionSqlDAO.getActiveAuctionsCount()).thenReturn(10);
+    when(itemSqlDAO.getPendingItemsCount()).thenReturn(5);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    // Dùng ArgumentCaptor hoặc xác nhận chuỗi JSON được trả về
+    verify(userSqlDAO, times(1)).getTotalUserCount();
+    verify(auctionSqlDAO, times(1)).getActiveAuctionsCount();
+    verify(itemSqlDAO, times(1)).getPendingItemsCount();
+
+    // Vì JsonObject sẽ được match với any() do khó so sánh equals trực tiếp
+    verify(clientHandler, times(1)).sendResponse(eq("GET_SYSTEM_STATS_SUCCESS"), any(com.google.gson.JsonObject.class), eq(reqId));
+  }
+
+  // ==============================================================
+  // THỬ NGHIỆM XÓA SẢN PHẨM & MỞ KHÓA USER
+  // ==============================================================
+  @Test
+  void testProcessRequest_DeleteItem_Success() throws Exception {
+    String reqId = "delete-item-123";
+    NetworkMessage msg = new NetworkMessage("DELETE_ITEM", 404);
+    msg.setRequestId(reqId);
+
+    when(itemSqlDAO.deleteItemCompletely(404)).thenReturn(true);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(itemSqlDAO, times(1)).deleteItemCompletely(404);
+    verify(clientHandler, times(1)).sendResponse(eq("DELETE_ITEM_SUCCESS"), eq("Xóa sản phẩm thành công!"), eq(reqId));
+  }
+
+  @Test
+  void testProcessRequest_UnbanUser_Success() {
+    String reqId = "unban-abc";
+    NetworkMessage msg = new NetworkMessage("UNBAN_USER", 55);
+    msg.setRequestId(reqId);
+
+    when(userSqlDAO.updateBanStatus(55, false)).thenReturn(true);
+
+    requestProcessor.processRequest(msg, clientHandler);
+
+    verify(userSqlDAO, times(1)).updateBanStatus(55, false);
+    verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq("Mở khóa tài khoản thành công."), eq(reqId));
   }
 
 }

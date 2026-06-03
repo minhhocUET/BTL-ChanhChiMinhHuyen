@@ -74,6 +74,7 @@ public class ProductDetailController {
 
   private static ProductDetailController instance;
   private LocalDateTime countdownEndTime;
+  private boolean isRegisteredForAuction = false;
 
   public static ProductDetailController getInstance() {
     return instance;
@@ -179,8 +180,24 @@ public class ProductDetailController {
           applyRegistrationButtonState(registered);
         }));
   }
-
+  private boolean isValidBidder() {
+    Customer customer = UserSession.getLoggedInCustomer();
+    if (customer == null) {
+      showAlert("⚠️ Thông báo", "Vui lòng đăng nhập để tham gia đấu giá!", Alert.AlertType.WARNING);
+      return false;
+    }
+    if (!customer.hasCompleteProfile()) {
+      showAlert("⚠️ Thông báo", "Vui lòng hoàn thiện hồ sơ trong mục Setting trước!", Alert.AlertType.WARNING);
+      return false;
+    }
+    if (!isRegisteredForAuction) {
+      showAlert("⚠️ Yêu cầu đăng ký", "Bạn phải bấm nút 'Đăng ký' tham gia phiên đấu giá này trước!", Alert.AlertType.WARNING);
+      return false;
+    }
+    return true;
+  }
   private void applyRegistrationButtonState(boolean registered) {
+    this.isRegisteredForAuction = registered;
     if (btnRegister == null) return;
     if (registered) {
       btnRegister.setDisable(true);
@@ -301,6 +318,7 @@ public class ProductDetailController {
 
   @FXML
   public void handleEnableAutoBid(ActionEvent event) {
+    if (!isValidBidder()) return;
     Customer customer = UserSession.getLoggedInCustomer();
     if (customer == null) return;
 
@@ -387,6 +405,7 @@ public class ProductDetailController {
 
   @FXML
   public void handlePlaceBid(ActionEvent event) {
+    if (!isValidBidder()) return;
     Customer customer = UserSession.getLoggedInCustomer();
 
     if (customer == null || !customer.hasCompleteProfile()) {

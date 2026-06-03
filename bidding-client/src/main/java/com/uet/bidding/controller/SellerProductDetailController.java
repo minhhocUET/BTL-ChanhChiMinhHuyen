@@ -267,7 +267,13 @@ public class SellerProductDetailController implements Initializable {
               }
               String a = fmt.format(b.getAmount()) + " đ";
               rows.add(new ProductDetailController.BidRow(t, name, a));
-              series.getData().add(new XYChart.Data<>(t, b.getAmount().doubleValue()));
+
+              // CHỖ SỬA 1: Khởi tạo điểm dữ liệu riêng để đính kèm thông tin hiển thị
+              if (b.getAmount() != null) {
+                XYChart.Data<String, Number> dataPoint = new XYChart.Data<>(t, b.getAmount().doubleValue());
+                dataPoint.setExtraValue("👤 Người đặt: " + name + "\n⏱ Thời gian: " + t + "\n💰 Mức giá: " + a);
+                series.getData().add(dataPoint);
+              }
             }
 
             colBidTime.setCellValueFactory(new PropertyValueFactory<>("time"));
@@ -280,6 +286,31 @@ public class SellerProductDetailController implements Initializable {
             if (bidLineChart != null) {
               bidLineChart.getData().clear();
               bidLineChart.getData().add(series);
+
+              // CHỖ SỬA 2: Lặp qua các nút hình tròn vừa tạo trên đồ thị để cấu hình Tooltip + Hover
+              for (XYChart.Data<String, Number> data : series.getData()) {
+                javafx.scene.Node node = data.getNode();
+                if (node != null && data.getExtraValue() != null) {
+
+                  // Khởi tạo và thiết kế giao diện Tooltip giống hệt màn hình người mua
+                  Tooltip tooltip = new Tooltip(data.getExtraValue().toString());
+                  tooltip.setStyle("-fx-font-size: 13px; -fx-background-color: rgba(0,0,0,0.8); -fx-text-fill: white; -fx-padding: 8px; -fx-background-radius: 6px;");
+                  Tooltip.install(node, tooltip);
+
+                  // Sự kiện khi di chuột vào điểm tròn: đổi con trỏ sang bàn tay + phóng to 1.6 lần
+                  node.setOnMouseEntered(event -> {
+                    node.setStyle("-fx-cursor: hand;");
+                    node.setScaleX(1.6);
+                    node.setScaleY(1.6);
+                  });
+
+                  // Sự kiện khi chuột rời đi: trả về kích thước 1.0 bình thường
+                  node.setOnMouseExited(event -> {
+                    node.setScaleX(1.0);
+                    node.setScaleY(1.0);
+                  });
+                }
+              }
             }
           } catch (Exception e) {
             e.printStackTrace();
@@ -290,6 +321,7 @@ public class SellerProductDetailController implements Initializable {
   private String nullSafeCity(Item item) {
     return (item == null || item.getCity() == null) ? "-" : item.getCity();
   }
+
 
   private void showAlert(String title, String content, Alert.AlertType type) {
     Alert alert = new Alert(type);

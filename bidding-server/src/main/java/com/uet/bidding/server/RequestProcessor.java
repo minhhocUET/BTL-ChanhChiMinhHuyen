@@ -759,11 +759,34 @@ public class RequestProcessor {
       int auctionId = Integer.parseInt(parts[0]);
       BigDecimal maxBid = new BigDecimal(parts[1]);
 
+      // 1. CHỐT CHẶN BẢO MẬT: Phải đăng ký mới được Auto-bid
+      boolean isRegistered = auctionSqlDAO.isBidderRegistered(auctionId, customer.getId());
+      if (!isRegistered) {
+        throw new UserException("Bạn chưa đăng ký tham gia phiên đấu giá này!");
+      }
+
+      // 2. Lưu cài đặt vào DB
       auctionSqlDAO.setAutoBid(auctionId, customer.getId(), maxBid);
+
+      // 3. ĐÁNH THỨC HỆ THỐNG ĐỌ GIÁ NGAY LẬP TỨC (Lưu thẳng xuống DB)
+      auctionSqlDAO.evaluateAutoBidsForAuction(auctionId);
+
+      // 4. Đồng bộ Cache cho Bot
       AuctionManager.getInstance().syncAutoBidCache(auctionId);
-      Auction updated = auctionSqlDAO.findById(auctionId);
-      updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auctionId));
-      Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
+
+      // =================================================================
+      // 🚀 SỬA TẠI ĐÂY: ÉP SERVER ĐỌC LẠI BẢN MỚI NHẤT TỪ DATABASE
+      // Không dùng: Auction updated = AuctionManager.getInstance().getAuction(auctionId);
+      // =================================================================
+      Auction updatedFromDB = auctionSqlDAO.findById(auctionId);
+
+      if (updatedFromDB != null) {
+        // Cập nhật lại RAM Cache để các luồng khác không bị đọc nhầm dữ liệu cũ
+
+        // Phát Broadcast dữ liệu cực mới cho tất cả Client
+        Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updatedFromDB));
+      }
+
       handler.sendResponse("SUCCESS", "Đã bật đấu giá tự động!", msg.getRequestId());
     } catch (Exception e) {
       handler.sendResponse("ERROR", e.getMessage(), msg.getRequestId());

@@ -32,8 +32,6 @@ public class UserProfileController implements Initializable {
   private TextArea txtAddress;
   @FXML
   private Label lblBalance;
-  @FXML
-  private Label lblBankStatus;
 
   // --- CÁC FIELD MỚI CHO MẬT KHẨU ---
   @FXML private PasswordField txtOldPassword;
@@ -98,7 +96,7 @@ public class UserProfileController implements Initializable {
   }
 
   @FXML
-  public void handleSaveInfo(ActionEvent event) {
+  public void handleSaveInfo() {
     if (currentUser == null) return;
 
     // 1. Lấy dữ liệu từ giao diện
@@ -144,7 +142,7 @@ public class UserProfileController implements Initializable {
   }
 
   @FXML
-  public void handleAddFunds(ActionEvent event) {
+  public void handleAddFunds() {
 
     TextInputDialog dialog = new TextInputDialog("100000"); // Mặc định 100k
     dialog.setTitle("Nạp tiền");
@@ -181,7 +179,7 @@ public class UserProfileController implements Initializable {
   // 🔐 XỬ LÝ ĐỔI MẬT KHẨU
   // ==========================================
   @FXML
-  public void handleChangePassword(ActionEvent event) {
+  public void handleChangePassword() {
     String oldPass = txtOldPassword.getText();
     String newPass = txtNewPassword.getText();
     String confirmPass = txtConfirmPassword.getText();

@@ -24,7 +24,7 @@ public class LoginController {
   private UserService userService = new UserService();
 
   @FXML
-  public void handleLogin(ActionEvent event) {
+  public void handleLogin() {
     String username = usernameField.getText().trim();
     String password = passwordField.getText().trim();
 
@@ -79,7 +79,7 @@ public class LoginController {
   }
 
   @FXML
-  public void goToRegister(ActionEvent event) {
+  public void goToRegister() {
     Main.changeScene("/Register.fxml", "Hệ thống Đấu giá VNU - Đăng ký", 400, 500);
   }
 }

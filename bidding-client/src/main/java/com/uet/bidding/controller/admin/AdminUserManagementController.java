@@ -1,5 +1,7 @@
 package com.uet.bidding.controller.admin;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.uet.bidding.model.User;
 import com.uet.bidding.network.ClientService;
 import javafx.application.Platform;
@@ -7,16 +9,20 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
 
-import java.util.List;
-
 public class AdminUserManagementController {
+
   private static AdminUserManagementController instance;
   private final ObservableList<User> userObservableList = FXCollections.observableArrayList();
-  // Đã sửa lại khớp chính xác 100% với fx:id trong FXML mới
+
   @FXML
   private TableView<User> userTable;
   @FXML
@@ -28,7 +34,7 @@ public class AdminUserManagementController {
   @FXML
   private TableColumn<User, String> colStatus;
   @FXML
-  private TableColumn<User, Void> colUserAction; // Cột xử lý nút bấm động
+  private TableColumn<User, Void> colUserAction;
 
   public static AdminUserManagementController getInstance() {
     return instance;
@@ -38,7 +44,6 @@ public class AdminUserManagementController {
   public void initialize() {
     instance = this;
 
-    // 1. Ánh xạ dữ liệu cho các cột cơ bản
     colUserId.setCellValueFactory(new PropertyValueFactory<>("id"));
     colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
     colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
@@ -48,15 +53,11 @@ public class AdminUserManagementController {
       return new SimpleStringProperty(isBanned ? "❌ Đã khóa" : "✅ Hoạt động");
     });
 
-    // 2. Tự động dựng nút bấm Khóa/Mở khóa cho từng dòng trong bảng
     setupActionColumn();
 
     userTable.setItems(userObservableList);
-
-    // 💡 BỔ SUNG DÒNG NÀY: Khóa chết chiều cao tất cả các hàng là 45px (Không cho phép tự phình to)
     userTable.setFixedCellSize(45.0);
 
-    // 3. Tải danh sách người dùng từ Server khi vừa mở màn hình
     loadUsersFromServer();
   }
 
@@ -64,18 +65,17 @@ public class AdminUserManagementController {
     ClientService.getInstance().sendRequest("GET_ALL_USERS", "")
         .thenAccept(msg -> {
           if ("ERROR".equals(msg.getType())) {
-            Platform.runLater(() -> showAlert("Thất bại", String.valueOf(msg.getData()), Alert.AlertType.ERROR));
+            Platform.runLater(() -> showAlert("Thất bại",
+                String.valueOf(msg.getData()), Alert.AlertType.ERROR));
             return;
           }
 
           try {
-            // 1. Nhận mảng dữ liệu thô từ Server (dạng List các Map)
             List<?> rawList = (List<?>) msg.getData();
-            List<User> platformUsers = new java.util.ArrayList<>();
+            List<User> platformUsers = new ArrayList<>();
 
             if (rawList != null) {
               for (Object rawData : rawList) {
-                // 2. DÙNG CHÍNH HÀM PARSE CÓ SẴN CỦA BẠN: Tự động nhận diện chuẩn Admin / Customer
                 User user = ClientService.getInstance().parseUser(rawData);
                 if (user != null) {
                   platformUsers.add(user);
@@ -83,19 +83,16 @@ public class AdminUserManagementController {
               }
             }
 
-            // 3. Đổ danh sách chuẩn (đã phân loại Admin/Customer) lên TableView
             updateUsersUI(platformUsers);
 
           } catch (Exception e) {
-            System.err.println("❌ Lỗi giải mã danh sách người dùng tại Controller: " + e.getMessage());
+            System.err.println("❌ Lỗi giải mã danh sách người dùng tại Controller: "
+                + e.getMessage());
             e.printStackTrace();
           }
         });
   }
 
-  /**
-   * Nhận phản hồi danh sách người dùng từ luồng ClientService và nạp lên giao diện
-   */
   public void updateUsersUI(List<User> users) {
     Platform.runLater(() -> {
       userObservableList.setAll(users);
@@ -103,9 +100,6 @@ public class AdminUserManagementController {
     });
   }
 
-  /**
-   * Sinh nút bấm động (Khóa / Mở khóa) cho từng dòng dựa vào trạng thái tài khoản
-   */
   private void setupActionColumn() {
     Callback<TableColumn<User, Void>, TableCell<User, Void>> cellFactory = new Callback<>() {
       @Override
@@ -115,7 +109,9 @@ public class AdminUserManagementController {
 
           {
             actionBtn.setPrefHeight(30.0);
-            actionBtn.setStyle("-fx-cursor: hand; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4; -fx-font-size: 12px;");
+            actionBtn.setStyle("-fx-cursor: hand; -fx-text-fill: white; "
+                + "-fx-font-weight: bold; -fx-background-radius: 4; "
+                + "-fx-font-size: 12px;");
           }
 
           @Override
@@ -126,20 +122,20 @@ public class AdminUserManagementController {
             } else {
               User user = getTableView().getItems().get(getIndex());
 
-              // Bảo vệ: Admin không thể tự tác động lên tài khoản Admin khác/chính mình tại đây
               if ("ADMIN".equalsIgnoreCase(user.getRole())) {
                 setGraphic(null);
                 return;
               }
 
-              // Đổi giao diện nút tùy theo trạng thái bị Ban hay chưa
               if (user.isBanned()) {
                 actionBtn.setText("Mở khóa");
-                actionBtn.setStyle(actionBtn.getStyle() + "-fx-background-color: #2ed573;"); // Màu xanh lá
+                actionBtn.setStyle(actionBtn.getStyle()
+                    + "-fx-background-color: #2ed573;");
                 actionBtn.setOnAction(event -> handleToggleBan(user, false));
               } else {
                 actionBtn.setText("Khóa");
-                actionBtn.setStyle(actionBtn.getStyle() + "-fx-background-color: #ff4757;"); // Màu đỏ
+                actionBtn.setStyle(actionBtn.getStyle()
+                    + "-fx-background-color: #ff4757;");
                 actionBtn.setOnAction(event -> handleToggleBan(user, true));
               }
               setGraphic(actionBtn);
@@ -152,16 +148,14 @@ public class AdminUserManagementController {
     colUserAction.setCellFactory(cellFactory);
   }
 
-  /**
-   * Hợp nhất logic Ban/Unban cũ thành một hàm xử lý tập trung, an toàn qua luồng mạng
-   */
   private void handleToggleBan(User user, boolean shouldBan) {
     String actionType = shouldBan ? "BAN_USER" : "UNBAN_USER";
-    String confirmMsg = shouldBan ? "Bạn có chắc chắn muốn khóa tài khoản [" + user.getUsername() + "]?"
+    String confirmMsg = shouldBan
+        ? "Bạn có chắc chắn muốn khóa tài khoản [" + user.getUsername() + "]?"
         : "Bạn có chắc chắn muốn mở khóa tài khoản [" + user.getUsername() + "]?";
 
-    // Tạo thông báo xác nhận hành động trước khi gửi gói tin đi
-    Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION, confirmMsg, ButtonType.YES, ButtonType.NO);
+    Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION, confirmMsg,
+        ButtonType.YES, ButtonType.NO);
     confirmAlert.setHeaderText(null);
     confirmAlert.setTitle("Xác nhận thao tác");
 
@@ -171,11 +165,14 @@ public class AdminUserManagementController {
             .thenAccept(msg -> {
               if ("SUCCESS".equals(msg.getType())) {
                 Platform.runLater(() -> {
-                  showAlert("Thành công", (shouldBan ? "Đã khóa " : "Đã mở khóa ") + "tài khoản thành công!", Alert.AlertType.INFORMATION);
-                  loadUsersFromServer(); // Làm mới lại bảng dữ liệu sau khi cập nhật thành công
+                  String successMsg = (shouldBan ? "Đã khóa " : "Đã mở khóa ")
+                      + "tài khoản thành công!";
+                  showAlert("Thành công", successMsg, Alert.AlertType.INFORMATION);
+                  loadUsersFromServer();
                 });
               } else {
-                Platform.runLater(() -> showAlert("Thất bại", String.valueOf(msg.getData()), Alert.AlertType.ERROR));
+                Platform.runLater(() -> showAlert("Thất bại",
+                    String.valueOf(msg.getData()), Alert.AlertType.ERROR));
               }
             });
       }

@@ -553,7 +553,7 @@ public class SellerDashboardController {
   }
 
   @FXML
-  private void handleSaveInfo(ActionEvent event) {
+  private void handleSaveInfo() {
     String newStoreName = storeNameField.getText().trim();
     String newDesc = descriptionArea.getText().trim();
 

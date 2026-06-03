@@ -161,7 +161,7 @@ public class SellerProductDetailController implements Initializable {
   }
 
   @FXML
-  public void handleEndEarly(ActionEvent event) {
+  public void handleEndEarly() {
     if (currentAuction == null) return;
 
     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);

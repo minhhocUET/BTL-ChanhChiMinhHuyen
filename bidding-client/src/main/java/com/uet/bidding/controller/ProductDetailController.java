@@ -215,7 +215,7 @@ public class ProductDetailController {
   }
 
   @FXML
-  public void handleRegister(ActionEvent event) {
+  public void handleRegister() {
     Customer customer = UserSession.getLoggedInCustomer();
     if (customer == null || !customer.hasCompleteProfile()) {
       showAlert("Chú ý", "Hoàn thiện hồ sơ và đăng nhập trước!", Alert.AlertType.WARNING);
@@ -317,7 +317,7 @@ public class ProductDetailController {
   }
 
   @FXML
-  public void handleEnableAutoBid(ActionEvent event) {
+  public void handleEnableAutoBid() {
     if (!isValidBidder()) return;
     Customer customer = UserSession.getLoggedInCustomer();
     if (customer == null) return;
@@ -404,7 +404,7 @@ public class ProductDetailController {
   }
 
   @FXML
-  public void handlePlaceBid(ActionEvent event) {
+  public void handlePlaceBid() {
     if (!isValidBidder()) return;
     Customer customer = UserSession.getLoggedInCustomer();
 

@@ -300,7 +300,7 @@ public class ReviewController {
 
 
   @FXML
-  private void handleSubmitReview(ActionEvent event) {
+  private void handleSubmitReview() {
     Integer stars = cmbStars.getValue();
     String comment = txtReviewComment.getText().trim();
 

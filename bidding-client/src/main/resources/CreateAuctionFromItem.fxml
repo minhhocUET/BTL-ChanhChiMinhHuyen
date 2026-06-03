@@ -43,8 +43,12 @@
                     <TextField fx:id="txtStartPrice" promptText="VD: 1000000" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
                     <Label text="Thời lượng (phút):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
                     <TextField fx:id="txtDuration" promptText="VD: 60" text="60" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                    <Label text="Bước giá (tùy chọn):" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                    <TextField fx:id="txtBidIncrement" promptText="Mặc định 5" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Bước giá (tùy chọn):" GridPane.rowIndex="2" GridPane.columnIndex="0" GridPane.valignment="TOP" style="-fx-padding: 4 0 0 0;"/>
+                    <VBox spacing="4.0" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                        <TextField fx:id="txtBidIncrement" promptText="Để trống nhận mặc định 5% giá khởi điểm"/>
+                        <Label text="* Bước giá tự nhập bắt buộc từ 5.000 VNĐ trở lên." style="-fx-text-fill: #e91e63; -fx-font-size: 11px; -fx-font-style: italic;"/>
+                    </VBox>
                 </GridPane>
 
                 <Label fx:id="lblDemoHint" wrapText="true" style="-fx-text-fill: #f57c00; -fx-font-size: 12px;"

@@ -100,8 +100,15 @@ public class CreateAuctionFromItemController {
       String clean = txtStartPrice.getText().replaceAll("[^\\d]", "");
       if (clean.isEmpty()) return;
       BigDecimal price = new BigDecimal(clean);
+
       // Tính bước giá gợi ý = 5% giá khởi điểm
       BigDecimal suggest = price.multiply(new BigDecimal("0.05"));
+
+      // Nếu mức gợi ý thấp hơn 5.000đ, tự động nâng lên thành 5.000đ cho hợp lệ
+      if (suggest.compareTo(new BigDecimal("5000")) < 0) {
+        suggest = new BigDecimal("5000");
+      }
+
       txtBidIncrement.setText(String.valueOf(suggest.toBigInteger()));
     } catch (Exception e) {
       // Bỏ qua nếu có lỗi parse
@@ -141,8 +148,8 @@ public class CreateAuctionFromItemController {
         showAlert(Alert.AlertType.WARNING, "Lỗi", "Thời lượng phải lớn hơn 0 phút.");
         return;
       }
-      if (bidIncrement.compareTo(BigDecimal.ZERO) <= 0) {
-        showAlert(Alert.AlertType.WARNING, "Lỗi", "Bước giá phải lớn hơn 0.");
+      if (bidIncrement.compareTo(new BigDecimal("5000")) < 0) {
+        showAlert(Alert.AlertType.WARNING, "Lỗi nhập liệu", "Bước giá tối thiểu phải từ 5.000 VNĐ trở lên.");
         return;
       }
 

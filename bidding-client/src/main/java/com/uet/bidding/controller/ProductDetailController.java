@@ -57,7 +57,6 @@ public class ProductDetailController {
   @FXML private Label lblAntiSnipeInfo;
   @FXML private TextField txtMaxAutoBid;
   @FXML private Button btnEnableAutoBid;
-  @FXML private Button btnDisableAutoBid;
   @FXML private Button btnSellerReviews;
   @FXML private TableView<BidRow> bidHistoryTable;
   @FXML private TableColumn<BidRow, String> colBidTime;
@@ -114,16 +113,17 @@ public class ProductDetailController {
           if ("SUCCESS".equals(response.getType()) || "CHECK_AUTO_BID_SUCCESS".equals(response.getType())) {
 
             if (response.getData() != null) {
-              // TRƯỜNG HỢP 1: ĐÃ BẬT TỪ TRƯỚC
+              // TRƯỜNG HỢP 1: ĐÃ BẬT TỪ TRƯỚC -> Cho phép cập nhật lại liên tục
               String savedMaxBid = String.valueOf(response.getData());
               txtMaxAutoBid.setText(savedMaxBid);
-              txtMaxAutoBid.setDisable(true);
 
-              btnEnableAutoBid.setDisable(true);
-              btnEnableAutoBid.setStyle("-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: default;");
+              // CHỈ SỬA ĐOẠN NÀY: Mở khóa ô nhập và nút để người dùng đặt lại được nhiều lần
+              txtMaxAutoBid.setDisable(false);
+              btnEnableAutoBid.setDisable(false);
 
-              btnDisableAutoBid.setDisable(false);
-              btnDisableAutoBid.setStyle("-fx-background-color: #f31313; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
+              // Đổi chữ hiển thị sang "Cập nhật Auto-Bid" và giữ nguyên màu hồng hoạt động
+              btnEnableAutoBid.setText("Cập nhật Auto-Bid");
+              btnEnableAutoBid.setStyle("-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
 
             } else {
               // TRƯỜNG HỢP 2: CHƯA BẬT HOẶC ĐÃ TẮT
@@ -131,10 +131,8 @@ public class ProductDetailController {
               txtMaxAutoBid.setDisable(false);
 
               btnEnableAutoBid.setDisable(false);
+              btnEnableAutoBid.setText("Đặt Auto-Bid");
               btnEnableAutoBid.setStyle("-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
-
-              btnDisableAutoBid.setDisable(true);
-              btnDisableAutoBid.setStyle("-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: default;");
             }
           }
         }))
@@ -351,33 +349,6 @@ public class ProductDetailController {
     }
   }
 
-  @FXML
-  public void handleDisableAutoBid(ActionEvent event) {
-    if (currentAuction == null) return;
-
-    new AutoBidService().disable(currentAuction.getId())
-        .thenAccept(res -> javafx.application.Platform.runLater(() -> {
-          if ("SUCCESS".equals(res.getType())) {
-            showAlert("Thành công", "Đã tắt tính năng Auto-bid!", Alert.AlertType.INFORMATION);
-
-            txtMaxAutoBid.clear();
-            txtMaxAutoBid.setDisable(false);
-
-            btnEnableAutoBid.setDisable(false);
-            btnEnableAutoBid.setStyle("-fx-background-color: #e84393; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
-
-            btnDisableAutoBid.setDisable(true);
-            btnDisableAutoBid.setStyle("-fx-background-color: #9e9e9e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: default;");
-          } else {
-            showAlert("Lỗi", String.valueOf(res.getData()), Alert.AlertType.ERROR);
-          }
-        }))
-        .exceptionally(ex -> {
-          System.err.println("Lỗi khi tắt Auto-Bid: " + ex.getMessage());
-          return null;
-        });
-  }
-
   private void startCountdown(LocalDateTime endTime) {
     if (timeline != null) timeline.stop();
 
@@ -592,7 +563,10 @@ public class ProductDetailController {
 
                 // Thêm tọa độ vào đồ thị
                 if (b.getAmount() != null) {
-                  series.getData().add(new XYChart.Data<>(tChart, b.getAmount().doubleValue()));
+                  // SỬA CHỖ 1: Khởi tạo biến data riêng để gán thêm thông tin Tooltip
+                  XYChart.Data<String, Number> dataPoint = new XYChart.Data<>(tChart, b.getAmount().doubleValue());
+                  dataPoint.setExtraValue("👤 Người đặt: " + name + "\n⏱ Thời gian: " + tTable + "\n💰 Mức giá: " + a);
+                  series.getData().add(dataPoint);
                 }
               }
             }
@@ -609,10 +583,37 @@ public class ProductDetailController {
             if (bidLineChart != null) {
               bidLineChart.getData().clear();
               bidLineChart.getData().add(series);
+
+              // SỬA CHỖ 2: Thêm Tooltip và hiệu ứng Hover sau khi đã add dữ liệu vào Chart
+              for (XYChart.Data<String, Number> data : series.getData()) {
+                javafx.scene.Node node = data.getNode();
+                if (node != null && data.getExtraValue() != null) {
+                  // Khởi tạo giao diện cho Tooltip
+                  Tooltip tooltip = new Tooltip(data.getExtraValue().toString());
+                  tooltip.setStyle("-fx-font-size: 13px; -fx-background-color: rgba(0,0,0,0.8); -fx-text-fill: white; -fx-padding: 8px; -fx-background-radius: 6px;");
+
+                  // Gắn Tooltip vào Node (hình tròn)
+                  Tooltip.install(node, tooltip);
+
+                  // Hiệu ứng phóng to khi chuột lướt qua
+                  node.setOnMouseEntered(event -> {
+                    node.setStyle("-fx-cursor: hand;");
+                    node.setScaleX(1.6);
+                    node.setScaleY(1.6);
+                  });
+
+                  // Trả lại kích thước cũ khi chuột đi khỏi
+                  node.setOnMouseExited(event -> {
+                    node.setScaleX(1.0);
+                    node.setScaleY(1.0);
+                  });
+                }
+              }
             }
           } catch (Exception e) {
             System.err.println("Lỗi render đồ thị lịch sử: " + e.getMessage());
           }
         }));
   }
+
 }

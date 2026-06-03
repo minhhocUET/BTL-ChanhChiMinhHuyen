@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox prefHeight="650.0" prefWidth="1050.0" spacing="15.0" style="-fx-background-color: #f4f7f6;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.admin.AdminAuctionManagementController">
+    <padding>
+        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+    </padding>
+    <children>
+        <VBox spacing="5.0">
+            <children>
+                <Label text="QUẢN LÝ PHIÊN ĐẤU GIÁ" textFill="#1b3394">
+                    <font>
+                        <Font name="Segoe UI Bold" size="22.0" />
+                    </font>
+                </Label>
+                <Label text="Theo dõi, giám sát và can thiệp kịp thời vào hệ thống giao dịch." textFill="#7f8c8d">
+                    <font>
+                        <Font name="Segoe UI" size="14.0" />
+                    </font>
+                </Label>
+            </children>
+        </VBox>
+        <HBox spacing="15.0" VBox.vgrow="ALWAYS">
+            <children>
+                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label style="-fx-font-weight: bold; -fx-text-fill: #34495e;" text="Danh sách các phiên đấu giá" />
+                        <TableView fx:id="tableAuctions" prefWidth="779.0" style="-fx-background-color: white; -fx-background-radius: 4; -fx-border-color: #bdc3c7; -fx-border-radius: 4; -fx-font-family: 'Segoe UI';" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colId" prefWidth="50.0" style="-fx-alignment: CENTER;" text="ID" />
+                                <TableColumn fx:id="colItemName" prefWidth="200.0" style="-fx-alignment: CENTER-LEFT;" text="Tên sản phẩm" />
+                                <TableColumn fx:id="colCurrentPrice" prefWidth="130.0" style="-fx-alignment: CENTER-RIGHT; -fx-padding: 0 15 0 0;" text="Giá hiện tại" />
+                                <TableColumn fx:id="colStatus" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Trạng thái" />
+                                <TableColumn fx:id="colEndTime" prefWidth="140.0" style="-fx-alignment: CENTER;" text="Thời gian kết thúc" />
+                                <TableColumn fx:id="colAction" prefWidth="120.0" style="-fx-alignment: CENTER;" text="Thao tác" />
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                            </columnResizePolicy>
+                        </TableView>
+                    </children>
+                </VBox>
+
+                <VBox fx:id="detailPane" prefHeight="527.0" prefWidth="380.0" spacing="15.0" visible="false" style="-fx-background-color: white; -fx-background-radius: 6; -fx-border-color: #bdc3c7; -fx-border-radius: 6; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 1);">
+                    <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                    </padding>
+                    <children>
+                        <Label style="-fx-font-weight: bold; -fx-text-fill: #1b3394;" text="XEM TRƯỚC CHI TIẾT" />
+                        <Separator />
+
+                        <Label fx:id="lblDetailSeller" text="👤 Mã Người bán (Seller ID): " wrapText="true">
+                            <font>
+                                <Font name="Segoe UI Bold" size="14.0" />
+                            </font>
+                        </Label>
+
+                        <Label fx:id="lblDetailLeader" text="👑 Người trả cao nhất: " wrapText="true" style="-fx-text-fill: #27ae60; -fx-font-weight: bold;">
+                            <font>
+                                <Font name="Segoe UI Bold" size="14.0" />
+                            </font>
+                        </Label>
+
+                        <Label text="📜 Lịch sử đặt giá (Chi tiết):" style="-fx-font-weight: bold; -fx-text-fill: #e84393;">
+                            <VBox.margin>
+                                <Insets top="5.0" />
+                            </VBox.margin>
+                        </Label>
+
+                        <TableView fx:id="tableHistory" VBox.vgrow="ALWAYS" style="-fx-font-family: 'Segoe UI'; -fx-border-color: #fdcb6e; -fx-border-radius: 2;">
+                            <columns>
+                                <TableColumn fx:id="colTime" prefWidth="130.0" style="-fx-alignment: CENTER;" text="Thời gian" />
+                                <TableColumn fx:id="colBidder" prefWidth="110.0" style="-fx-alignment: CENTER;" text="Người đặt" />
+                                <TableColumn fx:id="colAmount" prefWidth="100.0" style="-fx-alignment: CENTER-RIGHT; -fx-padding: 0 10 0 0;" text="Số tiền" />
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                            </columnResizePolicy>
+                        </TableView>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</VBox>

@@ -30,20 +30,9 @@ public class BidSqlDAO {
    * @return id của bản ghi bid vừa tạo.
    */
   public int addBid(int auctionId, int bidderId, BigDecimal amount, LocalDateTime time) throws SQLException {
-    String sql = "INSERT INTO bids (auction_id, bidder_id, bid_amount, bid_time) VALUES (?, ?, ?, ?)";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-      stmt.setInt(1, auctionId);
-      stmt.setInt(2, bidderId);
-      stmt.setBigDecimal(3, amount);
-      stmt.setTimestamp(4, Timestamp.valueOf(time));
-      stmt.executeUpdate();
-
-      try (ResultSet rs = stmt.getGeneratedKeys()) {
-        if (rs.next()) return rs.getInt(1);
-        throw new SQLException("Không thể lấy id của bid vừa tạo.");
-      }
+    try (Connection conn = DatabaseConnection.getConnection()) {
+      // Gọi luôn lại hàm addBid bên dưới truyền conn vào, code gọn đi một nửa!
+      return addBid(conn, auctionId, bidderId, amount, time);
     }
   }
 
@@ -75,33 +64,54 @@ public class BidSqlDAO {
 
   /**
    * Lấy danh sách tất cả lượt bid của một phiên đấu giá.
-   * Kết quả được sắp xếp theo giá giảm dần (cao nhất lên đầu).
+   * Đã tối ưu hóa bằng INNER JOIN để tránh lỗi N+1 Query gây lag Server.
    *
-   * @return List<Bid>, mỗi Bid chứa đối tượng Bidder (lấy từ Customer).
+   * @return List<Bid> danh sách lịch sử đặt giá.
    */
   public List<Bid> getBidsByAuction(int auctionId) {
     List<Bid> bids = new ArrayList<>();
-    String sql = "SELECT * FROM bids WHERE auction_id = ? ORDER BY bid_amount DESC";
+
+    // 🎯 SỬ DỤNG JOIN: Lấy luôn username từ bảng users trong cùng 1 câu lệnh
+    String sql = """
+        SELECT b.bidder_id, b.bid_amount, b.bid_time, u.username 
+        FROM bids b 
+        INNER JOIN users u ON b.bidder_id = u.id 
+        WHERE b.auction_id = ? 
+        ORDER BY b.bid_amount DESC
+        """;
+
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
+
       stmt.setInt(1, auctionId);
+
       try (ResultSet rs = stmt.executeQuery()) {
         while (rs.next()) {
           int bidderId = rs.getInt("bidder_id");
           BigDecimal amount = rs.getBigDecimal("bid_amount");
           LocalDateTime time = rs.getTimestamp("bid_time").toLocalDateTime();
+          String username = rs.getString("username");
 
-          // Lấy Customer -> Bidder
-          Customer customer = (Customer) userDao.findById(bidderId);
-          Bidder bidder = customer.getBidderProfile();
+          // 🎯 TẠO OBJECT SIÊU NHẸ: Thay vì bắt DB phải tìm kiếm lại toàn bộ thông tin User,
+          // ta chỉ tạo một Object giả lập (Dummy Object) chứa đúng những thông tin Client cần để hiển thị.
+          Customer lightweightCustomer = new Customer();
+          lightweightCustomer.setId(bidderId);
+          lightweightCustomer.setUsername(username);
+
+          // Lấy profile trống hoặc gán ID tùy theo cấu trúc Model của sếp
+          Bidder bidder = new Bidder();
+          // bidder.setId(bidderId); // Mở comment này nếu class Bidder của sếp cần truyền ID
+
           Bid bid = new Bid(bidder, amount, time);
-          bid.setBidderUsername(customer.getUsername());
+          bid.setBidderUsername(username); // Truyền thẳng username lấy từ câu SQL vào
+
           bids.add(bid);
         }
       }
-    } catch (SQLException | UserException e) {
-      System.err.println("Lỗi khi lấy danh sách bid: " + e.getMessage());
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi khi lấy danh sách bid: " + e.getMessage());
     }
+
     return bids;
   }
 

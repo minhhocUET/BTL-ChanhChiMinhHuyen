@@ -137,6 +137,35 @@ public class AuctionSqlDAO {
     return list;
   }
 
+  // =========================================================
+  //  CÁC HÀM DÀNH RIÊNG CHO TÍNH NĂNG ADMIN
+  // =========================================================
+
+  /**
+   * Dành riêng cho màn hình Admin: Lấy TOÀN BỘ phiên đấu giá không phân biệt trạng thái.
+   * Sắp xếp theo ID giảm dần (mới nhất lên đầu) để Admin dễ quản lý.
+   */
+  public List<Auction> getAllAuctionsForAdmin() {
+    List<Auction> list = new ArrayList<>();
+    String sql = "SELECT * FROM auctions ORDER BY id DESC";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+
+      while (rs.next()) {
+        Auction auction = mapAuction(rs);
+        enrichAuction(auction); // Nạp thêm count lượt đăng ký
+        list.add(auction);
+      }
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi SQL truy vấn toàn bộ danh sách phiên (Admin): " + e.getMessage());
+    } catch (UserException e) {
+      System.err.println("❌ Lỗi Map dữ liệu phiên (Admin): " + e.getMessage());
+    }
+    return list;
+  }
+
   /**
    * Phiên đấu giá của một seller, lọc theo trạng thái (RUNNING, FINISHED, ...).
    */
@@ -246,6 +275,31 @@ public class AuctionSqlDAO {
     }
   }
 
+
+  /**
+   * Cập nhật trạng thái của một phiên đấu giá (Chức năng Admin dùng để Hủy phiên).
+   * @param auctionId ID của phiên cần đổi
+   * @param newState Trạng thái mới (dạng String, vd: "CANCELED")
+   * @return true nếu cập nhật thành công, false nếu thất bại.
+   */
+  public boolean updateAuctionState(int auctionId, String newState) {
+    String sql = "UPDATE auctions SET status = ? WHERE id = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+      stmt.setString(1, newState);
+      stmt.setInt(2, auctionId);
+
+      // executeUpdate() trả về số dòng bị ảnh hưởng. Nếu > 0 tức là đã update thành công.
+      int rowsAffected = stmt.executeUpdate();
+      return rowsAffected > 0;
+
+    } catch (SQLException e) {
+      System.err.println("❌ Lỗi cập nhật trạng thái DB cho phiên #" + auctionId + ": " + e.getMessage());
+      return false;
+    }
+  }
   // =========================================================
   //  KẾT THÚC PHIÊN
   // =========================================================
@@ -753,7 +807,7 @@ public class AuctionSqlDAO {
       int rows = stmt.executeUpdate();
       return rows > 0;
     } catch (SQLException e) {
-        if (e.getErrorCode() == 1062) { // Mã lỗi Duplicate entry của MySQL
+      if (e.getErrorCode() == 1062) { // Mã lỗi Duplicate entry của MySQL
         throw new UserException("ALREADY_REGISTERED");
       }
       throw new UserException("Lỗi lưu đăng ký: " + e.getMessage());

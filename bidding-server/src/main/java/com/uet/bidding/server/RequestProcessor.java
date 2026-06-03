@@ -57,7 +57,46 @@ public class RequestProcessor {
           } catch (Exception e) {
             handler.sendResponse("ERROR", "Lỗi tải sảnh đấu giá: " + e.getMessage(), reqId);
           }
-        }        case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
+        }
+        case "GET_ALL_AUCTIONS_FOR_ADMIN" -> {
+          try {
+            // Lấy toàn bộ phiên (Bao gồm RUNNING, FINISHED, CANCELED) từ RAM Cache
+            List<Auction> allAuctions = AuctionManager.getInstance().getAllAuctions();
+            handler.sendResponse("SUCCESS", allAuctions, reqId);
+          } catch (Exception e) {
+            handler.sendResponse("ERROR", "Lỗi tải danh sách phiên Admin: " + e.getMessage(), reqId);
+          }
+        }
+
+        case "ADMIN_UPDATE_AUCTION_STATUS" -> {
+          try {
+            com.google.gson.JsonObject dataObj = gson.fromJson(msg.getData().toString(), com.google.gson.JsonObject.class);
+            int auctionId = dataObj.get("auctionId").getAsInt();
+            String status = dataObj.get("status").getAsString();
+
+            boolean isSuccess = AuctionManager.getInstance().updateAuctionStatus(auctionId, status);
+            if (isSuccess) {
+              handler.sendResponse("SUCCESS", "Đã cập nhật trạng thái phiên thành công!", reqId);
+            } else {
+              handler.sendResponse("ERROR", "Không thể cập nhật trạng thái phiên dưới Database.", reqId);
+            }
+          } catch (Exception e) {
+            handler.sendResponse("ERROR", "Lỗi xử lý trạng thái: " + e.getMessage(), reqId);
+          }
+        }
+
+        case "ADMIN_DELETE_AUCTION" -> {
+          try {
+            int auctionId = ((Number) msg.getData()).intValue();
+            AuctionManager.getInstance().deleteAuction(auctionId);
+            handler.sendResponse("SUCCESS", "Đã dọn dẹp sạch sẽ tàn dư phiên đấu giá khỏi hệ thống!", reqId);
+          } catch (com.uet.bidding.exception.UserException e) {
+            handler.sendResponse("ERROR", e.getMessage(), reqId);
+          } catch (Exception e) {
+            handler.sendResponse("ERROR", "Lỗi hệ thống khi dọn dẹp dữ liệu: " + e.getMessage(), reqId);
+          }
+        }
+        case "CREATE_AUCTION" -> handleCreateAuction(msg, handler);
         case "SELLER_END_AUCTION" -> handleSellerEndAuction(msg, handler);
         case "SET_AUTO_BID" -> handleSetAutoBid(msg, handler);
         case "REMOVE_AUTO_BID" -> handleRemoveAutoBid(msg, handler);

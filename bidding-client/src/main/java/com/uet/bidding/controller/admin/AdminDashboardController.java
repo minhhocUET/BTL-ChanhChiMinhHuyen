@@ -23,6 +23,10 @@ public class AdminDashboardController {
   @FXML
   private Button btnItemApproval;
 
+  // 🚀 KHAI BÁO THÊM NÚT QUẢN LÝ PHIÊN
+  @FXML
+  private Button btnAuctionManagement;
+
   @FXML
   private Button btnLogout;
 
@@ -50,6 +54,14 @@ public class AdminDashboardController {
   public void showItemApprovalPage() {
     setActiveMenu(btnItemApproval);
     changePage("/AdminItemManagement.fxml");
+  }
+
+  // 🚀 HÀM GỌI RA MÀN HÌNH QUẢN LÝ PHIÊN ĐẤU GIÁ MỚI LÀM
+  @FXML
+  public void showAuctionManagementPage() {
+    setActiveMenu(btnAuctionManagement);
+    // Lưu ý: Đảm bảo tên file FXML anh em mình vừa tạo ở trên khớp với chuỗi này nhé
+    changePage("/AdminAuctionManagement.fxml");
   }
 
   /**
@@ -103,6 +115,11 @@ public class AdminDashboardController {
     btnUserManagement.setStyle(normalStyle);
     btnItemApproval.setStyle(normalStyle);
 
+    // 🚀 NHỚ RESET CẢ MÀU CỦA NÚT QUẢN LÝ PHIÊN NỮA NHÉ
+    if(btnAuctionManagement != null) {
+      btnAuctionManagement.setStyle(normalStyle);
+    }
+
     // 2. Định dạng ĐẬM và MỜ XANH cho riêng nút được click (Active)
     String activeStyle = "-fx-background-color: #2a4ecb; "
         + "-fx-text-fill: white; "
@@ -114,7 +131,9 @@ public class AdminDashboardController {
         + "-fx-focused-background-color: #2a4ecb; "
         + "-fx-focus-color: transparent;";
 
-    activeButton.setStyle(activeStyle);
+    if(activeButton != null) {
+      activeButton.setStyle(activeStyle);
+    }
   }
 
   // Hàm dùng chung để dọn trang cũ, đập trang mới vào khungArea
@@ -146,6 +165,11 @@ public class AdminDashboardController {
 
   public Button getBtnItemApproval() {
     return btnItemApproval;
+  }
+
+  // Getter cho nút mới
+  public Button getBtnAuctionManagement() {
+    return btnAuctionManagement;
   }
 
   public Button getBtnLogout() {

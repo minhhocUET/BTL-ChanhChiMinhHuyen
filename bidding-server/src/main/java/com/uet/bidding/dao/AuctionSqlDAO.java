@@ -104,41 +104,35 @@ public class AuctionSqlDAO {
     return getAuctionsByStatusEnriched("RUNNING");
   }
 
-  /** Phiên đang chạy cho sảnh đấu giá (không hiển thị FINISHED). */
-  public List<Auction> getRunningAuctionsForHall() {
-    return getAuctionsByStatusEnriched("RUNNING");
+  // 1. Hàm chính để lấy danh sách theo trạng thái (Sắp xếp theo thời gian kết thúc - Phục vụ logic ngầm/Bot)
+  public List<Auction> getAuctionsByStatus(String status) {
+    return getAuctionsByStatusCore(status, "end_time ASC", false);
   }
 
+  // 2. Hàm lấy danh sách kèm số lượng người đăng ký (Sắp xếp theo thời gian bắt đầu - Phục vụ hiển thị Sảnh)
   private List<Auction> getAuctionsByStatusEnriched(String status) {
+    return getAuctionsByStatusCore(status, "start_time DESC", true);
+  }
+
+  // 🎯 HÀM LÕI DÙNG CHUNG (Tối ưu hóa gom code trùng lặp về một nơi)
+  private List<Auction> getAuctionsByStatusCore(String status, String orderBy, boolean isEnriched) {
     List<Auction> list = new ArrayList<>();
-    String sql = "SELECT * FROM auctions WHERE status = ? ORDER BY start_time DESC";
+    String sql = "SELECT * FROM auctions WHERE status = ? ORDER BY " + orderBy;
+
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, status);
       try (ResultSet rs = stmt.executeQuery()) {
         while (rs.next()) {
           Auction auction = mapAuction(rs);
-          enrichAuction(auction);
+          if (isEnriched) {
+            auction.setRegisteredCount(countRegistrations(auction.getId()));
+          }
           list.add(auction);
         }
       }
     } catch (SQLException | UserException e) {
-      System.err.println("Lỗi load auctions: " + e.getMessage());
-    }
-    return list;
-  }
-
-  public List<Auction> getAuctionsByStatus(String status) {
-    List<Auction> list = new ArrayList<>();
-    String sql = "SELECT * FROM auctions WHERE status = ? ORDER BY end_time";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setString(1, status);
-      try (ResultSet rs = stmt.executeQuery()) {
-        while (rs.next()) list.add(mapAuction(rs));
-      }
-    } catch (SQLException | UserException e) {
-      System.err.println("Lỗi load auctions: " + e.getMessage());
+      System.err.println("❌ Lỗi load auctions (" + status + "): " + e.getMessage());
     }
     return list;
   }
@@ -326,6 +320,9 @@ public class AuctionSqlDAO {
     }
   }
 
+  /**
+   * Người dùng chủ động HỦY tính năng tự động đặt giá (Auto-Bid) từ giao diện
+   */
   public void removeAutoBid(int auctionId, int bidderId) throws UserException {
     String sql = "UPDATE auto_bids SET is_active = FALSE WHERE auction_id = ? AND bidder_id = ?";
     try (Connection conn = DatabaseConnection.getConnection();
@@ -334,7 +331,7 @@ public class AuctionSqlDAO {
       stmt.setInt(2, bidderId);
       stmt.executeUpdate();
     } catch (SQLException e) {
-      throw new UserException("Lỗi xóa auto-bid: " + e.getMessage());
+      throw new UserException("Lỗi hủy tính năng auto-bid: " + e.getMessage());
     }
   }
 
@@ -354,8 +351,9 @@ public class AuctionSqlDAO {
     }
   }
 
+  //Kiểm tra một người dùng cụ thể đã đăng ký tham gia phiên đó chưa
   public boolean isBidderRegistered(int auctionId, int bidderId) {
-    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND bidder_id = ? LIMIT 1";
+    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND user_id = ? LIMIT 1";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setInt(1, auctionId);
@@ -369,6 +367,9 @@ public class AuctionSqlDAO {
     return false;
   }
 
+  //"Người dùng X này đã đăng ký tham gia những phiên đấu giá nào?"
+  // (Đầu vào là ID người dùng, đầu ra là danh sách ID các phiên đấu giá).
+  // Hàm này thường dùng ở giao diện của Bidder để hiển thị danh sách "Phiên tôi đã đăng ký".
   public List<Integer> getRegisteredAuctionIdsForBidder(int bidderId) {
     List<Integer> list = new ArrayList<>();
     String sql = "SELECT auction_id FROM auction_registrations WHERE bidder_id = ? ORDER BY auction_id DESC";
@@ -384,6 +385,8 @@ public class AuctionSqlDAO {
     return list;
   }
 
+  //Phiên đấu giá Y này đang có những người dùng nào đăng ký tham gia?"
+  // (Đầu vào là ID phiên, đầu ra là danh sách ID của các người dùng)
   public List<Integer> getRegisteredBidders(int auctionId) {
     List<Integer> list = new ArrayList<>();
     String sql = "SELECT bidder_id FROM auction_registrations WHERE auction_id = ?";
@@ -407,6 +410,7 @@ public class AuctionSqlDAO {
     return countRegistrations(auctionId);
   }
 
+  //Đếm số lượng người đã đăng ký tham gia một phiên đấu giá
   private int countRegistrations(int auctionId) {
     String sql = "SELECT COUNT(*) AS cnt FROM auction_registrations WHERE auction_id = ?";
     try (Connection conn = DatabaseConnection.getConnection();
@@ -421,41 +425,45 @@ public class AuctionSqlDAO {
     return 0;
   }
 
-  public boolean isUserRegistered(int auctionId, int bidderId) {
-    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND bidder_id = ?";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, auctionId);
-      stmt.setInt(2, bidderId);
-      try (ResultSet rs = stmt.executeQuery()) {
-        return rs.next(); // Nếu tìm thấy bản ghi nghĩa là đã đăng ký
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-    return false;
-  }
+  // Chuyển đổi một dòng dữ liệu thô từ cơ sở dữ liệu thành một đối tượng Java (Auction) hoàn chỉnh.
   private Auction mapAuction(ResultSet rs) throws SQLException, UserException {
     int id = rs.getInt("id");
     int itemId = rs.getInt("item_id");
+
+    // 1. Lấy thông tin Item (Tạm thời giữ nguyên để đảm bảo logic đa hình Electronics, Fashion... của bạn)
     Item item = itemDao.findById(itemId);
+
     BigDecimal currentPrice = rs.getBigDecimal("current_price");
     LocalDateTime start = rs.getTimestamp("start_time").toLocalDateTime();
     LocalDateTime end = rs.getTimestamp("end_time").toLocalDateTime();
     String status = rs.getString("status");
+
     Auction auction = new Auction(id, item, currentPrice, start, end, status);
     auction.setBidIncrement(rs.getBigDecimal("bid_increment"));
     auction.setAntiSnipeWindowMinutes(rs.getInt("anti_snipe_window_minutes"));
     auction.setAntiSnipeExtensionMinutes(rs.getInt("anti_snipe_extension_minutes"));
 
+    // 2. TỐI ƯU HÓA PAYLOAD HIGHEST BIDDER
     int bidderId = rs.getInt("highest_bidder_id");
     if (!rs.wasNull()) {
       User u = userDao.findById(bidderId);
-      if (u instanceof Customer) auction.setHighestBidder((Customer) u);
+      if (u instanceof Customer) {
+        Customer lightweightBidder = (Customer) u;
+
+        // 🎯 CHIẾN THUẬT "RÚT RUỘT": Làm rỗng thông tin nặng/nhạy cảm khi đẩy lên Sảnh
+        // Thư viện Gson sẽ tự động bỏ qua các trường null này, gói tin JSON nhẹ đi 10 lần!
+        //Database trả về dữ liệu thô. Hàm mapAuction nhận dữ liệu này và dùng từ khóa new Auction(...) để tạo ra một thực thể (Object) hoàn toàn mới nằm trên thanh RAM của Server.
+        lightweightBidder.setPassword(null);
+        lightweightBidder.setBalance(null);
+
+        auction.setHighestBidder(lightweightBidder);
+      }
     }
     return auction;
   }
 
+  //cập nhật trạng thái và thông tin mới nhất của một phiên đấu giá xuống Cơ sở dữ liệu (Database).
+  //Khi có một sự kiện xảy ra (ví dụ: có người vừa đặt mức giá cao hơn, hoặc phiên đấu giá bị kích hoạt chống bắn tỉa thời gian - Anti-sniping), hàm này sẽ lấy dữ liệu từ đối tượng Auction trên RAM để đè lên dòng dữ liệu cũ trong bảng auctions dưới Database qua câu lệnh UPDATE
   private void updateAuctionInTransaction(Connection conn, Auction auction) throws SQLException {
     String sql = """
         UPDATE auctions
@@ -475,6 +483,7 @@ public class AuctionSqlDAO {
     }
   }
 
+  //ghi lại lịch sử (log) mỗi khi hệ thống kích hoạt tính năng Chống bắn tỉa (Anti-sniping) trong một phiên đấu giá.
   private void logSniping(Connection conn, int auctionId, LocalDateTime oldEnd, LocalDateTime newEnd,
                           int extendedMinutes, int triggeredByBidId) throws SQLException {
     String sql = "INSERT INTO sniping_logs (auction_id, old_end_time, new_end_time, extended_by_minutes, triggered_by_bid_id) VALUES (?, ?, ?, ?, ?)";
@@ -488,6 +497,7 @@ public class AuctionSqlDAO {
     }
   }
 
+  //lấy 2 trần giá cao nhất đấu đá nhau qua một biến targetPrice
   private void triggerAutoBids(Connection conn, Auction auction, int triggeringBidId) throws SQLException, UserException {
     // 1. Chỉ lấy đúng 2 người cài Trần giá (Max Bid) CAO NHẤT hiện tại
     String sql = """
@@ -575,7 +585,7 @@ public class AuctionSqlDAO {
       triggerAutoBids(conn, auction, triggeringBidId);
     }
   }
-
+  //Hệ thống ép buộc tắt Bot vì lỗi tài khoản/hết tiền
   private void deactivateAutoBid(Connection conn, int autoBidId) throws SQLException {
     String deactivateSql = "UPDATE auto_bids SET is_active = FALSE WHERE id = ?";
     try(PreparedStatement ps = conn.prepareStatement(deactivateSql)) {
@@ -583,6 +593,11 @@ public class AuctionSqlDAO {
       ps.executeUpdate();
     }
   }
+
+  //Hàm này giống như một "Trọng tài sàn đấu".
+  // Ông trọng tài này mở cửa sàn đấu (setAutoCommit(false)),
+  // gọi các Bot vào đọ giá, nếu trận đấu diễn ra công bằng và không lỗi thì ông công nhận kết quả (commit),
+  // nếu có sự cố ngầm xảy ra thì ông hủy trận đấu và đưa mọi thứ về vị trí cũ (rollback).
   public void evaluateAutoBidsForAuction(int auctionId) throws UserException {
     try (Connection conn = DatabaseConnection.getConnection()) {
       conn.setAutoCommit(false);
@@ -601,6 +616,7 @@ public class AuctionSqlDAO {
     }
   }
 
+  //hàm chuyển tiền
   private void createPaymentTransactions(Auction auction) throws UserException {
     Customer winner = auction.getHighestBidder();
     if (winner == null) return;
@@ -727,55 +743,7 @@ public class AuctionSqlDAO {
     return 0;
   }
 
-  /** * Hàm tối ưu hóa đặc biệt dành riêng cho Sảnh đấu giá (AuctionListController).
-   * Chống lỗi N+1 Query và Over-fetching.
-   */
-  /**
-   * Hàm tối ưu hóa đặc biệt dành riêng cho Sảnh đấu giá (AuctionListController).
-   * Chống lỗi N+1 Query và kết hợp hoàn hảo với ItemFactory.
-   */
-  public List<Auction> getFastRunningAuctionsForHall() {
-    List<Auction> list = new ArrayList<>();
-    // Câu SQL lấy dữ liệu cần thiết (5 cột yêu cầu) + ID để map sau này
-    String sql = """
-        SELECT
-            a.id, a.current_price, a.start_time, a.end_time, a.status,
-            a.bid_increment, a.anti_snipe_window_minutes, a.anti_snipe_extension_minutes,
-            i.id AS item_id, i.name AS item_name, i.type AS item_type, i.city AS item_city,
-            (SELECT COUNT(*) FROM auction_registrations ar WHERE ar.auction_id = a.id) AS reg_count
-        FROM auctions a
-        INNER JOIN items i ON a.item_id = i.id
-        WHERE a.status = 'RUNNING'
-        ORDER BY a.start_time DESC
-        """;
-
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
-
-      while (rs.next()) {
-        // Khởi tạo Item cơ bản mà không cần gọi Factory phức tạp
-        // Lưu ý: Item chỉ cần các field hiển thị trên TableView
-        Item item = new Electronics(rs.getInt("item_id"), rs.getString("item_name"), null, null, null, 0, null, 0);
-        item.setType(rs.getString("item_type"));
-        item.setCity(rs.getString("item_city"));
-
-        Auction auction = new Auction(
-            rs.getInt("id"),
-            item,
-            rs.getBigDecimal("current_price"),
-            rs.getTimestamp("start_time").toLocalDateTime(),
-            rs.getTimestamp("end_time").toLocalDateTime(),
-            rs.getString("status")
-        );
-        auction.setRegisteredCount(rs.getInt("reg_count"));
-        list.add(auction);
-      }
-    } catch (SQLException e) {
-      System.err.println("❌ Lỗi truy vấn sảnh đấu giá: " + e.getMessage());
-    }
-    return list;
-  }
+  //hàm đăng ký tham gia phiên
   public boolean registerForAuction(int auctionId, int userId) throws UserException {
     String sql = "INSERT INTO auction_registrations (auction_id, user_id) VALUES (?, ?)";
     try (Connection conn = DatabaseConnection.getConnection();
@@ -792,9 +760,9 @@ public class AuctionSqlDAO {
     }
   }
 
-  /**
-   * TỐI ƯU HÓA: Phiên RUNNING mà bidder đã đăng ký tham gia (Đã sửa lỗi Unknown column 'i.type')
-   */
+  //quản lý tập trung toàn bộ các phòng đấu giá mà họ đã đăng ký và đang trực tiếp diễn ra
+  //Database sẽ vừa tìm phiên vừa đếm luôn số người tham gia trong đúng 1 lượt quét.
+  //Lấy luôn tên vật phẩm (item_name) và thành phố (item_city) của vật phẩm đó ngay trong câu lệnh gốc thay vì phải gọi hàm tìm kiếm Item riêng lẻ.
   public List<Auction> getFastActiveAuctionsForBidder(int bidderId) {
     List<Auction> list = new ArrayList<>();
     String sql = """
@@ -833,7 +801,8 @@ public class AuctionSqlDAO {
   }
 
   /**
-   * TỐI ƯU HÓA: Phiên FINISHED mà bidder đã tham gia (Đã sửa lỗi Unknown column 'i.type')
+   * "Lịch sử đấu giá" hoặc "Các phiên tôi từng tham gia" của người mua (Bidder).
+   * Hàm này đóng vai trò là "Thẻ lưu trữ dòng thời gian lịch sử" dành riêng cho mỗi người mua. Nó quét sạch mọi ngóc ngách dữ liệu (từ đăng ký, đặt giá cho tới thắng cuộc) để trả về một danh sách kết quả đấu giá đầy đủ, gọn gàng, giúp người dùng biết được quá khứ mình đã tham gia những gì và thắng/thua ra sao một cách nhanh chóng nhất.
    */
   public List<Auction> getFastFinishedAuctionsForBidder(int bidderId) {
     List<Auction> list = new ArrayList<>();
@@ -879,7 +848,8 @@ public class AuctionSqlDAO {
   // =========================================================
 
   /**
-   * Lấy cấu hình Auto-Bid phục vụ nạp RAM-Cache lúc khởi động Server
+   * Hàm này đóng vai trò là "Người bốc vác dữ liệu lên RAM". Nó giúp hệ thống chuyển hóa các thiết lập Bot đấu giá tự động từ dạng lưu trữ tĩnh dưới Database thành các đối tượng tính toán siêu nhẹ trên bộ nhớ RAM, sẵn sàng kích hoạt bất cứ khi nào có cuộc chiến giá cả xảy ra.
+   * th1: gọi khi server khởi động lại, th2: khi đọ giá
    */
   public List<AuctionManager.RemoteAutoBid> getAutoBidsByAuctionId(int auctionId) {
     List<AuctionManager.RemoteAutoBid> list = new ArrayList<>();
@@ -903,60 +873,8 @@ public class AuctionSqlDAO {
   }
 
   /**
-   * Cầu nối lấy thực thể Customer qua tầng bảo vệ UserDao của bạn
+   *"Người dùng này (bidderId) hiện tại có đang bật Bot đặt giá tự động cho phiên đấu giá này (auctionId) hay không? Nếu có thì mức giá trần tối đa họ cấu hình cho Bot là bao nhiêu?"
    */
-  public Customer getCustomerById(int customerId) {
-    try {
-      User u = userDao.findById(customerId);
-      if (u instanceof Customer) {
-        return (Customer) u;
-      }
-    } catch (UserException e) {
-      System.err.println("❌ Không tìm thấy thông tin khách hàng ID: " + customerId);
-    }
-    return null;
-  }
-
-  /**
-   * Cầu nối lấy số dư mới nhất phục vụ điều kiện chặn ví rỗng của Bot
-   */
-  public BigDecimal getUserBalanceBridge(int userId) throws UserException {
-    return userDao.getBalance(userId);
-  }
-
-  /**
-   * Ghi nhận lịch sử nhảy giá của Bot vào bảng liên kết
-   */
-  public void logAutoBidAction(int autoBidId, BigDecimal amount) {
-    String sql = "INSERT INTO auto_bid_logs (auto_bid_id, bid_amount) VALUES (?, ?)";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, autoBidId);
-      stmt.setBigDecimal(2, amount);
-      stmt.executeUpdate();
-    } catch (SQLException e) {
-      System.err.println("❌ Lỗi log lịch sử hoạt động của Bot: " + e.getMessage());
-    }
-  }
-
-  /**
-   * Hàm đọc nhanh trạng thái phiên để nạp tức thời vào RAM sau khi đặt giá thành công
-   */
-  public Auction createFastAuctionRefresh(int auctionId) {
-    String sql = "SELECT * FROM auctions WHERE id = ?";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.setInt(1, auctionId);
-      try (ResultSet rs = stmt.executeQuery()) {
-        if (rs.next()) {
-          return mapAuction(rs);
-        }
-      }
-    } catch (Exception e) {
-      System.err.println("❌ Lỗi refresh nhanh phiên đấu giá: " + e.getMessage());
-    }
-    return null;
-  }
   public BigDecimal getActiveAutoBidMaxPrice(int auctionId, int bidderId) {
     String sql = "SELECT max_bid FROM auto_bids WHERE auction_id = ? AND bidder_id = ? AND is_active = TRUE";
     try (Connection conn = DatabaseConnection.getConnection();

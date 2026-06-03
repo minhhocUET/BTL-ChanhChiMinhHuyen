@@ -44,13 +44,13 @@ public class RequestProcessorTest {
 
     List<Auction> fakeAuctions = new ArrayList<>();
     // Giả lập hàm trong DAO trả về danh sách trống hoặc có phần tử
-    when(auctionSqlDAO.getRunningAuctionsForHall()).thenReturn(fakeAuctions);
+    when(auctionSqlDAO.getAllAuctions()).thenReturn(fakeAuctions);
 
     // 2. Chạy hàm cần test
     requestProcessor.processRequest(msg, clientHandler);
 
     // 3. Kiểm chứng (Verify): Xem server có gọi hàm gửi phản hồi SUCCESS về cho Client đúng reqId không
-    verify(auctionSqlDAO, times(1)).getRunningAuctionsForHall();
+    verify(auctionSqlDAO, times(1)).getAllAuctions();
     verify(clientHandler, times(1)).sendResponse(eq("SUCCESS"), eq(fakeAuctions), eq(reqId));
   }
 

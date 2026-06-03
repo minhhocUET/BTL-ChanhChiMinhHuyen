@@ -35,7 +35,7 @@ public class AuctionExpirationTask {
   private void checkAndCloseAuctions() {
     try {
       // 1. Lấy tất cả các phiên đang chạy (RUNNING)
-      List<Auction> runningAuctions = auctionSqlDAO.getRunningAuctionsForHall();
+      List<Auction> runningAuctions = auctionSqlDAO.getAllAuctions();
       LocalDateTime now = LocalDateTime.now();
 
       for (Auction auction : runningAuctions) {

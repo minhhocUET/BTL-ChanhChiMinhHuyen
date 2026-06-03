@@ -45,7 +45,7 @@ public class RequestProcessor {
         case "GET_ALL_AUCTIONS" -> {
           try {
             // 1. Lấy danh sách từ Database
-            List<Auction> runningAuctions = auctionSqlDAO.getRunningAuctionsForHall();
+            List<Auction> runningAuctions = auctionSqlDAO.getAllAuctions();
 
             // 2. 🎯 Cực kỳ quan trọng: Lặp qua và lấy số lượng đăng ký thực tế gán vào object
             for (Auction a : runningAuctions) {

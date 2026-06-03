@@ -41,12 +41,11 @@ public class Main extends Application {
 
     // Kết nối mạng ngay khi khởi động
     try {
-      // Thay "26.95.102.74" bằng "localhost" nếu chạy cùng máy
       ClientService.getInstance().connect("18.136.197.107", 8888);
       System.out.println("✅ Kết nối Server thành công!");
     } catch (IOException e) {
       // 1. Hiển thị thông báo lỗi
-      showErrorAlert("Lỗi kết nối", "Không thể kết nối đến Server tại IP 18.136.197.107:8888. Vui lòng bật Server trước!");
+      showErrorAlert("Lỗi kết nối", "Không thể kết nối đến Server tại IP 127.0.0.1:8888. Vui lòng bật Server trước!");
 
       // 2. Dừng chương trình ngay lập tức
       Platform.exit();

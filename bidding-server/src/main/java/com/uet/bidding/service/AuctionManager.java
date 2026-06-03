@@ -124,7 +124,7 @@ public class AuctionManager {
     }
 
     // Kiểm tra đăng ký (Khớp với hàm check của bạn dưới DB)
-    boolean isRegistered = auctionSqlDAO.isUserRegistered(auctionId, customer.getId());
+    boolean isRegistered = auctionSqlDAO.isBidderRegistered(auctionId, customer.getId());
     if (!isRegistered) {
       throw new InvalidBidException("Bạn chưa đăng ký tham gia phiên đấu giá này! Vui lòng ấn nút đăng ký trước.");
     }
@@ -136,7 +136,7 @@ public class AuctionManager {
       boolean success = auctionSqlDAO.placeBid(auctionId, customer, amount);
 
       if (success) {
-        Auction updatedAuction = auctionSqlDAO.createFastAuctionRefresh(auctionId);
+        Auction updatedAuction = auctionSqlDAO.findById(auctionId);
         if (updatedAuction != null) {
           auctions.put(auctionId, updatedAuction);
         }
@@ -162,7 +162,7 @@ public class AuctionManager {
     }
     List<RemoteAutoBid> updatedList = auctionSqlDAO.getAutoBidsByAuctionId(auctionId);
     autoBidCache.put(auctionId, updatedList);
-    Auction updatedAuction = auctionSqlDAO.createFastAuctionRefresh(auctionId);
+    Auction updatedAuction = auctionSqlDAO.findById(auctionId);
     if (updatedAuction != null) {
       auctions.put(auctionId, updatedAuction);
     }

@@ -1,40 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.VBox?>
-<VBox xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21"
-      fx:controller="com.uet.bidding.controller.LoginController" alignment="CENTER" prefHeight="450.0" prefWidth="350.0"
-      spacing="20.0" styleClass="root-container" stylesheets="@style.css">
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="CENTER" prefHeight="478.0" prefWidth="422.0" spacing="20.0" styleClass="root-container" stylesheets="@style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.LoginController">
     <children>
-        <VBox alignment="CENTER" spacing="5.0">
-            <children>
-                <Label text="Welcome to" style="-fx-font-size: 14px; -fx-text-fill: #ec4899;"/>
-                <Label text="ChanhChiMinhHuyen"
-                       style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ec4899; -fx-padding: 0 0 10 0;"/>
-                <Label styleClass="title-label" text="ĐĂNG NHẬP"/>
-                <Label styleClass="subtitle-label" text="Chào mừng bạn quay trở lại"/>
-            </children>
+
+        <StackPane>
             <VBox.margin>
-                <Insets bottom="10.0"/>
+                <Insets bottom="10.0" />
             </VBox.margin>
-        </VBox>
+            <children>
+
+                <Pane mouseTransparent="true">
+                    <children>
+                        <ImageView fitHeight="130.0" layoutX="200.0" layoutY="-25.0" managed="false" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@mash.png" />
+                            </image>
+                        </ImageView>
+                    </children>
+                </Pane>
+
+                <VBox alignment="CENTER" pickOnBounds="false" spacing="5.0">
+                    <children>
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #ec4899;" text="Welcome to" />
+                        <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ec4899; -fx-padding: 0 0 10 0;" text="ChanhChiMinhHuyen" />
+                        <Label styleClass="title-label" text="ĐĂNG NHẬP" />
+                        <Label styleClass="subtitle-label" text="Chào mừng bạn quay trở lại" />
+                    </children>
+                </VBox>
+
+            </children>
+        </StackPane>
 
         <VBox spacing="15.0">
             <children>
-                <TextField fx:id="usernameField" promptText="Tên đăng nhập" styleClass="input-field"/>
-                <PasswordField fx:id="passwordField" promptText="Mật khẩu" styleClass="input-field"/>
+                <TextField fx:id="usernameField" promptText="Tên đăng nhập" styleClass="input-field" />
+                <PasswordField fx:id="passwordField" promptText="Mật khẩu" styleClass="input-field" />
             </children>
         </VBox>
 
-        <Button mnemonicParsing="false" onAction="#handleLogin" styleClass="action-button" text="ĐĂNG NHẬP"/>
+        <Button mnemonicParsing="false" onAction="#handleLogin" styleClass="action-button" text="ĐĂNG NHẬP" />
 
-        <Hyperlink onAction="#goToRegister" text="Chưa có tài khoản? Đăng ký ngay" textFill="#3b82f6"/>
+        <Hyperlink onAction="#goToRegister" text="Chưa có tài khoản? Đăng ký ngay" textFill="#3b82f6" />
 
-        <Label fx:id="messageLabel" styleClass="error-label"/>
+        <Label fx:id="messageLabel" styleClass="error-label" />
     </children>
 
     <padding>
-        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
+        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0" />
     </padding>
 </VBox>

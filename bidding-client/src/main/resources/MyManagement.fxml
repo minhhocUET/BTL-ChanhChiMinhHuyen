@@ -1,53 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.shape.Circle?>
-<?import javafx.scene.text.Font?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="600.0" prefWidth="950.0"
-            style="-fx-background-color: #ffe4e8;" xmlns="http://javafx.com/javafx/17.0.12"
-            fx:controller="com.uet.bidding.controller.MyManagementController">
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="600.0" prefWidth="950.0" style="-fx-background-color: #ffe4e8;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.MyManagementController">
     <children>
-        <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
-              AnchorPane.topAnchor="20.0">
+        <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
             <children>
                 <HBox alignment="CENTER_LEFT">
                     <children>
-                        <Button mnemonicParsing="false" onAction="#handleBack"
-                                style="-fx-background-color: white; -fx-border-color: #d8466b; -fx-border-radius: 5; -fx-cursor: hand;"
-                                text="← Quay lại" textFill="#d8466b">
+                        <Button mnemonicParsing="false" onAction="#handleBack" style="-fx-background-color: white; -fx-border-color: #d8466b; -fx-border-radius: 5; -fx-cursor: hand;" text="← Quay lại" textFill="#d8466b">
                             <font>
-                                <Font name="System Bold" size="13.0"/>
+                                <Font name="System Bold" size="13.0" />
                             </font>
                         </Button>
-                        <Region prefWidth="20.0"/>
+                        <Region prefWidth="20.0" />
                         <Label text="Bidder" textFill="#d8466b">
                             <font>
-                                <Font name="System Bold" size="24.0"/>
+                                <Font name="System Bold" size="24.0" />
                             </font>
                         </Label>
-                        <Region HBox.hgrow="ALWAYS"/>
                     </children>
                 </HBox>
 
-                <TabPane style="-fx-background-color: white; -fx-background-radius: 8;" tabClosingPolicy="UNAVAILABLE"
-                         VBox.vgrow="ALWAYS">
+                <TabPane style="-fx-background-color: white; -fx-background-radius: 8;" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                     <tabs>
-
                         <Tab text="Đang tham gia đấu giá">
                             <content>
                                 <AnchorPane>
                                     <children>
-                                        <TableView fx:id="bidTableView" AnchorPane.bottomAnchor="10.0"
-                                                   AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0"
-                                                   AnchorPane.topAnchor="10.0">
+                                        <TableView fx:id="bidTableView" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
                                             <columns>
-                                                <TableColumn fx:id="colBidEndTime" prefWidth="160.0" text="Thời gian kết thúc"/>
-                                                <TableColumn fx:id="colBidCity" prefWidth="120.0" text="Thành phố"/>
-                                                <TableColumn fx:id="colBidName" prefWidth="220.0" text="Tên sản phẩm"/>
-                                                <TableColumn fx:id="colBidCurrentPrice" prefWidth="130.0"
-                                                             text="Giá hiện tại"/>
-                                                <TableColumn fx:id="colBidMyPrice" prefWidth="130.0" text="Giá đã đặt"/>
+                                                <TableColumn fx:id="colBidEndTime" prefWidth="160.0" text="Thời gian kết thúc" />
+                                                <TableColumn fx:id="colBidCity" prefWidth="120.0" text="Thành phố" />
+                                                <TableColumn fx:id="colBidName" prefWidth="220.0" text="Tên sản phẩm" />
+                                                <TableColumn fx:id="colBidCurrentPrice" prefWidth="130.0" text="Giá hiện tại" />
+                                                <TableColumn fx:id="colBidMyPrice" prefWidth="130.0" text="Giá đã đặt" />
                                             </columns>
                                         </TableView>
                                     </children>
@@ -59,18 +49,13 @@
                             <content>
                                 <AnchorPane>
                                     <children>
-                                        <TableView fx:id="sellTableView" AnchorPane.bottomAnchor="10.0"
-                                                   AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0"
-                                                   AnchorPane.topAnchor="10.0">
+                                        <TableView fx:id="sellTableView" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
                                             <columns>
-                                                <TableColumn fx:id="colSellCity" prefWidth="120.0" text="Thành phố"/>
-                                                <TableColumn fx:id="colSellName" prefWidth="250.0" text="Tên sản phẩm"/>
-                                                <TableColumn fx:id="colSellStartPrice" prefWidth="150.0"
-                                                             text="Giá khởi điểm"/>
-                                                <TableColumn fx:id="colSellHighestBid" prefWidth="150.0"
-                                                             text="Giá cao nhất"/>
-
-                                                <TableColumn fx:id="colReview" prefWidth="150.0" text="Đánh giá shop"/>
+                                                <TableColumn fx:id="colSellCity" prefWidth="120.0" text="Thành phố" />
+                                                <TableColumn fx:id="colSellName" prefWidth="250.0" text="Tên sản phẩm" />
+                                                <TableColumn fx:id="colSellStartPrice" prefWidth="150.0" text="Giá khởi điểm" />
+                                                <TableColumn fx:id="colSellHighestBid" prefWidth="150.0" text="Giá cao nhất" />
+                                                <TableColumn fx:id="colReview" prefWidth="150.0" text="Đánh giá shop" />
                                             </columns>
                                         </TableView>
                                     </children>
@@ -81,5 +66,19 @@
                 </TabPane>
             </children>
         </VBox>
+
+        <ImageView fitHeight="140.0" fitWidth="127.0" mouseTransparent="true" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="30.0" AnchorPane.rightAnchor="31.0">
+            <image>
+                <Image url="@chopper.png" />
+            </image>
+        </ImageView>
+
+        <ImageView fitHeight="128.0" fitWidth="276.0" layoutY="-25.0" mouseTransparent="true" pickOnBounds="true" preserveRatio="true" AnchorPane.rightAnchor="13.0" AnchorPane.topAnchor="-25.0">
+            <image>
+                <Image url="@ace.png" />
+            </image>
+        </ImageView>
+            <Region layoutX="251.0" layoutY="3.0" />
+
     </children>
 </AnchorPane>

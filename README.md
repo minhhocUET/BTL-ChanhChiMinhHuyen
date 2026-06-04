@@ -109,5 +109,5 @@ Mở thư mục gốc của dự án (`BTL_OOP_Java`) bằng IDE (khuyến khíc
 
 ## 6. Báo cáo chi tiết và Video Demo
 
-- **Báo cáo PDF:** [Điền link Google Drive của nhóm bạn vào đây]
-- **Video demo tính năng:** [Điền link video Demo của nhóm bạn vào đây]
+- **Báo cáo PDF: https://drive.google.com/file/d/1-iQHc5hb445-6IQuY3xo64ucufQB6Gpf/view?usp=sharing
+- **Video demo tính năng: https://www.youtube.com/watch?v=j3t8NVDlcJU

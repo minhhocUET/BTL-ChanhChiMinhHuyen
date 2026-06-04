@@ -308,19 +308,47 @@ public class AuctionSqlDAO {
    * Kết thúc phiên đấu giá, xác định người thắng, lưu kết quả và tạo transaction.
    */
   public void finishAuction(int auctionId) throws UserException {
+    // 1. Đọc dữ liệu mới nhất trực tiếp từ DB lên để tránh cache local
     Auction auction = findById(auctionId);
-    if ("FINISHED".equals(auction.getStatus()) || "CANCELED".equals(auction.getStatus())) {
+    if (auction == null) {
       return;
     }
-    auction.setStatus("FINISHED");
+
+    // Nếu trạng thái đã hoàn thành hoặc hủy thì dừng ngay tại cửa sổ Java
+    String currentStatus = auction.getStatus() != null ? auction.getStatus().toUpperCase() : "";
+    if ("FINISHED".equals(currentStatus) || "PAID".equals(currentStatus) || "CANCELED".equals(currentStatus)) {
+      return;
+    }
+
     try (Connection conn = DatabaseConnection.getConnection()) {
       conn.setAutoCommit(false);
-      updateAuctionInTransaction(conn, auction);
-      // Lưu kết quả
+
+      // 2. CẬP NHẬT TRẠNG THÁI: Chấp nhận cả OPEN hoặc RUNNING (miễn là chưa FINISHED/CANCELED/PAID)
+      String updateAuctionSql = """
+        UPDATE auctions 
+        SET status = 'FINISHED' 
+        WHERE id = ? AND status NOT IN ('FINISHED', 'PAID', 'CANCELED')
+        """;
+
+      int rowsUpdated = 0;
+      try (PreparedStatement stmtAuction = conn.prepareStatement(updateAuctionSql)) {
+        stmtAuction.setInt(1, auctionId);
+        rowsUpdated = stmtAuction.executeUpdate();
+      }
+
+      // Nếu rowsUpdated == 0 nghĩa là phiên này ĐÃ bị luồng khác sửa thành FINISHED/PAID/CANCELED rồi
+      if (rowsUpdated == 0) {
+        conn.rollback();
+        return; // Thoát ngay lập tức, không chạy xuống dưới nữa
+      }
+
+      // 3. INSERT KẾT QUẢ: Dùng thêm từ khóa IGNORE để phòng thủ tầng cuối cùng (Tầng Database)
+      // Nếu chẳng may có lỗi đồng bộ nào đó làm trùng lặp auction_id, MySQL tự động BỎ QUA chứ không quăng lỗi SẬP SERVER
       String sqlResult = """
-          INSERT INTO auction_results (auction_id, winner_id, final_price)
-          VALUES (?, ?, ?)
-          """;
+        INSERT IGNORE INTO auction_results (auction_id, winner_id, final_price)
+        VALUES (?, ?, ?)
+        """;
+
       try (PreparedStatement stmt = conn.prepareStatement(sqlResult)) {
         stmt.setInt(1, auctionId);
         if (auction.getHighestBidder() != null) {
@@ -332,18 +360,20 @@ public class AuctionSqlDAO {
         }
         stmt.executeUpdate();
       }
-      // Cập nhật trạng thái item
-      itemDao.setInAuction(auction.getItem().getId(), false);
-      // 2. ÉP TRẠNG THÁI SẢN PHẨM THÀNH "AUCTION_ENDED" TRONG DATABASE
-      String updateItemSql = "UPDATE items SET status = 'AUCTION_ENDED' WHERE id = ?";
-      try (PreparedStatement stmtItem = conn.prepareStatement(updateItemSql)) {
-        stmtItem.setInt(1, auction.getItem().getId());
-        stmtItem.executeUpdate();
+
+      // 4. Cập nhật trạng thái item
+      if (auction.getItem() != null) {
+        itemDao.setInAuction(auction.getItem().getId(), false);
+
+        String updateItemSql = "UPDATE items SET status = 'AUCTION_ENDED' WHERE id = ?";
+        try (PreparedStatement stmtItem = conn.prepareStatement(updateItemSql)) {
+          stmtItem.setInt(1, auction.getItem().getId());
+          stmtItem.executeUpdate();
+        }
       }
 
       conn.commit();
 
-      // Tạo transaction cho người thắng và người bán (có thể sau commit)
       if (auction.getHighestBidder() != null) {
         createPaymentTransactions(auction);
       }
@@ -407,7 +437,7 @@ public class AuctionSqlDAO {
 
   //Kiểm tra một người dùng cụ thể đã đăng ký tham gia phiên đó chưa
   public boolean isBidderRegistered(int auctionId, int bidderId) {
-    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND user_id = ? LIMIT 1";
+    String sql = "SELECT 1 FROM auction_registrations WHERE auction_id = ? AND bidder_id = ? LIMIT 1";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
       stmt.setInt(1, auctionId);

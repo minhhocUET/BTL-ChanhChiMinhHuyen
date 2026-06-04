@@ -34,31 +34,49 @@ public class AuctionExpirationTask {
    */
   private void checkAndCloseAuctions() {
     try {
-      // 1. Lấy tất cả các phiên đang chạy (RUNNING)
-      List<Auction> runningAuctions = auctionSqlDAO.getAllAuctions();
+      // Lấy toàn bộ danh sách phiên từ DB
+      List<Auction> allAuctions = auctionSqlDAO.getAllAuctions();
       LocalDateTime now = LocalDateTime.now();
 
-      for (Auction auction : runningAuctions) {
-        // 2. So sánh: Nếu thời gian kết thúc <= thời gian hiện tại
+      for (Auction auction : allAuctions) {
+        if (auction == null || auction.getStatus() == null) {
+          continue;
+        }
+
+        String status = auction.getStatus().toUpperCase();
+
+        // CHỈ QUÉT những phiên chưa kết thúc (OPEN hoặc RUNNING)
+        // Bỏ qua ngay lập tức nếu phiên đã FINISHED, PAID, hoặc CANCELED
+        if ("FINISHED".equals(status) || "PAID".equals(status) || "CANCELED".equals(status)) {
+          continue;
+        }
+
+        // So sánh thời gian kết thúc <= Hiện tại
         if (auction.getEndTime() != null && !auction.getEndTime().isAfter(now)) {
           System.out.println("⏰ [Server] Phiên #" + auction.getId() + " đã hết giờ. Đang tự động đóng...");
 
-          // 3. Gọi hàm của DAO để lưu trạng thái FINISHED và sinh Transaction
-          auctionSqlDAO.finishAuction(auction.getId());
+          try {
+            // Thực hiện chốt phiên dưới DB
+            auctionSqlDAO.finishAuction(auction.getId());
 
-          // 4. Cập nhật lại số liệu mới nhất từ DB
-          Auction updated = auctionSqlDAO.findById(auction.getId());
-          updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auction.getId()));
+            // Đọc lại trạng thái thực tế xem phiên đã sang FINISHED chưa trước khi phát loa
+            Auction updated = auctionSqlDAO.findById(auction.getId());
+            if (updated != null && "FINISHED".equalsIgnoreCase(updated.getStatus())) {
+              updated.setRegisteredCount(auctionSqlDAO.getRegistrationCount(auction.getId()));
 
-          // 5. Phát loa (Broadcast) báo cho TẤT CẢ các Client đang mở app biết để ép UI cập nhật
-          Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
-          Server.broadcast(new NetworkMessage("BROADCAST",
-              "🎉 Phiên đấu giá [" + updated.getItem().getName() + "] đã chính thức khép lại!"));
+              // Broadcast thông báo cho Client
+              Server.broadcast(new NetworkMessage("AUCTION_UPDATED", updated));
+              Server.broadcast(new NetworkMessage("BROADCAST",
+                  "🎉 Phiên đấu giá [" + updated.getItem().getName() + "] đã chính thức khép lại!"));
+            }
+          } catch (Exception ex) {
+            System.err.println("❌ Lỗi xử lý đóng phiên #" + auction.getId() + ": " + ex.getMessage());
+          }
         }
       }
     } catch (Exception e) {
       System.err.println("❌ [Server] Lỗi trong luồng quét phiên đấu giá: " + e.getMessage());
-      e.printStackTrace(); // In ra log để dễ debug nếu có lỗi DB
+      e.printStackTrace();
     }
   }
 

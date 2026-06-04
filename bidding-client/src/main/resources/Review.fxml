@@ -34,12 +34,8 @@
                                     </font>
                                 </Label>
 
-                                <HBox alignment="CENTER_LEFT" spacing="5.0">
-                                    <children>
-                                        <Label fx:id="lblAvgRating" style="-fx-font-weight: bold; -fx-font-size: 18px;" text="0.0" textFill="#c2185b" />
-                                        <Label style="-fx-font-size: 16px;" text="⭐⭐⭐⭐★" textFill="#ffb300" />
-                                    </children>
-                                </HBox>
+                                <HBox fx:id="lblAvgRating" alignment="CENTER_LEFT" spacing="3.0" />
+
                                 <Label fx:id="lblReviewCount" text="(0 đánh giá)" textFill="#888888">
                                     <font>
                                         <Font size="13.0" />

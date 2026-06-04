@@ -41,8 +41,7 @@ public class ReviewController {
   private Label lblShopName;
   @FXML
   private Label lblShopDescription;
-  @FXML
-  private Label lblAvgRating;
+  @FXML private HBox lblAvgRating;
   @FXML
   private Label lblReviewCount;
   @FXML
@@ -190,7 +189,7 @@ public class ReviewController {
           lblEmpty.setStyle("-fx-text-fill: #94a3b8; -fx-font-style: italic;");
           reviewsContainer.getChildren().add(lblEmpty);
 
-          lblAvgRating.setText("0.0");
+          if (lblAvgRating != null) lblAvgRating.getChildren().clear();
           if (lblBigAvgRating != null) lblBigAvgRating.setText("0.0");
           lblReviewCount.setText("(0 đánh giá)");
           return;
@@ -280,7 +279,9 @@ public class ReviewController {
 
         double avg = sum / arr.size();
         String avgStr = String.format("%.1f", avg);
-        lblAvgRating.setText(avgStr);
+        if (lblAvgRating != null) {
+          renderDynamicStars(lblAvgRating, avg);
+        }
         if (lblBigAvgRating != null) lblBigAvgRating.setText(avgStr);
         lblReviewCount.setText("(" + arr.size() + " đánh giá)");
       });
@@ -288,6 +289,33 @@ public class ReviewController {
       Platform.runLater(() -> showAlert("Lỗi kết nối", "Không thể tải đánh giá: " + ex.getMessage()));
       return null;
     });
+  }
+
+  private void renderDynamicStars(HBox container, double avgScore) {
+    container.getChildren().clear(); // Dọn dẹp sạch cụm cũ
+    container.setSpacing(3);         // Khoảng cách giữa các ngôi sao
+    container.setAlignment(Pos.CENTER_LEFT);
+
+    for (int i = 1; i <= 5; i++) {
+      Label starLabel = new Label();
+      starLabel.setStyle("-fx-font-size: 18px;"); // Kích thước hiển thị sao vừa vặn giao diện tổng
+
+      if (avgScore >= i) {
+        // 1. Sao vàng đậm nguyên vẹn (Điểm số bao trọn vị trí)
+        starLabel.setText("★");
+        starLabel.setStyle(starLabel.getStyle() + " -fx-text-fill: #ffb300;");
+      } else if (avgScore > i - 1 && avgScore < i) {
+        // 2. Điểm số nằm giữa khoảng lẻ (Ví dụ 3.5 thì ngôi sao thứ 4 rơi vào đây)
+        // Dùng sao đặc nhưng đổi màu sang vàng chanh sáng dịu để làm nổi bật vị trí nửa sao
+        starLabel.setText("★");
+        starLabel.setStyle(starLabel.getStyle() + " -fx-text-fill: #ffdd67;");
+      } else {
+        // 3. Các ngôi sao rỗng còn lại phía sau
+        starLabel.setText("☆");
+        starLabel.setStyle(starLabel.getStyle() + " -fx-text-fill: #ced4da;");
+      }
+      container.getChildren().add(starLabel);
+    }
   }
 
 

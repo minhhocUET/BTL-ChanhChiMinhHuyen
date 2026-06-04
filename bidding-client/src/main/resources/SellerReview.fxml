@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.*?>
+
+<?import javafx.scene.image.ImageView?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="850.0"
+            style="-fx-background-color: #fce4ec;" xmlns="http://javafx.com/javafx/17.0.12"
+            fx:controller="com.uet.bidding.controller.seller.SellerReviewController">
+    <children>
+        <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
+              AnchorPane.topAnchor="20.0">
+            <children>
+
+                <HBox alignment="CENTER_LEFT" spacing="20.0"
+                      style="-fx-background-color: #ffffff; -fx-padding: 20; -fx-background-radius: 18; -fx-border-color: #f8bbd0; -fx-border-radius: 18; -fx-border-width: 1.5;">
+                    <children>
+                        <StackPane prefHeight="80.0" prefWidth="80.0">
+                            <children>
+                                <Circle fill="#ffe4ec" radius="40.0" stroke="#ffb3cc" strokeType="INSIDE"/>
+                                <Label fx:id="sellerReviewAvatarLabel" text="?" style="-fx-font-size: 35px; -fx-font-weight: bold;" textFill="#e91e63" />
+                                <ImageView fx:id="sellerReviewAvatarImageView" fitHeight="80.0" fitWidth="80.0" preserveRatio="true" smooth="true" />
+                            </children>
+                        </StackPane>
+
+                        <VBox alignment="CENTER_LEFT" spacing="6.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label fx:id="lblShopName" text="Tên Cửa Hàng" textFill="#880e4f">
+                                    <font>
+                                        <Font name="System Bold" size="20.0"/>
+                                    </font>
+                                </Label>
+
+                                <Label fx:id="lblShopDesc" text="Mô tả: Đang tải mô tả cửa hàng..." textFill="#747d8c">
+                                    <font>
+                                        <Font name="System Italic" size="13.0"/>
+                                    </font>
+                                </Label>
+
+                                <HBox alignment="BASELINE_LEFT" spacing="8.0" style="-fx-padding: 2 0 0 0;">
+                                    <children>
+                                        <Label fx:id="lblAvgRating" text="0.0" textFill="#c2185b">
+                                            <font>
+                                                <Font name="System Bold" size="28.0"/>
+                                            </font>
+                                        </Label>
+                                        <Label text="/ 5" textFill="#888888">
+                                            <font>
+                                                <Font name="System Bold" size="18.0"/>
+                                            </font>
+                                        </Label>
+                                        <HBox fx:id="lblStarRating" alignment="CENTER_LEFT" spacing="3" />                                    </children>
+                                </HBox>
+
+                                <Label fx:id="lblReviewCount" text="(0 đánh giá)" textFill="#888888">
+                                    <font>
+                                        <Font size="14.0"/>
+                                    </font>
+                                </Label>
+                            </children>
+                        </VBox>
+
+                        <GridPane hgap="10.0" vgap="5.0">
+                            <columnConstraints>
+                                <ColumnConstraints halignment="RIGHT" minWidth="30.0"/>
+                                <ColumnConstraints minWidth="150.0"/>
+                                <ColumnConstraints halignment="LEFT" minWidth="30.0"/>
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                                <RowConstraints minHeight="15.0"/>
+                            </rowConstraints>
+                            <children>
+                                <Label text="5 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                                <ProgressBar fx:id="bar5" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                                <Label fx:id="lblCount5" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+
+                                <Label text="4 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                                <ProgressBar fx:id="bar4" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                                <Label fx:id="lblCount4" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+
+                                <Label text="3 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                                <ProgressBar fx:id="bar3" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                                <Label fx:id="lblCount3" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+
+                                <Label text="2 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                                <ProgressBar fx:id="bar2" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                                <Label fx:id="lblCount2" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+
+                                <Label text="1 ★" textFill="#555555" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                                <ProgressBar fx:id="bar1" progress="0.0" prefWidth="150.0" style="-fx-accent: #e91e63;" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                                <Label fx:id="lblCount1" text="0" textFill="#555555" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
+                            </children>
+                        </GridPane>
+                    </children>
+                </HBox>
+
+                <Label text="Danh sách đánh giá" textFill="#c2185b">
+                    <font>
+                        <Font name="System Bold" size="16.0"/>
+                    </font>
+                </Label>
+
+                <ScrollPane fitToWidth="true" prefHeight="330.0"
+                            style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;"
+                            VBox.vgrow="ALWAYS">
+                    <content>
+                        <VBox fx:id="reviewsContainer" spacing="12.0"
+                              style="-fx-background-color: transparent; -fx-padding: 5;"/>
+                    </content>
+                </ScrollPane>
+
+                <HBox alignment="CENTER" style="-fx-padding: 10 0 0 0;">
+                    <children>
+                        <Button mnemonicParsing="false" onAction="#handleBackToSellerDashboard" prefHeight="40.0"
+                                prefWidth="250.0"
+                                style="-fx-background-color: #fdf2f4; -fx-text-fill: #e91e63; -fx-border-color: #f8bbd0; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;"
+                                text="⬅ Quay lại Seller Dashboard"/>
+                    </children>
+                </HBox>
+
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="720.0" prefWidth="640.0" style="-fx-background-color: #fce4ec;"
+            xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.uet.bidding.controller.seller.SellerProductDetailController">
+    <VBox spacing="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <HBox alignment="CENTER_LEFT" spacing="12.0"
+              style="-fx-background-color: white; -fx-border-color: #e91e63; -fx-border-width: 0 0 1 0;">
+            <padding>
+                <Insets bottom="10.0" left="16.0" right="16.0" top="10.0"/>
+            </padding>
+            <Button onAction="#handleBack" style="-fx-background-color: transparent; -fx-cursor: hand; -fx-font-weight: bold;"
+                    text="← Quay lại Seller" textFill="#880e4f"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label style="-fx-font-weight: bold; -fx-font-size: 17px;" text="QUẢN LÝ PHIÊN ĐẤU GIÁ" textFill="#880e4f"/>
+        </HBox>
+
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
+            <VBox spacing="16.0">
+                <padding>
+                    <Insets bottom="16.0" left="20.0" right="20.0" top="12.0"/>
+                </padding>
+
+                <VBox spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 16; -fx-border-color: #f8bbd0; -fx-border-radius: 12;">
+                    <StackPane>
+                        <ImageView fx:id="imgProduct" fitHeight="220.0" fitWidth="360.0" preserveRatio="true"/>
+                        <Label fx:id="lblStatusBadge" text="RUNNING" StackPane.alignment="TOP_LEFT"
+                               style="-fx-background-color: #e91e63; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 4 10; -fx-background-radius: 5;">
+                            <StackPane.margin>
+                                <Insets left="8.0" top="8.0"/>
+                            </StackPane.margin>
+                        </Label>
+                    </StackPane>
+                    <Label fx:id="lblProductName" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #880e4f;" wrapText="true"/>
+                    <HBox spacing="8.0">
+                        <Label fx:id="lblItemMeta" style="-fx-text-fill: #64748b;"/>
+                        <Label text="|" style="-fx-text-fill: #f8bbd0;"/>
+                        <Label fx:id="lblAuctionId" style="-fx-text-fill: #64748b;"/>
+                    </HBox>
+                    <HBox spacing="20.0">
+                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                            <Label text="Giá hiện tại" style="-fx-text-fill: #64748b;"/>
+                            <Label fx:id="lblCurrentPrice" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                            <Label fx:id="lblHighestBidder" style="-fx-text-fill: #880e4f; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <VBox alignment="TOP_RIGHT" spacing="4.0">
+                            <Label text="Còn lại" style="-fx-text-fill: #64748b;"/>
+                            <Label fx:id="lblCountdown" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #e91e63;"/>
+                        </VBox>
+                    </HBox>
+                    <Label text="Mô tả" style="-fx-font-weight: bold; -fx-text-fill: #880e4f;"/>
+                    <Label fx:id="lblDescription" wrapText="true" style="-fx-text-fill: #475569;"/>
+                    <Label fx:id="lblRegisteredCount" style="-fx-text-fill: #64748b;"/>
+                </VBox>
+
+                <VBox spacing="10.0" style="-fx-background-color: #fff0f5; -fx-padding: 14; -fx-background-radius: 10; -fx-border-color: #f8bbd0; -fx-border-radius: 10;">
+                    <Label text="Thao tác người bán" style="-fx-font-weight: bold; -fx-text-fill: #880e4f;"/>
+                    <Label fx:id="lblSellerHint" wrapText="true" style="-fx-text-fill: #64748b; -fx-font-size: 12px;"/>
+                    <Button fx:id="btnEndEarly" onAction="#handleEndEarly" prefHeight="42.0"
+                            style="-fx-background-color: #c62828; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;"
+                            text="⏹ Dừng sớm phiên đấu giá"/>
+                </VBox>
+
+                <VBox spacing="8.0" style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10; -fx-border-color: #f8bbd0; -fx-border-radius: 10;">
+                    <Label text="Lịch sử đặt giá" style="-fx-font-weight: bold; -fx-text-fill: #880e4f;"/>
+                    <TableView fx:id="bidHistoryTable" prefHeight="140.0">
+                        <columns>
+                            <TableColumn fx:id="colBidTime" prefWidth="150.0" text="Thời gian"/>
+                            <TableColumn fx:id="colBidderName" prefWidth="120.0" text="Người đặt"/>
+                            <TableColumn fx:id="colBidAmount" prefWidth="130.0" text="Số tiền (VNĐ)"/>
+                        </columns>
+                    </TableView>
+
+                    <LineChart fx:id="bidLineChart" prefHeight="220.0" legendVisible="false"
+                               animated="true" createSymbols="true" alternativeRowFillVisible="false"
+                               horizontalGridLinesVisible="true" verticalGridLinesVisible="false">
+                        <xAxis>
+                            <CategoryAxis label="Thời gian (Theo tiến trình phiên)" side="BOTTOM" tickLabelFill="#64748b" tickLabelsVisible="false" tickMarkVisible="false" />
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis label="Giá (VNĐ)" side="LEFT" forceZeroInRange="false" tickLabelFill="#64748b" />
+                        </yAxis>
+                    </LineChart>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </VBox>
+</AnchorPane>

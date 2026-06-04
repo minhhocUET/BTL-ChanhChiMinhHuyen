@@ -1,52 +1,63 @@
 package com.uet.bidding.model;
 
-import java.math.BigDecimal;
+/**
+ * Lớp User trừu tượng - Lớp cơ sở (Base Class)
+ * Loại bỏ Serialization, sẵn sàng cho GSON/JSON
+ */
+public abstract class User extends Entity {
 
-// Tính Trừu tượng: Dùng abstract vì không có "User" chung chung, chỉ có Bidder, Seller hoặc Admin
-public abstract class User {
-    // Tính Đóng gói: Các thuộc tính đều là private
-    private int id;
-    private String username;
-    private String password;
-    private BigDecimal balance;
+  private String username;
+  private String password;
+  private boolean isBanned = false; // Thuộc tính bắt buộc để Admin thực hiện quản lý (Mục 3.1.1)
 
-    // Constructor
-    public User(int id, String username, String password, BigDecimal balance) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.balance = balance;
-    }
+  private String role;
 
-    // Các hàm Getter/Setter để truy xuất an toàn
-    public int getId() {
-        return id;
-    }
+  public User() {
+  }
 
-    public String getUsername() {
-        return username;
-    }
+  public User(String username, String password) {
+    this.username = username;
+    this.password = password;
+  }
 
-    public BigDecimal getBalance() {
-        return balance;
-    }
+  public User(int id, String username, String password) {
+    this.setId(id);
+    this.username = username;
+    this.password = password;
+  }
 
-    public void setBalance(BigDecimal balance) {
-        this.balance = balance;
-    }
+  // --- Getters & Setters ---
+  public String getUsername() {
+    return username;
+  }
 
-    public String getPassword() {
-        return password;
-    }
+  public void setUsername(String username) {
+    this.username = username;
+  }
 
-    // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa
-    public abstract String getRole();
+  public String getPassword() {
+    return password;
+  }
 
-    public boolean withdraw(BigDecimal amount) {
-        if (this.balance != null && this.balance.compareTo(amount) >= 0) {
-            this.balance = this.balance.subtract(amount);
-            return true;
-        }
-        return false;
-    }
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public boolean isBanned() {
+    return isBanned;
+  }
+
+  public void setBanned(boolean banned) {
+    isBanned = banned;
+  }
+
+  /**
+   * Phương thức trừu tượng để phân định vai trò.
+   * Admin sẽ trả về "ADMIN", Customer sẽ trả về "CUSTOMER".
+   */
+  public abstract String getRole();
+
+  public void setRole(String role) {
+    this.role = role;
+  }
 }

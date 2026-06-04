@@ -5,11 +5,35 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
-    private static final String URL = "jdbc:postgresql://localhost:5433/auction_db";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "BTL_chanhchiminhhuyen";
 
-    public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+  public static Connection getConnection() throws SQLException {
+    try {
+      Class.forName("com.mysql.cj.jdbc.Driver");
+    } catch (ClassNotFoundException e) {
+      System.err.println("Không tìm thấy MySQL JDBC Driver!");
+      e.printStackTrace();
     }
+
+    // Đọc thông tin từ Biến môi trường
+    String url = System.getenv("DB_URL");
+    String user = System.getenv("DB_USER");
+    String password = System.getenv("DB_PASSWORD");
+
+    // Bắt lỗi nếu quên chưa cài đặt biến môi trường
+    if (url == null || user == null || password == null) {
+      System.err.println("❌ THIẾU BIẾN MÔI TRƯỜNG! Vui lòng cấu hình DB_URL, DB_USER, DB_PASSWORD.");
+      throw new SQLException("Thiếu cấu hình biến môi trường cho Database!");
+    }
+
+    // ⏰ TỰ ĐỘNG ÉP MÚI GIỜ VIỆT NAM (Sửa lỗi lệch 7 tiếng trên toàn hệ thống)
+    if (!url.contains("serverTimezone")) {
+      if (url.contains("?")) {
+        url += "&serverTimezone=Asia/Ho_Chi_Minh";
+      } else {
+        url += "?serverTimezone=Asia/Ho_Chi_Minh";
+      }
+    }
+
+    return DriverManager.getConnection(url, user, password);
+  }
 }

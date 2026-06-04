@@ -1,37 +1,61 @@
 package com.uet.bidding.model;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Người tham gia đấu giá
- */
-public class Bidder extends User {
+public class Bidder {
 
-    public Bidder(int id, String username, String password, BigDecimal balance) {
-        super(id, username, password, balance);
+  // 1. Danh sách các phiên đang đăng ký tham gia (Đang diễn ra)
+  private List<Integer> registeredAuctionIds;
+
+  // 2. Danh sách các phiên đã từng tham gia (Đã kết thúc)
+  private List<Integer> auctionHistoryIds;
+
+  public Bidder() {
+    this.registeredAuctionIds = new ArrayList<>();
+    this.auctionHistoryIds = new ArrayList<>();
+  }
+
+  // --- Getter và Setter ---
+  public List<Integer> getRegisteredAuctionIds() {
+    return registeredAuctionIds;
+  }
+
+  public void setRegisteredAuctionIds(List<Integer> registeredAuctionIds) {
+    this.registeredAuctionIds = registeredAuctionIds;
+  }
+
+  public List<Integer> getAuctionHistoryIds() {
+    return auctionHistoryIds;
+  }
+
+  public void setAuctionHistoryIds(List<Integer> auctionHistoryIds) {
+    this.auctionHistoryIds = auctionHistoryIds;
+  }
+
+  // --- Các hàm hỗ trợ logic (Helper methods) ---
+
+  /**
+   * 🎯 ĐÃ THÊM: Kiểm tra người dùng đã đăng ký tham gia phiên đấu giá này chưa
+   */
+  public boolean isRegistered(int auctionId) {
+    return this.registeredAuctionIds != null && this.registeredAuctionIds.contains(auctionId);
+  }
+
+  // Khi người dùng nhấn nút "Đăng ký tham gia" một phiên mới
+  public void registerForAuction(int auctionId) {
+    if (!registeredAuctionIds.contains(auctionId)) {
+      this.registeredAuctionIds.add(auctionId);
     }
+  }
 
-    /**
-     * Logic đặt giá
-     */
-    public boolean placeBid(Auction auction, BigDecimal amount) {
-        // Kiểm tra giá hợp lệ
-        if (amount.compareTo(auction.getCurrentPrice()) <= 0) {
-            return false;
-        }
-
-        // Kiểm tra đủ tiền
-        if (!withdraw(amount)) {
-            return false;
-        }
-
-        // Cập nhật giá mới
-        auction.setCurrentPrice(amount);
-        return true;
+  // Khi một phiên đấu giá kết thúc, chuyển nó từ "Đang tham gia" sang "Lịch sử"
+  public void completeAuction(int auctionId) {
+    if (this.registeredAuctionIds.contains(auctionId)) {
+      this.registeredAuctionIds.remove(Integer.valueOf(auctionId));
+      if (!this.auctionHistoryIds.contains(auctionId)) {
+        this.auctionHistoryIds.add(auctionId);
+      }
     }
-
-    @Override
-    public String getRole() {
-        return "BIDDER";
-    }
+  }
 }

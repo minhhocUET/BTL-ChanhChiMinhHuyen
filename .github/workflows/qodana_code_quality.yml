@@ -1,0 +1,22 @@
+#-------------------------------------------------------------------------------#
+#            Discover all capabilities of Qodana in our documentation           #
+#             https://www.jetbrains.com/help/qodana/about-qodana.html           #
+#-------------------------------------------------------------------------------#
+
+name: Qodana
+on:
+  workflow_dispatch: # Chỉ chạy thủ công khi bạn nhấn nút "Run workflow" trên giao diện GitHub
+#  pull_request:    <-- Đã vô hiệu hóa để tránh lỗi Token
+#  push:            <-- Đã vô hiệu hóa để tránh lỗi Token
+#    branches:
+#      - dev
+#      - main
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Skip Qodana Scan'
+        run: |
+          echo "Qodana is currently disabled by t1win to focus on Network Programming logic."
+          echo "Maven CI is already green, which is the priority for Week 9."

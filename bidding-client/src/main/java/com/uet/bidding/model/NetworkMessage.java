@@ -1,35 +1,54 @@
 package com.uet.bidding.model;
 
-/**
- *
- */
 public class NetworkMessage {
-    private String type;
 
-    // Nội dung chi tiết của tin nhắn (thường là một Object khác đã biến thành chuỗi JSON)
-    private String content;
+  private String type;
+  private Object data;
 
-    // Constructor khởi tạo
-    public NetworkMessage(String type, String content) {
-        this.type = type;
-        this.content = content;
-    }
+  // ⭐ THÊM: Chỉ cần 4 dòng này!
+  private String requestId;
 
-    // Các Getter và Setter để thư viện Gson có thể truy cập dữ liệu
-    public String getType() {
-        return type;
-    }
+  public NetworkMessage(String type, Object data) {
+    this.type = type;
+    this.data = data;
+  }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+  // ⭐ THÊM: Getters/Setters cho requestId
+  public String getRequestId() {
+    return requestId;
+  }
 
-    public String getContent() {
-        return content;
-    }
+  public void setRequestId(String requestId) {
+    this.requestId = requestId;
+  }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+  // Các getter/setter cũ giữ nguyên
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  public Object getData() {
+    return data;
+  }
+
+  public void setData(Object data) {
+    this.data = data;
+  }
+
+  public void setContent(Object data) {
+    this.data = data;
+  }
+
+  @Override
+  public String toString() {
+    return "NetworkMessage{" +
+        "type='" + type + '\'' +
+        ", data=" + data +
+        ", requestId='" + requestId + '\'' +  // ⭐ Cập nhật toString
+        '}';
+  }
 }
-

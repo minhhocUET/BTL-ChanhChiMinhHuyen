@@ -1,38 +1,63 @@
 package com.uet.bidding.model;
 
-// Tính Trừu tượng: Dùng abstract vì không có "User" chung chung, chỉ có Bidder, Seller hoặc Admin
-public abstract class User {
-    // Tính Đóng gói: Các thuộc tính đều là private
-    private int id;
-    private String username;
-    private String password;
-    private double balance;
+/**
+ * Lớp User trừu tượng - Lớp cơ sở (Base Class)
+ * Loại bỏ Serialization, sẵn sàng cho GSON/JSON
+ */
+public abstract class User extends Entity {
 
-    // Constructor
-    public User(int id, String username, String password, double balance) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-        this.balance = balance;
-    }
+  private String username;
+  private String password;
+  private boolean isBanned = false; // Thuộc tính bắt buộc để Admin thực hiện quản lý (Mục 3.1.1)
 
-    // Các hàm Getter/Setter để truy xuất an toàn
-    public int getId() {
-        return id;
-    }
+  private String role;
 
-    public String getUsername() {
-        return username;
-    }
+  public User() {
+  }
 
-    public double getBalance() {
-        return balance;
-    }
+  public User(String username, String password) {
+    this.username = username;
+    this.password = password;
+  }
 
-    public void setBalance(double balance) {
-        this.balance = balance;
-    }
+  public User(int id, String username, String password) {
+    this.setId(id);
+    this.username = username;
+    this.password = password;
+  }
 
-    // Tính Đa hình (Polymorphism): Phương thức ảo để các lớp con tự định nghĩa
-    public abstract String getRole();
+  // --- Getters & Setters ---
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public boolean isBanned() {
+    return isBanned;
+  }
+
+  public void setBanned(boolean banned) {
+    isBanned = banned;
+  }
+
+  /**
+   * Phương thức trừu tượng để phân định vai trò.
+   * Admin sẽ trả về "ADMIN", Customer sẽ trả về "CUSTOMER".
+   */
+  public abstract String getRole();
+
+  public void setRole(String role) {
+    this.role = role;
+  }
 }

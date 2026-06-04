@@ -1,0 +1,92 @@
+package com.uet.bidding.service;
+
+import com.uet.bidding.model.Customer;
+import com.uet.bidding.model.NetworkMessage;
+import com.uet.bidding.network.ClientService;
+import com.uet.bidding.util.UserSession;
+
+import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
+
+public class BidderService {
+
+  private final ClientService clientService = ClientService.getInstance();
+
+  // Lấy toàn bộ danh sách
+  /**
+   * Lấy toàn bộ danh sách phiên đấu giá từ hệ thống
+   */
+  public CompletableFuture<NetworkMessage> fetchAllAuctions() {
+    return clientService.sendRequest("GET_ALL_AUCTIONS", "");
+  }
+
+  /**
+   * Lọc danh sách các phiên đấu giá dựa theo địa điểm/thành phố
+   */
+  public CompletableFuture<NetworkMessage> fetchAuctionsByCity(String city) {
+    if (city == null) return CompletableFuture.completedFuture(null);
+    return clientService.sendRequest("GET_BY_CITY", city.trim());
+  }
+
+  public CompletableFuture<NetworkMessage> placeBid(int auctionId, BigDecimal amount) {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(
+          new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    if (!current.hasCompleteProfile()) {
+      return CompletableFuture.failedFuture(
+          new RuntimeException("Hoàn thiện hồ sơ trước khi đặt giá!"));
+    }
+    // Server đọc: "auctionId amount"
+    String data = auctionId + " " + amount.toPlainString();
+    return clientService.sendRequest("BID", data);
+  }
+
+  public CompletableFuture<NetworkMessage> registerForAuction(int auctionId) {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    if (!current.hasCompleteProfile()) {
+      return CompletableFuture.failedFuture(
+          new RuntimeException("Hoàn thiện hồ sơ trước khi đăng ký!"));
+    }
+    return clientService.sendRequest("REGISTER_FOR_AUCTION", auctionId);
+  }
+
+  public CompletableFuture<NetworkMessage> checkRegistration(int auctionId) {
+    return clientService.sendRequest("IS_REGISTERED_FOR_AUCTION", auctionId);
+  }
+
+  public CompletableFuture<NetworkMessage> loadMyRegistrations() {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    return clientService.sendRequest("GET_MY_REGISTRATIONS", current.getId());
+  }
+
+  public CompletableFuture<NetworkMessage> loadActiveAuctions() {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    return clientService.sendRequest("GET_BIDDER_ACTIVE_AUCTIONS", current.getId());
+  }
+
+  public CompletableFuture<NetworkMessage> loadBidderHistory() {
+    Customer current = UserSession.getLoggedInCustomer();
+    if (current == null) {
+      return CompletableFuture.failedFuture(new RuntimeException("Vui lòng đăng nhập!"));
+    }
+    return clientService.sendRequest("GET_BIDDER_HISTORY", current.getId());
+  }
+
+  /**
+   * 🌟 ĐÃ BỔ SUNG: Lấy danh sách toàn bộ bài đánh giá của một Shop dựa trên sellerId
+   */
+  public CompletableFuture<NetworkMessage> loadReviewsForSeller(int sellerId) {
+    return clientService.sendRequest("GET_REVIEWS_BY_SELLER", sellerId);
+  }
+}

@@ -1,5 +1,6 @@
 package com.uet.bidding.controller;
 
+import com.uet.bidding.controller.auth.RegisterController;
 import com.uet.bidding.model.NetworkMessage; // Nhớ đổi đúng package nếu bị sai
 import com.uet.bidding.service.UserService;
 import javafx.application.Platform;

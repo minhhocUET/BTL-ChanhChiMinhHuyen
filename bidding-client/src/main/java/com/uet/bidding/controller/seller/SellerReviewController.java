@@ -162,7 +162,9 @@ public class SellerReviewController {
               String rawDate = obj.get("createdAt").getAsString();
               if (rawDate.length() >= 19) {
                 String cleanDate = rawDate.substring(0, 19).replace(" ", "T");
-                dateStr = LocalDateTime.parse(cleanDate).format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+                // 🌟 SỬA TẠI ĐÂY: Parse ra LocalDateTime rồi cộng thêm 7 tiếng chuẩn GMT+7 Việt Nam
+                LocalDateTime ldt = LocalDateTime.parse(cleanDate).plusHours(7);
+                dateStr = ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
               } else {
                 dateStr = rawDate;
               }

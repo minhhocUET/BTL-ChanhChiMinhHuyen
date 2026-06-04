@@ -224,7 +224,8 @@ public class ReviewController {
               String rawDate = obj.get("createdAt").getAsString();
               if (rawDate.length() >= 19) {
                 String cleanDate = rawDate.substring(0, 19).replace(" ", "T");
-                LocalDateTime ldt = LocalDateTime.parse(cleanDate);
+                // 🌟 SỬA TẠI ĐÂY: Thêm .plusHours(7) ngay sau khi parse chuỗi từ server gửi về
+                LocalDateTime ldt = LocalDateTime.parse(cleanDate).plusHours(7);
                 dateStr = ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
               } else {
                 dateStr = rawDate;

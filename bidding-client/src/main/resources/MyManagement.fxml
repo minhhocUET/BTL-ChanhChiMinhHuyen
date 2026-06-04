@@ -45,7 +45,7 @@
                             </content>
                         </Tab>
 
-                        <Tab text="Lịch sử mua hàng">
+                        <Tab text="Lịch sử đấu giá">
                             <content>
                                 <AnchorPane>
                                     <children>

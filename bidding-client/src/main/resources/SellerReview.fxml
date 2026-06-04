@@ -51,8 +51,7 @@
                                                 <Font name="System Bold" size="18.0"/>
                                             </font>
                                         </Label>
-                                        <Label fx:id="lblStarRating" text="⭐⭐⭐⭐⭐" textFill="#e91e63" style="-fx-font-size: 20px;"/>
-                                    </children>
+                                        <HBox fx:id="lblStarRating" alignment="CENTER_LEFT" spacing="3" />                                    </children>
                                 </HBox>
 
                                 <Label fx:id="lblReviewCount" text="(0 đánh giá)" textFill="#888888">

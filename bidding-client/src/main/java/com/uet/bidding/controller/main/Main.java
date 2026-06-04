@@ -1,6 +1,7 @@
 package com.uet.bidding.controller.main;
 
 import com.uet.bidding.network.ClientService;
+import com.uet.bidding.util.TimeManager;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -43,6 +44,21 @@ public class Main extends Application {
     try {
       ClientService.getInstance().connect("18.136.197.107", 8888);
       System.out.println("✅ Kết nối Server thành công!");
+      ClientService.getInstance().sendRequest("GET_SERVER_TIME", "")
+          .thenAccept(response -> {
+            if (response != null && "SERVER_TIME_RESPONSE".equals(response.getType())) {
+              long serverTime = Long.parseLong(response.getData().toString());
+              long clientTime = System.currentTimeMillis();
+
+              // Tính khoảng lệch pha
+              long offset = serverTime - clientTime;
+              TimeManager.setTimeOffset(offset);
+              System.out.println("⏰ Đã đồng bộ thời gian với Server. Độ lệch pha: " + offset + " ms");
+            }
+          }).exceptionally(ex -> {
+            System.err.println("⚠️ Không thể đồng bộ thời gian, dùng giờ mặc định máy local.");
+            return null;
+          });
     } catch (IOException e) {
       // 1. Hiển thị thông báo lỗi
       showErrorAlert("Lỗi kết nối", "Không thể kết nối đến Server tại IP 127.0.0.1:8888. Vui lòng bật Server trước!");

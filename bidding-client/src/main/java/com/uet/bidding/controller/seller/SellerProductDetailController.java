@@ -10,6 +10,7 @@ import com.uet.bidding.model.Item;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.ImageUtils;
 import com.uet.bidding.util.SellerAuctionContext;
+import com.uet.bidding.util.TimeManager;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -221,7 +222,7 @@ public class SellerProductDetailController implements Initializable {
   private void startCountdown(LocalDateTime endTime) {
     if (timeline != null) timeline.stop();
     timeline = new Timeline(new KeyFrame(Duration.seconds(1), ev -> {
-      LocalDateTime now = LocalDateTime.now();
+      LocalDateTime now = TimeManager.getNow();
       if (now.isAfter(endTime)) {
         lblCountdown.setText("ĐÃ KẾT THÚC");
         timeline.stop();

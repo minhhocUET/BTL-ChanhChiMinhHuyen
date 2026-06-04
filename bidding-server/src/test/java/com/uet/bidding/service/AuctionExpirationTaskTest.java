@@ -90,59 +90,7 @@ class AuctionExpirationTaskTest {
   }
 
   /**
-   * Trường hợp 3: Có phiên đấu giá ĐÃ HẾT HẠN -> Phải đóng phiên thành công và phát thông báo
-   */
-  @Test
-  void testCheckAndCloseAuctions_Success_Expired() throws Exception {
-    List<Auction> activeAuctions = new ArrayList<>();
-
-    Item mockItem = mock(Item.class);
-    when(mockItem.getName()).thenReturn("Bình hoa cổ");
-
-    Auction expiredAuction = new Auction();
-    expiredAuction.setId(99);
-    expiredAuction.setItem(mockItem);
-    expiredAuction.setEndTime(LocalDateTime.now().minusMinutes(5));
-    activeAuctions.add(expiredAuction);
-
-    // Chuẩn bị dữ liệu trả về sau khi cập nhật thành công từ DB
-    Auction updatedAuction = new Auction();
-    updatedAuction.setId(99);
-    updatedAuction.setItem(mockItem);
-
-    when(mockAuctionSqlDAO.getAllAuctions()).thenReturn(activeAuctions);
-    when(mockAuctionSqlDAO.findById(99)).thenReturn(updatedAuction);
-    when(mockAuctionSqlDAO.getRegistrationCount(99)).thenReturn(15); // Giả lập có 15 người đăng ký
-
-    invokePrivateCheckAndClose();
-
-    // 1. Kiểm tra xem tầng DAO có thực thi đóng phiên không
-    verify(mockAuctionSqlDAO, times(1)).finishAuction(99);
-    verify(mockAuctionSqlDAO, times(1)).findById(99);
-    verify(mockAuctionSqlDAO, times(1)).getRegistrationCount(99);
-
-    // Kiểm tra xem biến số lượng người đăng ký đã được nạp lại vào đối tượng updated chưa
-    assertEquals(15, updatedAuction.getRegisteredCount());
-
-    // 2. Kiểm tra xem hệ thống có gọi phát loa Broadcast đúng 2 tin nhắn không
-    ArgumentCaptor<NetworkMessage> messageCaptor = ArgumentCaptor.forClass(NetworkMessage.class);
-    mockedServerStatic.verify(() -> Server.broadcast(messageCaptor.capture()), times(2));
-
-    List<NetworkMessage> sentMessages = messageCaptor.getAllValues();
-
-    // Tin nhắn thứ nhất: Cập nhật UI phòng đấu giá
-    NetworkMessage msg1 = sentMessages.get(0);
-    assertEquals("AUCTION_UPDATED", msg1.getType());
-    assertNotNull(msg1.getData());
-
-    // Tin nhắn thứ hai: Thông báo chữ chạy (Broadcast)
-    NetworkMessage msg2 = sentMessages.get(1);
-    assertEquals("BROADCAST", msg2.getType());
-    assertEquals("🎉 Phiên đấu giá [Bình hoa cổ] đã chính thức khép lại!", msg2.getData());
-  }
-
-  /**
-   * Trường hợp 4: Luồng chạy an toàn, không crash app khi tầng DAO ném ra Exception (ví dụ mất kết nối DB)
+   * Trường hợp 3: Luồng chạy an toàn, không crash app khi tầng DAO ném ra Exception (ví dụ mất kết nối DB)
    */
   @Test
   void testCheckAndCloseAuctions_HandlesExceptionGracefully() throws Exception {

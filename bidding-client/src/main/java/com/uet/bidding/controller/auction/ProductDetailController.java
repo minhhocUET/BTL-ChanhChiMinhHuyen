@@ -7,6 +7,7 @@ import com.uet.bidding.service.AutoBidService;
 import com.uet.bidding.service.BidderService;
 import com.uet.bidding.util.ImageUtils;
 import com.uet.bidding.util.ReviewContext;
+import com.uet.bidding.util.TimeManager;
 import com.uet.bidding.util.UserSession;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -372,7 +373,7 @@ public class ProductDetailController {
     if (timeline != null) timeline.stop();
 
     timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-      LocalDateTime now = LocalDateTime.now();
+      LocalDateTime now = TimeManager.getNow();
 
       if (now.isAfter(endTime) || now.isEqual(endTime)) {
         lblCountdown.setText("ĐÃ KẾT THÚC");

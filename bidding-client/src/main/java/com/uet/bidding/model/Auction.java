@@ -2,6 +2,8 @@ package com.uet.bidding.model;
 
 import com.uet.bidding.exception.AuctionClosedException;
 import com.uet.bidding.exception.InvalidBidException;
+import com.uet.bidding.util.TimeManager;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -52,7 +54,7 @@ public class Auction {
   public Auction(Item item, BigDecimal startPrice, int durationMinutes) {
     this.item = item;
     this.currentPrice = startPrice;
-    this.startTime = LocalDateTime.now(); // Bắt đầu ngay lập tức
+    this.startTime = TimeManager.getNow(); // Bắt đầu ngay lập tức
     this.endTime = this.startTime.plusMinutes(durationMinutes); // Tự tính thời gian kết thúc
     this.status = "OPEN";
     this.bidHistory = new ArrayList<>();
@@ -82,7 +84,7 @@ public class Auction {
   }
 
   public void refreshStatus() {
-    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = TimeManager.getNow();
 
     // Nếu đang OPEN nhưng đã quá giờ kết thúc
     if (("OPEN".equals(this.status) || "RUNNING".equals(this.status)) && now.isAfter(endTime)) {
@@ -201,7 +203,7 @@ public class Auction {
 
     // 4. Lưu vào lịch sử Bid (Sử dụng hồ sơ Bidder từ Customer)
     // Giả sử Constructor của Bid nhận (Bidder bidder, BigDecimal amount, LocalDateTime time)
-    this.bidHistory.add(new Bid(customer.getBidderProfile(), bidAmount, LocalDateTime.now()));
+    this.bidHistory.add(new Bid(customer.getBidderProfile(), bidAmount, TimeManager.getNow()));
 
     System.out.println("✅ " + customer.getUsername() + " đặt giá thành công: " + bidAmount);
 

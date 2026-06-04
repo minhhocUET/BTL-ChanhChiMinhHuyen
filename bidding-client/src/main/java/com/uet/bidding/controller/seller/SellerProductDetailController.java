@@ -1,15 +1,15 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.seller;
 
 import com.google.gson.reflect.TypeToken;
+import com.uet.bidding.controller.auction.AuctionListController;
+import com.uet.bidding.controller.auction.ProductDetailController;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Bid;
-import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.GsonFactory;
 import com.uet.bidding.model.Item;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.util.ImageUtils;
 import com.uet.bidding.util.SellerAuctionContext;
-import com.uet.bidding.util.UserSession;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -31,7 +31,6 @@ import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.math.BigDecimal;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;

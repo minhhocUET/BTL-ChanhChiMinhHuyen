@@ -1,13 +1,9 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.user;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
-import com.uet.bidding.model.GsonFactory;
-import com.uet.bidding.model.NetworkMessage;
-import com.uet.bidding.model.Review;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.BidderService;
 import com.uet.bidding.util.ImageUtils;
@@ -25,17 +21,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ReviewController {

@@ -1,9 +1,11 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.user;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.uet.bidding.controller.auction.AuctionListController;
+import com.uet.bidding.controller.auction.ProductDetailController;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Item;
@@ -11,7 +13,6 @@ import com.uet.bidding.service.BidderService;
 import com.uet.bidding.util.ReviewContext;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -29,7 +30,6 @@ import javafx.util.Callback;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 

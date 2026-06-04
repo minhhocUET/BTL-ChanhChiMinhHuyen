@@ -1,4 +1,4 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.main;
 
 import com.uet.bidding.network.ClientService;
 import javafx.application.Application;

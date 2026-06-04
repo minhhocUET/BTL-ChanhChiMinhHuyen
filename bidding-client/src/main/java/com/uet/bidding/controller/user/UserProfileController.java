@@ -1,4 +1,4 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.user;
 
 import com.uet.bidding.exception.UserException;
 import com.uet.bidding.model.Customer;

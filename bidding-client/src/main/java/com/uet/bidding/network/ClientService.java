@@ -2,12 +2,12 @@ package com.uet.bidding.network;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.uet.bidding.controller.AuctionListController;
-import com.uet.bidding.controller.Main;
-import com.uet.bidding.controller.MyManagementController;
-import com.uet.bidding.controller.ProductDetailController;
-import com.uet.bidding.controller.SellerDashboardController;
-import com.uet.bidding.controller.SellerProductDetailController;
+import com.uet.bidding.controller.auction.AuctionListController;
+import com.uet.bidding.controller.main.Main;
+import com.uet.bidding.controller.user.MyManagementController;
+import com.uet.bidding.controller.auction.ProductDetailController;
+import com.uet.bidding.controller.seller.SellerDashboardController;
+import com.uet.bidding.controller.seller.SellerProductDetailController;
 import com.uet.bidding.controller.admin.AdminUserManagementController;
 import com.uet.bidding.controller.admin.AdminItemManagementController; // 🚀 ĐÃ BỔ SUNG IMPORT NÀY
 import com.uet.bidding.model.*;
@@ -21,7 +21,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -319,7 +318,7 @@ public class ClientService {
     return null;
   }
 
-  private void showAlert(String title, String content, Alert.AlertType type) {
+  protected void showAlert(String title, String content, Alert.AlertType type) {
     Alert alert = new Alert(type);
     alert.setTitle(title);
     alert.setHeaderText(null);

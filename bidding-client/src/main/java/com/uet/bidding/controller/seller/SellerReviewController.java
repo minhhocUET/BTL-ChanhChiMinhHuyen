@@ -1,4 +1,4 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.seller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -23,8 +23,6 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;

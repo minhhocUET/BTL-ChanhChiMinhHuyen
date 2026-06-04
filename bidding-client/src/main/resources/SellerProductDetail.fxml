@@ -10,7 +10,7 @@
 
 <AnchorPane prefHeight="720.0" prefWidth="640.0" style="-fx-background-color: #fce4ec;"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.uet.bidding.controller.SellerProductDetailController">
+            fx:controller="com.uet.bidding.controller.seller.SellerProductDetailController">
     <VBox spacing="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
           AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <HBox alignment="CENTER_LEFT" spacing="12.0"

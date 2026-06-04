@@ -5,7 +5,7 @@
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox alignment="CENTER" prefHeight="478.0" prefWidth="422.0" spacing="20.0" styleClass="root-container" stylesheets="@style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.LoginController">
+<VBox alignment="CENTER" prefHeight="478.0" prefWidth="422.0" spacing="20.0" styleClass="root-container" stylesheets="@style.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.auth.LoginController">
     <children>
 
         <StackPane>

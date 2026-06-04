@@ -8,7 +8,7 @@
 <?import javafx.scene.image.ImageView?>
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="650.0" prefWidth="850.0"
             style="-fx-background-color: #fce4ec;" xmlns="http://javafx.com/javafx/17.0.12"
-            fx:controller="com.uet.bidding.controller.SellerReviewController">
+            fx:controller="com.uet.bidding.controller.seller.SellerReviewController">
     <children>
         <VBox spacing="15.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0"
               AnchorPane.topAnchor="20.0">

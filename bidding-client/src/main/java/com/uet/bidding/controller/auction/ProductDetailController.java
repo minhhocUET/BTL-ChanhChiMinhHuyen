@@ -1,5 +1,6 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.auction;
 
+import com.uet.bidding.controller.user.MyManagementController;
 import com.uet.bidding.model.*;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.AutoBidService;

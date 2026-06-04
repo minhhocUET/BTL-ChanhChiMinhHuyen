@@ -1,4 +1,4 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.auction;
 
 import com.google.gson.Gson;
 import com.uet.bidding.model.Auction;
@@ -39,6 +39,8 @@ public class CreateAuctionFromItemController {
   @FXML private Label lblDemoHint;
 
   private Item item;
+
+  protected SellerService sellerService = new SellerService();
 
   @FXML
   public void initialize() {
@@ -116,7 +118,7 @@ public class CreateAuctionFromItemController {
   }
 
   @FXML
-  private void handleCreateAuction(ActionEvent event) {
+  protected void handleCreateAuction(ActionEvent event) {
     if (item == null) return;
     if (item.getId() <= 0) {
       showAlert(Alert.AlertType.WARNING, "Sản phẩm demo",
@@ -154,7 +156,7 @@ public class CreateAuctionFromItemController {
       }
 
       // TRUYỀN THÊM bidIncrement VÀO SERVICE
-      new SellerService().createAuctionAsync(item.getId(), startPrice, duration, bidIncrement)
+      sellerService.createAuctionAsync(item.getId(), startPrice, duration, bidIncrement)
           .thenAccept(res -> Platform.runLater(() -> {
             if (!"SUCCESS".equals(res.getType())) {
               showAlert(Alert.AlertType.ERROR, "Lỗi", String.valueOf(res.getData()));

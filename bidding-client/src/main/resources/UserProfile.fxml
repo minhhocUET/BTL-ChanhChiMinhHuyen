@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.UserProfileController">
+<AnchorPane prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: #ffe6ea;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.uet.bidding.controller.user.UserProfileController">
     <children>
 
         <ImageView fitHeight="435.0" fitWidth="308.0" layoutX="-53.0" layoutY="-30.0" pickOnBounds="true" preserveRatio="true" AnchorPane.leftAnchor="-53.0" AnchorPane.topAnchor="-30.0">

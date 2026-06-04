@@ -87,7 +87,7 @@ public class CreateAuctionFromItemController {
   private void updateEndTimeHint() {
     try {
       int mins = Integer.parseInt(txtDuration.getText());
-      java.time.LocalDateTime end = java.time.LocalDateTime.now().plusMinutes(mins);
+      java.time.LocalDateTime end = com.uet.bidding.util.TimeManager.getNow().plusMinutes(mins);
       java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("HH:mm, dd/MM");
       lblDemoHint.setVisible(true);
       lblDemoHint.setManaged(true);

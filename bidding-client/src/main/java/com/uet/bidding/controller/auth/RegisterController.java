@@ -27,7 +27,7 @@ public class RegisterController {
   private UserService userService = new UserService();
 
   @FXML
-   public void handleRegister(ActionEvent event) {
+  public void handleRegister(ActionEvent event) {
     String username = usernameField.getText().trim();
     String password = passwordField.getText().trim();
     String confirmPassword = confirmPasswordField.getText().trim();

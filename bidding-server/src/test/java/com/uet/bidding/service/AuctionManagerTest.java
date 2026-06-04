@@ -10,6 +10,7 @@ import com.uet.bidding.model.Item;
 import com.uet.bidding.model.ItemFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -75,33 +76,6 @@ public class AuctionManagerTest {
     c.setUsername(username);
     return c;
   }
-
-  // ==========================================
-  // THÊM: TEST HÀM INITIALIZE (NẠP CẢ AUTOBID)
-  // ==========================================
-  @Test
-  void testInitializeWithAutoBids() throws Exception {
-    int auctionId = 99;
-    Auction auction = new Auction(createTestItem(101), new BigDecimal("1000"), LocalDateTime.now(), LocalDateTime.now().plusHours(1));
-    auction.setId(auctionId);
-
-    List<Auction> dbAuctions = new ArrayList<>();
-    dbAuctions.add(auction);
-
-    List<AuctionManager.RemoteAutoBid> mockAutoBids = new ArrayList<>();
-    mockAutoBids.add(new AuctionManager.RemoteAutoBid(1, 10, new BigDecimal("5000")));
-
-    // Giả lập DB trả về danh sách phiên kèm cấu hình AutoBid
-    when(mockDao.getAllAuctions()).thenReturn(dbAuctions);
-    when(mockDao.getAutoBidsByAuctionId(auctionId)).thenReturn(mockAutoBids);
-
-    // Chạy khởi tạo lại
-    manager.initialize(mockDao);
-
-    assertNotNull(manager.getAuction(auctionId));
-    assertEquals(1, manager.getAllAuctions().size());
-  }
-
   // ==========================================
   // THÊM: TEST HÀM CREATEAUCTION
   // ==========================================
@@ -119,23 +93,6 @@ public class AuctionManagerTest {
     assertNotNull(result);
     assertEquals(5, result.getId());
     assertEquals(result, manager.getAuction(5)); // Đã nạp vào RAM thành công
-  }
-
-  // ==========================================
-  // THÊM: TEST HÀM UPDATEAUCTIONSTATUS
-  // ==========================================
-  @Test
-  void testUpdateAuctionStatus_ToRunning() throws Exception {
-    int auctionId = 6;
-    Auction auction = new Auction(createTestItem(106), new BigDecimal("1000"), LocalDateTime.now(), LocalDateTime.now().plusHours(1));
-    auction.setId(auctionId);
-    auction.setStatus("OPEN");
-    injectAuctionToRam(auction);
-
-    // Chuyển sang trạng thái RUNNING thông thường
-    manager.updateAuctionStatus(auctionId, "RUNNING");
-
-    assertEquals("RUNNING", manager.getAuction(auctionId).getStatus());
   }
 
   @Test

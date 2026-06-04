@@ -1,5 +1,7 @@
 package com.uet.bidding.model;
 
+import com.uet.bidding.util.TimeManager;
+
 import java.time.LocalDateTime;
 
 public class Review {
@@ -24,7 +26,7 @@ public class Review {
     this.reviewer = reviewer;
     this.stars = stars;
     this.comment = comment;
-    this.createdAt = LocalDateTime.now();
+    this.createdAt = TimeManager.getNow();
   }
 
   // Getters & Setters

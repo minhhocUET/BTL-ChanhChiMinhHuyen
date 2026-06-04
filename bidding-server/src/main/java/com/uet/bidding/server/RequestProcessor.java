@@ -85,6 +85,13 @@ public class RequestProcessor {
           }
         }
 
+        case "GET_SERVER_TIME" -> {
+          // Lấy thời gian hiện tại của Server ảo dưới dạng số milliseconds (Timestamp)
+          long serverTimestamp = System.currentTimeMillis();
+          // Gửi phản hồi thành công (SUCCESS) chứa chuỗi timestamp về cho client
+          handler.sendResponse("SERVER_TIME_RESPONSE", String.valueOf(serverTimestamp), reqId);
+        }
+
         case "ADMIN_DELETE_AUCTION" -> {
           try {
             int auctionId = ((Number) msg.getData()).intValue();

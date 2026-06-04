@@ -1,12 +1,12 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.auth;
 
+import com.uet.bidding.controller.main.Main;
 import com.uet.bidding.model.Admin;
 import com.uet.bidding.model.User;
 import com.uet.bidding.network.ClientService;
 import com.uet.bidding.service.UserService;
 import com.uet.bidding.util.UserSession;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;

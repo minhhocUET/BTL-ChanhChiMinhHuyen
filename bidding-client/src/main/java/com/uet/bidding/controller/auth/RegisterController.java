@@ -1,4 +1,4 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.auth;
 
 import com.uet.bidding.service.UserService;
 import javafx.application.Platform;

@@ -7,7 +7,7 @@
 
 <AnchorPane prefHeight="650.0" prefWidth="720.0" style="-fx-background-color: #fce4ec;"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.uet.bidding.controller.CreateAuctionFromItemController">
+            fx:controller="com.uet.bidding.controller.auction.CreateAuctionFromItemController">
     <VBox spacing="12.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0"
           AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
         <HBox alignment="CENTER_LEFT" spacing="12.0">

@@ -1,9 +1,10 @@
-package com.uet.bidding.controller;
+package com.uet.bidding.controller.auction;
 
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import com.google.gson.reflect.TypeToken;
+import com.uet.bidding.controller.seller.SellerProductDetailController;
 import com.uet.bidding.model.Auction;
 import com.uet.bidding.model.Customer;
 import com.uet.bidding.model.Item;
